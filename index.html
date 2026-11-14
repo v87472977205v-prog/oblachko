@@ -291,6 +291,8 @@ body:has(#vw:not([hidden])){overflow:hidden}
 .btn,button{-webkit-tap-highlight-color:transparent}
 button:active{opacity:.75}
 #dp .rrow{display:flex;align-items:center}
+#dp .rrow.oth{overflow:hidden;max-height:64px;opacity:1;transition:max-height .3s ease,opacity .26s ease}
+#dp .rrow.oth.hid{max-height:0;opacity:0}
 #dp .rrow .rp{flex:1;min-width:0}
 #dp .rrow .rp>span:not(.lkb){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #dp .rrow .rdots{width:44px;flex:none;justify-content:center;padding:12px 0}
@@ -552,10 +554,10 @@ body.pl-on .fab{bottom:calc(176px + env(safe-area-inset-bottom))}
 </main>
 <div id="drawer" hidden><div id="dp">
   <input id="q" type="search" placeholder="Поиск по всему архиву">
-  <div class="sec secrow"><span>Репозиториум</span><button id="addrepo" aria-label="Новый репозиторий" data-ic="plus"></button></div>
+  <div id="rbar"><button id="rsw" role="switch" aria-checked="false"><span>Все пользователи</span><span class="tg"></span></button></div>
+  <div class="sec secrow"><span>Репозитории</span><button id="addrepo" aria-label="Новый репозиторий" data-ic="plus"></button></div>
   <div id="repl"></div>
   <div class="dgrp" id="whoami" hidden></div>
-  <div id="rbar"><button id="rsw" role="switch" aria-checked="false"><span>Все пользователи</span><span class="tg"></span></button></div>
   <button id="setb" data-ic="gear">Настройки</button>
   <button id="conb" data-ic="users">Консоль</button>
   <div class="sec" id="fsec" hidden>Эта папка</div>
@@ -924,15 +926,17 @@ async function toggleLock(r,p){
   const m=await withChat(()=>client.sendMessage(S.chat,LK+JSON.stringify({r,p,h})));
   locks.push({id:m.id,r,p,h});unAdd(r+'\n'+p,h);jlog('lock',lkn(r,p));say('Пароль установлен');render();
 }
+let rpAnim=false,rswBusy=false;
 function drawRepos(){
   {const cb=$('#conb');if(cb){cb.hidden=!isAdmin();cb.style.display=isAdmin()?'':'none'}}
   try{const w=$('#whoami');w.hidden=!S.guestUser;w.textContent=S.guestUser?'Вы вошли как: '+S.guestUser:''}catch(e){}
   document.body.classList.toggle('own',isAdmin());
   $('#rsw').setAttribute('aria-checked',String(!!P.all));
-  const L=[['','Облако'],...repos.filter(x=>showRepo(x)||x.name===R()).map(x=>[x.name,x.name+(x.owner&&x.owner!==S.guestUser?' · '+x.owner:(S.viewer&&!x.guest?' · владелец':''))])];
+  const L=[['','Облако'],...repos.filter(x=>showRepo(x)||x.name===R()).map(x=>[x.name,x.name+(x.owner&&x.owner!==S.guestUser?' · '+x.owner:(S.viewer&&!x.guest?' · владелец':'')),!mineRepo(x)])];
   const dots='<svg class="i" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>';
-  const rowH=([r,t])=>`<div class="rrow"><button class="rp${r===R()?' on':''}" data-r="${esc(r)}">${icon(r?'repo':'cloud')}<span>${esc(t)}</span>${lockOf(r,'')?`<span class="lkb">${icon(UN.has(r+'\n')?'unlock':'lock')}</span>`:''}</button><button class="rdots" data-rm="${esc(r)}" aria-label="Меню репозитория">${dots}</button></div>`;
+  const rowH=([r,t,oth])=>`<div class="rrow${oth?' oth':''}"><button class="rp${r===R()?' on':''}" data-r="${esc(r)}">${icon(r?'repo':'cloud')}<span>${esc(t)}</span>${lockOf(r,'')?`<span class="lkb">${icon(UN.has(r+'\n')?'unlock':'lock')}</span>`:''}</button><button class="rdots" data-rm="${esc(r)}" aria-label="Меню репозитория">${dots}</button></div>`;
   $('#repl').innerHTML=L.map(rowH).join('');
+  if(rpAnim){const o=[...document.querySelectorAll('#repl .rrow.oth')];o.forEach(x=>x.classList.add('hid'));void $('#repl').offsetHeight;requestAnimationFrame(()=>requestAnimationFrame(()=>o.forEach(x=>x.classList.remove('hid'))))}
   $('#fsec').hidden=!cur;$('#lkf').hidden=!cur||!canPw(R());$('#mvf').hidden=!cur;$('#rnf').hidden=!cur;$('#cpf').hidden=!cur;
   if(cur)$('#lkf').lastChild.textContent=lockOf(R(),cur)?'Снять пароль с папки':'Запаролить папку';
 }
@@ -2084,7 +2088,14 @@ async function makeRepo(n){
   return true;
 }
 $('#addrepo').onclick=async()=>{const n=clean(await uiPrompt('Название репозитория')||'');if(!n)return;if(n==='Облако'||repos.some(x=>x.name===n)){alert('Такой репозиторий уже есть');return}try{if(await makeRepo(n)){cur='';render()}}catch(x){say(err(x),1)}};
-$('#rsw').onclick=()=>{P.all=!P.all;if(R()&&!repos.some(x=>x.name===R()&&showRepo(x))){P.repo='';cur=''}sv('tgmp',P);render()};
+$('#rsw').onclick=async()=>{
+  if(rswBusy)return;rswBusy=true;
+  try{
+    if(P.all){const o=document.querySelectorAll('#repl .rrow.oth');if(o.length){o.forEach(x=>x.classList.add('hid'));await new Promise(r=>setTimeout(r,300))}}
+    else{rpAnim=true;setTimeout(()=>{rpAnim=false},600)}
+    P.all=!P.all;if(R()&&!repos.some(x=>x.name===R()&&showRepo(x))){P.repo='';cur=''}sv('tgmp',P);render();
+  }finally{rswBusy=false}
+};
 $('#lkf').onclick=()=>toggleLock(R(),cur).catch(x=>say(err(x),1));
 /* ---- меню репозитория (три точки) ---- */
 let rmRepo='';
