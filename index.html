@@ -1177,8 +1177,11 @@ function musPaint(){
   const el=$('#musl');if(el&&MUS.showLog){el.textContent=MUS.log.join('\n');el.scrollTop=el.scrollHeight}
 }
 function musFolders(){
-  const r=$('#musrp').value,dl=$('#musdl');
-  dl.innerHTML=allPaths(r).map(x=>`<option value="${esc(x)}">`).join('');
+  const r=$('#musrp').value,ps=allPaths(r),sel=$('#musfs'),inp=$('#musfo');
+  const isNew=!!MS.folder&&!ps.includes(MS.folder);
+  sel.innerHTML='<option value="">Корень репозитория</option>'+ps.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('')+'<option value="__new">＋ Новая папка…</option>';
+  sel.value=isNew?'__new':(MS.folder||'');
+  inp.hidden=!isNew;inp.value=isNew?MS.folder:'';
 }
 function openMusic(){
   openAdm(extName('music'));
@@ -1186,7 +1189,8 @@ function openMusic(){
   if(!rl.some(x=>x[0]===MS.repo)){MS.repo='';msv()}
   $('#admb').innerHTML=`<div class="mus">
     <div class="uc"><label class="ml" for="musrp">Куда</label><select id="musrp">${rl.map(([v,t])=>`<option value="${esc(v)}"${v===MS.repo?' selected':''}>${esc(t)}</option>`).join('')}</select>
-      <input id="musfo" list="musdl" autocomplete="off" spellcheck="false" placeholder="Папка (пусто — корень)" value="${esc(MS.folder)}"><datalist id="musdl"></datalist></div>
+      <select id="musfs"></select>
+      <input id="musfo" autocomplete="off" spellcheck="false" placeholder="Название новой папки (можно Музыка/Рок)" hidden></div>
     <div class="uc"><textarea id="musp" placeholder="Исполнитель - Название&#10;по одному в строке">${esc(MS.list)}</textarea>
       <div class="row"><button class="p" id="musg">Начать скачивание</button><button id="musk">Очистить</button></div></div>
     <div class="uc"><div class="mpt" id="mpt"></div><div class="mpb"><i id="mpf"></i></div><div class="mps" id="mps"></div></div>
@@ -1196,7 +1200,8 @@ function openMusic(){
 }
 $('#admb').addEventListener('change',e=>{
   const t=e.target;if(!t.closest||!t.closest('.mus'))return;
-  if(t.id==='musrp'){MS.repo=t.value;MS.folder='';$('#musfo').value='';msv();musFolders();const r=t.value;if(r&&encOn(r)&&!KEYS[r])ensureKey(r).catch(x=>say(err(x),1))}
+  if(t.id==='musfs'){const inp=$('#musfo');if(t.value==='__new'){MS.folder='';inp.value='';inp.hidden=false;inp.focus()}else{MS.folder=t.value;inp.hidden=true}msv()}
+  else if(t.id==='musrp'){MS.repo=t.value;MS.folder='';msv();musFolders();const r=t.value;if(r&&encOn(r)&&!KEYS[r])ensureKey(r).catch(x=>say(err(x),1))}
 });
 $('#admb').addEventListener('input',e=>{
   const t=e.target;if(t.id==='musfo'){MS.folder=t.value;msv()}else if(t.id==='musp'){MS.list=t.value;msv()}
