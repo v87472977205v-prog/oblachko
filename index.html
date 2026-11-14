@@ -1116,11 +1116,20 @@ async function musClick(chat,m){
   const btn=musRowsOf(m).flat().find(b=>b&&(b.callbackData!==undefined||b.callback_data!==undefined));
   if(!btn){mlog('   у сообщения нет кнопок с действием');return false}
   const data=btn.callbackData!==undefined?btn.callbackData:btn.callback_data;
-  try{
-    if(typeof client.sendCallbackQuery==='function')await client.sendCallbackQuery(chat,m.id,data);
-    else{const peer=await client.getInputPeer(chat);await client.invoke({_:'messages.getBotCallbackAnswer',peer,msg_id:m.id,data:typeof data==='string'?new TextEncoder().encode(data):data})}
-    return true;
-  }catch(x){const t=err(x);if(/BOT_RESPONSE_TIMEOUT/i.test(t))return true;mlog('   ⚠ кнопка не нажалась: '+t);return false}
+  const raw=typeof data==='string'?new TextEncoder().encode(data):data,str=typeof data==='string'?data:new TextDecoder().decode(data);
+  const tries=[];
+  if(typeof client.sendCallbackQuery==='function'){
+    tries.push(['объект callback',()=>client.sendCallbackQuery(chat,m.id,{type:'callback',data:str})]);
+    tries.push(['объект data',()=>client.sendCallbackQuery(chat,m.id,{data:str})]);
+    tries.push(['строка',()=>client.sendCallbackQuery(chat,m.id,str)]);
+  }
+  tries.push(['raw',async()=>{const peer=await client.getInputPeer(chat);return client.invoke({_:'messages.getBotCallbackAnswer',peer,msg_id:m.id,data:raw})}]);
+  let last='';
+  for(const[n,f]of tries){
+    try{await f();mlog('   кнопка нажата ('+n+')');return true}
+    catch(x){const t=err(x);if(/BOT_RESPONSE_TIMEOUT/i.test(t)){mlog('   кнопка нажата ('+n+'), бот отвечает долго');return true}last=t}
+  }
+  mlog('   ⚠ кнопка не нажалась: '+last);return false;
 }
 async function musWait(chat,baseId,ms){
   let end=Date.now()+ms;const clicked=new Set();
