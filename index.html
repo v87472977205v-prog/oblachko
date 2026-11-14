@@ -486,6 +486,13 @@ body.pl-on .fab{bottom:calc(176px + env(safe-area-inset-bottom))}
 #pcv{display:none;flex:none;width:38px;height:38px;border-radius:8px;background:center/cover no-repeat var(--bg)}
 #pl:not(.full).hascv #pcv{display:block}
 #pl.full.cvbg #eq{background:linear-gradient(rgba(4,14,12,.38),rgba(4,14,12,.58)),var(--cv) center/cover no-repeat}
+
+#admb .mus textarea{width:100%;min-height:120px;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:16px;margin:4px 0;resize:vertical;font-family:inherit}
+#admb .mus .mr{display:flex;gap:10px;align-items:center;padding:9px 2px;border-bottom:1px solid var(--line)}
+#admb .mus .mr input{width:auto;flex:none;margin:0;transform:scale(1.25)}
+#admb .mus .mr .mi{flex:1;min-width:0}#admb .mus .mr .mn{font-size:15px;word-break:break-word}#admb .mus .mr .mm{font-size:12px;color:var(--mute)}
+#admb .mus #musl{white-space:pre-wrap;font:12px/1.4 ui-monospace,monospace;max-height:220px;overflow:auto;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px}
+#admb .mus .mlist{max-height:320px;overflow:auto}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-v4-192.png" type="image/png">
@@ -976,7 +983,7 @@ function drawSettings(){
 function drawConsole(){
   if(!isAdmin()){drawSettings();return}
   fromSet=false;admParent=null;openAdm('Консоль администратора');
-  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button></div>`;
+  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button><button data-set="mus">${icon('music')}<span>Музыка из чата</span></button></div>`;
 }
 function openLks(){
   openAdm('Кнопка открытия репозитория');
@@ -1014,6 +1021,190 @@ $('#setb').onclick=drawSettings;
 
 /* ---- «Консоль» только у администратора (в шторке); шестерёнка настроек папки — у всех ---- */
 $('#conb').onclick=()=>{if(isAdmin())drawConsole()};
+
+/* ---- Консоль → «Музыка из чата» ----
+   Вход в Telegram берётся тот же, что у Облачка (api_id / api_hash / сессия), второй раз входить не нужно.
+   Из чата или бота скачиваются голосовые и аудио, и сразу кладутся в выбранный репозиторий и папку Облачка. */
+const MUS={rows:[],stop:false,busy:false,log:[]};
+let MS=ld('tgmus',{chat:'',repo:'',folder:'',list:''});
+const msv=()=>sv('tgmus',MS);
+function mlog(m){
+  const d=new Date(),q=n=>String(n).padStart(2,'0');
+  MUS.log.push(q(d.getHours())+':'+q(d.getMinutes())+':'+q(d.getSeconds())+'  '+m);if(MUS.log.length>200)MUS.log.shift();
+  ulog('Музыка: '+m);const el=$('#musl');if(el){el.textContent=MUS.log.join('\n');el.scrollTop=el.scrollHeight}
+}
+const musChatId=t=>{t=String(t||'').trim();const m=/(?:t\.me|telegram\.me)\/([A-Za-z0-9_]+)/i.exec(t);if(m)t=m[1];if(!t)return '';if(/^-?\d+$/.test(t))return +t;return '@'+t.replace(/^@/,'')};
+const musDate=m=>m.date instanceof Date?m.date:new Date(m.date>1e11?m.date:m.date*1000);
+const musDur=s=>{s=Math.round(s||0);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const musAud=m=>m&&(m.audio||m.voice||(m.document&&/^audio\//.test(m.document.mimeType||'')&&m.document));
+function musInfo(m){
+  const a=m.audio,v=m.voice,d=musAud(m),dt=musDate(m),q=n=>String(n).padStart(2,'0');
+  let nm='';
+  if(a){const ar=a.artist||a.performer||'',ti=a.title||'';nm=[ar,ti].filter(Boolean).join(' - ')}
+  if(!nm&&d&&d.fileName)nm=d.fileName.replace(/\.[^.]+$/,'');
+  if(!nm){const tx=String(m.text||m.caption||'').split('\n').map(x=>x.replace(/[*_`]+/g,'').trim()).find(Boolean);if(tx)nm=tx.slice(0,80)}
+  if(!nm)nm=(v?'Голосовое ':'Аудио ')+dt.getFullYear()+'-'+q(dt.getMonth()+1)+'-'+q(dt.getDate())+' '+q(dt.getHours())+'-'+q(dt.getMinutes())+'-'+q(dt.getSeconds());
+  const mime=(d&&d.mimeType)||(v?'audio/ogg':'audio/mpeg');
+  let ext=((d&&d.fileName)||'').match(/\.([A-Za-z0-9]{2,5})$/);ext=ext?ext[1].toLowerCase():(/mpeg|mp3/.test(mime)?'mp3':/mp4|m4a|aac/.test(mime)?'m4a':/flac/.test(mime)?'flac':/wav/.test(mime)?'wav':'ogg');
+  nm=clean(nm).replace(/[<>:"|?*\\\x00-\x1f]/g,'').replace(/\s+/g,' ').trim().slice(0,120)||'audio';
+  return{id:m.id,msg:m,fid:d.fileId,name:nm+'.'+ext,title:nm,dur:(d&&d.duration)||0,date:dt,mime,size:(d&&d.fileSize)||0};
+}
+async function musResolve(){
+  const id=musChatId(MS.chat);if(!id)throw new Error('Укажите чат или бота');
+  if(!client)throw new Error('Ещё подключаюсь к Telegram, подождите секунду');
+  try{const c=await client.getChat(id);return c&&c.id!==undefined?c.id:id}catch(x){throw new Error('Не нашёл чат «'+MS.chat+'»: '+err(x))}
+}
+async function musFolderEnsure(r,p){
+  if(!p||allPaths(r).includes(p))return;
+  const m=await withChat(()=>client.sendMessage(S.chat,(r?RP+r+'\n':'')+FP+p));
+  folders.push({id:m.id,path:p,repo:r});jlog('fo+',(r||'Облако')+' / '+p);saveIndex();mlog('Создана папка: '+p);
+}
+async function musTarget(){
+  const r=MS.repo||'',p=clean(String(MS.folder||'').replace(/^\/+|\/+$/g,'')).replace(/\s*\/\s*/g,'/');
+  if(r&&!repos.some(x=>x.name===r&&mineRepo(x)))throw new Error('Репозиторий «'+r+'» не найден');
+  if(!await forceEnc(r))throw new Error('Нужен код шифрования репозитория');
+  await musFolderEnsure(r,p);
+  return{r,p};
+}
+async function musGet(it){
+  const parts=[];
+  for await(const c of client.download(it.fid)){if(MUS.stop)throw new Error('Остановлено');parts.push(c)}
+  return new Blob(parts,{type:it.mime});
+}
+async function musSave(it,tg){
+  if(files.some(f=>f.repo===tg.r&&f.path===tg.p&&f.name===it.name)){mlog('Уже есть, пропускаю: '+it.name);return false}
+  const b=await musGet(it);if(!b.size)throw new Error('пустой файл');
+  await enqueue([new File([b],it.name,{type:it.mime})],tg.r,tg.p);
+  mlog('✓ Передано в загрузку: '+it.name);return true;
+}
+async function musScan(){
+  if(MUS.busy)return;MUS.busy=true;MUS.stop=false;MUS.rows=[];musPaint();
+  try{
+    const chat=await musResolve();mlog('Ищу аудио и голосовые в чате…');
+    let off=0,seen=0;
+    for(;;){
+      if(MUS.stop){mlog('Поиск остановлен');break}
+      const b=await withChat(()=>client.getHistory(chat,off?{limit:100,offsetId:off}:{limit:100}));
+      if(!b.length)break;
+      for(const m of b)if(musAud(m)){const i=musInfo(m);i.on=true;MUS.rows.push(i)}
+      seen+=b.length;const o=Math.min(...b.map(m=>m.id));if(o===off)break;off=o;
+      mlog('Просмотрено сообщений: '+seen+', найдено: '+MUS.rows.length);musPaint();
+      if(b.length<100)break;await sleep(400);
+    }
+    mlog('Найдено аудио и голосовых: '+MUS.rows.length);
+  }catch(x){mlog('✖ '+err(x));say(err(x),1)}
+  finally{MUS.busy=false;musPaint()}
+}
+async function musDownload(){
+  if(MUS.busy)return;const sel=MUS.rows.filter(x=>x.on);
+  if(!sel.length){say('Отметьте хотя бы один трек',1);return}
+  MUS.busy=true;MUS.stop=false;musPaint();
+  try{
+    const tg=await musTarget();let ok=0,i=0;
+    mlog('Скачиваю: '+sel.length+' → '+(tg.r||'Облако')+(tg.p?' / '+tg.p:''));
+    for(const it of sel){
+      if(MUS.stop){mlog('Остановлено');break}
+      i++;try{if(await musSave(it,tg))ok++}catch(x){mlog('✖ '+it.name+': '+err(x))}
+    }
+    mlog('Готово: передано в загрузку '+ok+' из '+sel.length+'. Ход загрузки — в окне загрузок Облачка.');
+  }catch(x){mlog('✖ '+err(x));say(err(x),1)}
+  finally{MUS.busy=false;musPaint()}
+}
+/* бот может прислать не трек, а список вариантов с кнопками: тогда нажимаем первую кнопку */
+const musRowsOf=m=>{const k=m&&m.replyMarkup;const r=k&&(k.inlineKeyboard||k.inline_keyboard);return Array.isArray(r)?r:[]};
+async function musClick(chat,m){
+  const btn=musRowsOf(m).flat().find(b=>b&&(b.callbackData!==undefined||b.callback_data!==undefined));
+  if(!btn){mlog('   у сообщения нет кнопок с действием');return false}
+  const data=btn.callbackData!==undefined?btn.callbackData:btn.callback_data;
+  try{
+    if(typeof client.sendCallbackQuery==='function')await client.sendCallbackQuery(chat,m.id,data);
+    else{const peer=await client.getInputPeer(chat);await client.invoke({_:'messages.getBotCallbackAnswer',peer,msg_id:m.id,data:typeof data==='string'?new TextEncoder().encode(data):data})}
+    return true;
+  }catch(x){const t=err(x);if(/BOT_RESPONSE_TIMEOUT/i.test(t))return true;mlog('   ⚠ кнопка не нажалась: '+t);return false}
+}
+async function musWait(chat,baseId,ms){
+  let end=Date.now()+ms;const clicked=new Set();
+  while(Date.now()<end&&!MUS.stop){
+    let b=[];try{b=await client.getHistory(chat,{limit:10})}catch(x){}
+    const inc=b.filter(m=>m.id>baseId&&!m.out).sort((a,c)=>a.id-c.id);
+    const au=inc.find(m=>musAud(m));if(au)return au;
+    const lst=inc.slice().reverse().find(m=>musRowsOf(m).length>=2&&!clicked.has(m.id));
+    if(lst){clicked.add(lst.id);mlog('   Бот прислал список ('+musRowsOf(lst).length+' рядов кнопок), жму первую…');if(await musClick(chat,lst))end=Math.max(end,Date.now()+30000)}
+    await sleep(2000);
+  }
+  return null;
+}
+async function musPlaylist(){
+  if(MUS.busy)return;
+  const ta=$('#musp');if(ta){MS.list=ta.value;msv()}
+  const lines=String(MS.list||'').split('\n').map(x=>x.trim()).filter(Boolean);
+  if(!lines.length){say('Введите хотя бы одну строку: Исполнитель - Название',1);return}
+  MUS.busy=true;MUS.stop=false;musPaint();
+  try{
+    const chat=await musResolve(),tg=await musTarget();let ok=0,n=0;
+    mlog('Плейлист: '+lines.length+' строк → '+(tg.r||'Облако')+(tg.p?' / '+tg.p:''));
+    for(const line of lines){
+      if(MUS.stop){mlog('Остановлено');break}
+      n++;mlog('['+n+'/'+lines.length+'] Запрашиваю: '+line);
+      let sent;try{sent=await client.sendMessage(chat,line)}catch(x){mlog('⚠ Не удалось отправить «'+line+'»: '+err(x));await sleep(6000+Math.random()*1000);continue}
+      await sleep(6000+Math.random()*1000);
+      const tm=await musWait(chat,sent.id,30000);
+      if(!tm){mlog('⚠ Нет ответа с треком на «'+line+'», пропускаю.')}
+      else{try{const it=musInfo(tm);if(await musSave(it,tg))ok++}catch(x){mlog('✖ '+line+': '+err(x))}}
+      await sleep(6000+Math.random()*1000);
+    }
+    mlog('Плейлист готов: передано в загрузку '+ok+' из '+lines.length);
+  }catch(x){mlog('✖ '+err(x));say(err(x),1)}
+  finally{MUS.busy=false;musPaint()}
+}
+function musPaint(){
+  const l=$('#musr');if(!l)return;
+  l.innerHTML=MUS.rows.length?MUS.rows.map((x,i)=>`<label class="mr"><input type="checkbox" data-mi="${i}"${x.on?' checked':''}><div class="mi"><div class="mn">${esc(x.title)}</div><div class="mm">${x.dur?musDur(x.dur)+' · ':''}${x.date.toLocaleDateString('ru')}</div></div></label>`).join(''):'<div class="us">Список пуст — нажмите «Найти сообщения»</div>';
+  const n=MUS.rows.filter(x=>x.on).length;
+  $('#musn').textContent='Выбрано: '+n+' из '+MUS.rows.length;
+  for(const id of['musf','musd','musg'])$('#'+id).disabled=MUS.busy||(id==='musd'&&!n);
+  $('#musx').disabled=!MUS.busy;
+  const el=$('#musl');if(el)el.textContent=MUS.log.join('\n');
+}
+function musFolders(){
+  const r=$('#musrp').value,dl=$('#musdl');
+  dl.innerHTML=allPaths(r).map(x=>`<option value="${esc(x)}">`).join('');
+}
+function openMusic(){
+  openAdm('Музыка из чата');
+  const rl=[['','Облако'],...repos.filter(mineRepo).map(x=>[x.name,x.name])];
+  if(!rl.some(x=>x[0]===MS.repo)){MS.repo='';msv()}
+  $('#admb').innerHTML=`<div class="mus">
+    <div class="uc"><div class="un">Чат или бот</div><div class="us">Откуда брать музыку: @username, ссылка t.me/… или числовой ID. Вход берётся из Облачка, заново входить не нужно.</div><input id="musc" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="@username" value="${esc(MS.chat)}"></div>
+    <div class="uc"><div class="un">Куда сохранять</div><div class="us">Репозиторий и папка в Облачке. Папка создастся сама, если её ещё нет; пусто — в корень.</div>
+      <select id="musrp">${rl.map(([v,t])=>`<option value="${esc(v)}"${v===MS.repo?' selected':''}>${esc(t)}</option>`).join('')}</select>
+      <input id="musfo" list="musdl" autocomplete="off" spellcheck="false" placeholder="Папка (например, Музыка/Рок)" value="${esc(MS.folder)}"><datalist id="musdl"></datalist></div>
+    <div class="row"><button class="p" id="musf">🔍 Найти сообщения</button><button id="musg">🎵 Плейлист по списку</button><button class="del" id="musx" disabled>Остановить</button></div>
+    <div class="uc" id="musplw" hidden><div class="un">Плейлист по списку</div><div class="us">По одной строке: Исполнитель - Название. Каждая строка отправляется в выбранный чат (бот), ответный трек сохраняется.</div><textarea id="musp" placeholder="Исполнитель - Название">${esc(MS.list)}</textarea><div class="row"><button class="p" id="musgo">Начать скачивание</button></div></div>
+    <div class="uc"><div class="un">Найденные файлы</div><div class="row"><button id="musa" class="chip">Выбрать все</button><button id="musz" class="chip">Снять все</button><span class="us" id="musn" style="flex:1;text-align:right">Выбрано: 0 из 0</span></div><div class="mlist" id="musr"></div><div class="row"><button class="p" id="musd">⬇ Скачать выбранное</button></div></div>
+    <div class="uc"><div class="un">Журнал</div><pre id="musl"></pre></div></div>`;
+  musFolders();musPaint();
+}
+$('#admb').addEventListener('change',e=>{
+  const t=e.target;if(!t.closest||!t.closest('.mus'))return;
+  if(t.id==='musrp'){MS.repo=t.value;MS.folder='';$('#musfo').value='';msv();musFolders()}
+  else if(t.dataset&&t.dataset.mi!==undefined){MUS.rows[+t.dataset.mi].on=t.checked;musPaint()}
+});
+$('#admb').addEventListener('input',e=>{
+  const t=e.target;if(t.id==='musc'){MS.chat=t.value;msv()}else if(t.id==='musfo'){MS.folder=t.value;msv()}else if(t.id==='musp'){MS.list=t.value;msv()}
+});
+$('#admb').addEventListener('click',e=>{
+  const b=e.target.closest&&e.target.closest('.mus button');if(!b||b.disabled)return;
+  switch(b.id){
+    case'musf':musScan();break;
+    case'musd':musDownload();break;
+    case'musg':{const w=$('#musplw');w.hidden=!w.hidden;if(!w.hidden)$('#musp').focus();break}
+    case'musgo':musPlaylist();break;
+    case'musx':MUS.stop=true;mlog('Остановка запрошена…');break;
+    case'musa':MUS.rows.forEach(x=>x.on=true);musPaint();break;
+    case'musz':MUS.rows.forEach(x=>x.on=false);musPaint();break;
+  }
+});
 function openFolderSet(){
   const r=R(),c=cur;fromSet=false;admParent=null;
   openAdm(c?'Папка «'+base(c)+'»':(r||'Облако'));
@@ -1036,7 +1227,7 @@ $('#admb').addEventListener('click',e=>{
   else $('#'+k).click();
 });
 $('#admb').addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(!b)return;const k=b.dataset.set;
-  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,jrn:openJournal,key:makeKey,ann:openAnn};
+  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,jrn:openJournal,key:makeKey,ann:openAnn,mus:openMusic};
   if(ACT[k]){ACT[k]();return}
   if(SETK[k]){fromSet=true;admParent=drawSettings;SETK[k]();return}
   if(ADMK[k]){if(!isAdmin())return;fromSet=true;admParent=drawConsole;ADMK[k]()}  /* консоль и всё из неё — только у владельца */
@@ -2647,9 +2838,9 @@ async function dlStream(f){
   }catch(e){try{await w.abort()}catch(x){}throw e}
   return true;
 }
-async function enqueue(fs){
+async function enqueue(fs,rrO,ppO){
   ulog(`Выбрано файлов: ${fs.length}`);
-  const rr=R(),pp=cur,en=encOn(rr);
+  const rr=rrO!==undefined?rrO:R(),pp=ppO!==undefined?ppO:cur,en=encOn(rr);
   if(en&&!KEYS[rr]&&!await ensureKey(rr)){say('Загрузка отменена: нужен пароль шифрования',1);return}
   const items=fs.map(f=>({f,path:pp,repo:rr,enc:en})),add=fs.reduce((a,f)=>a+f.size,0);
   if(U.on){U.total+=add;U.n+=fs.length;UQ.push(...items);upPaint();return}
