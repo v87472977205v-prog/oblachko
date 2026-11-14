@@ -114,7 +114,11 @@ main{padding-bottom:100px}
 @media(prefers-reduced-motion:reduce){#splash *,#splash *::before,#splash *::after{animation-duration:.01s!important;animation-delay:0s!important}}
 #crumbs{flex:1;min-width:0;padding:0 4px}
 #tools{display:flex;align-items:center;gap:2px;flex:none;overflow:hidden;max-width:0;transition:max-width .32s cubic-bezier(.2,.8,.2,1)}
-#top.tl #tools{max-width:260px}
+#top.tl #tools{max-width:310px}
+#dp #conb,#conb{display:none!important}body.own #dp #conb{display:flex!important}
+#fsec,#lkf,#rnf,#mvf,#cpf,#delf{display:none!important}
+.dgrp{padding:10px 6px 2px;font-size:13px;letter-spacing:.04em;color:#8fb3ab}
+.fsn{padding:4px 6px 12px;color:var(--mute);font:14px system-ui,sans-serif}
 #tools .ib2{opacity:0;transform:translateX(36px) scale(.5);transition:transform .34s cubic-bezier(.3,1.5,.5,1),opacity .2s}
 #top.tl #tools .ib2{opacity:1;transform:none}
 #top.tl #tools .ib2:nth-last-child(1){transition-delay:.02s}#top.tl #tools .ib2:nth-last-child(2){transition-delay:.06s}#top.tl #tools .ib2:nth-last-child(3){transition-delay:.1s}#top.tl #tools .ib2:nth-last-child(4){transition-delay:.14s}#top.tl #tools .ib2:nth-last-child(5){transition-delay:.18s}
@@ -175,10 +179,27 @@ body.pl-on #fabm{bottom:calc(244px + env(safe-area-inset-bottom))}
 .lkb .i{width:13px;height:13px;margin-left:5px;vertical-align:-2px;color:var(--acc)}
 #dp .rp.on{color:var(--acc);font-weight:700}#dp hr{border:0;border-top:1px solid var(--line);margin:8px 0}
 #dp .sec{font:600 12px system-ui;color:var(--mute);padding:6px 8px 0;text-transform:uppercase;letter-spacing:.04em}
-#ann{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:center;justify-content:center;padding:16px}
-#ann .annb{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;width:min(400px,100%);max-height:85vh;overflow:auto;font-family:system-ui,sans-serif}
-#ann .annh{font-size:19px;font-weight:700}#ann .annv{color:var(--mute);font-size:13px;margin:3px 0 12px}#ann .annp{background:var(--bg);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--mute);margin-bottom:10px}
-#ann ul{margin:0 0 14px;padding-left:20px}#ann li{margin:6px 0;line-height:1.4}#ann button{width:100%}
+/* ---- полноэкранные страницы в стиле приложения: «Что нового», запрос доступа ---- */
+.pg{position:fixed;inset:0;z-index:40;display:flex;flex-direction:column;background:var(--bgfx);background-color:#051513;color:#2ee6cb;font-family:Roboto,system-ui,-apple-system,"Segoe UI",sans-serif;overflow-y:auto;overscroll-behavior:contain}
+#shp{z-index:42}
+.pg .pgin{flex:1 0 auto;width:100%;max-width:440px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 44px) 22px 24px}
+.pg .rglogo{display:block;width:96px;height:96px;margin:0 auto;color:#2ee6cb;filter:drop-shadow(0 0 10px rgba(46,230,203,.35))}
+.pg .pgt{margin:22px 0 6px;text-align:center;font-weight:700;font-size:38px;line-height:1.1;color:#2ee6cb;font-family:inherit}
+.pg .pgs{margin:0 0 22px;text-align:center;font-size:18px;color:#b7c9c5}
+.pg .pgc{border:2px solid #1fb8a0;background:#030d0c;border-radius:16px;padding:6px 18px 12px;box-shadow:0 0 14px rgba(46,230,203,.14);color:#e8fffb}
+.pg .pgk{margin-top:12px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#3fd8bf}
+.pg .pgv{font-size:20px;line-height:1.3;word-break:break-word}
+.pg ul{list-style:none;margin:0;padding:0}
+.pg li{position:relative;padding:10px 0 10px 28px;border-bottom:1px solid #124a43;font-size:17px;line-height:1.4;color:#e8fffb}
+.pg li:last-child{border:0}
+.pg li::before{content:"";position:absolute;left:4px;top:17px;width:10px;height:6px;border-left:2.5px solid #2ee6cb;border-bottom:2.5px solid #2ee6cb;transform:rotate(-45deg)}
+.pg .pgn{margin:16px 2px 0;font-size:14px;line-height:1.45;color:#8fb3ab;text-align:center}
+.pg .pgb{display:inline-block;background:#123a35;border-radius:99px;padding:3px 12px;font-size:13px;color:#b7c9c5;margin:0 0 14px}
+.pg .pgf{flex:none;width:100%;max-width:560px;margin:0 auto;padding:0 18px calc(env(safe-area-inset-bottom) + 18px);display:flex;flex-direction:column;gap:10px}
+.pg .pgp{display:block;width:100%;height:64px;padding:0;border:0;border-radius:16px;background:#0ff0d2;color:#04302a;font-weight:600;font-size:23px;font-family:inherit;box-shadow:0 0 22px rgba(15,240,210,.4)}
+.pg .pgo{display:block;width:100%;height:52px;padding:0;border:2px solid #1fb8a0;border-radius:16px;background:none;color:#2ee6cb;font-size:19px;font-family:inherit}
+.pg .pgp:disabled,.pg .pgo:disabled{opacity:.5}
+.pg .pgl{background:none;border:0;color:#8fb3ab;font-size:16px;height:40px;padding:0}
 .annl{display:flex;gap:6px;margin:6px 0}.annl input{flex:1}.annl button{flex:none}
 #pw{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:30;display:flex;align-items:center;justify-content:center;padding:16px}
 #pw .pwb{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;width:min(380px,100%);font-family:system-ui,sans-serif}
@@ -229,7 +250,7 @@ body.pl-on #fabm{bottom:calc(244px + env(safe-area-inset-bottom))}
 #ulp pre{flex:1;overflow:auto;margin:0 0 10px;padding:10px;background:var(--bg);border-radius:10px;font:12px/1.5 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
 #ulp .ulr{display:flex;gap:8px}#ulp .ulr button{flex:1}
 #toast{position:fixed;left:50%;bottom:calc(88px + env(safe-area-inset-bottom));transform:translateX(-50%);max-width:min(92vw,520px);background:var(--ink);color:var(--bg);font:14px/1.35 system-ui,sans-serif;padding:10px 16px;border-radius:99px;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.35);pointer-events:none;animation:tin .18s ease;text-align:center}
-#toast.err{background:var(--bad);color:#fff}
+#toast.err{background:var(--bad);color:#fff!important;font-weight:600}
 @keyframes tin{from{opacity:0;transform:translate(-50%,8px)}}
 .tile,.f{transition:transform .12s,box-shadow .12s}
 .tile:active,.f:active{transform:scale(.975)}
@@ -517,6 +538,7 @@ body.pl-on .fab{bottom:calc(176px + env(safe-area-inset-bottom))}
     <button class="ib2" id="selb" aria-label="Выбрать" data-ic="check"></button>
     <button class="ib2" id="vmode" aria-label="Вид"></button>
     <button class="ib2" id="pbtn" aria-label="Плеер" data-ic="music" hidden></button>
+    <button class="ib2" id="gearb" aria-label="Настройки папки" data-ic="gear"></button>
     </div>
     <button class="ib2" id="tgl" aria-label="Показать инструменты" aria-expanded="false" data-ic="back"></button>
     <div id="sortm" hidden></div><div id="fltm" hidden></div>
@@ -532,8 +554,10 @@ body.pl-on .fab{bottom:calc(176px + env(safe-area-inset-bottom))}
   <input id="q" type="search" placeholder="Поиск по всему архиву">
   <div class="sec secrow"><span>Репозиториум</span><button id="addrepo" aria-label="Новый репозиторий" data-ic="plus"></button></div>
   <div id="repl"></div>
+  <div class="dgrp" id="whoami" hidden></div>
   <div id="rbar"><button id="rsw" role="switch" aria-checked="false"><span>Все пользователи</span><span class="tg"></span></button></div>
   <button id="setb" data-ic="gear">Настройки</button>
+  <button id="conb" data-ic="users">Консоль</button>
   <div class="sec" id="fsec" hidden>Эта папка</div>
   <button id="lkf" hidden data-ic="lock">Пароль папки</button>
   <button id="rnf" hidden data-ic="edit">Переименовать папку</button>
@@ -616,6 +640,19 @@ function parseCombo(t){
   }
   return r;
 }
+/* ---- шифрованный ключ CLK2: AES-GCM, секрет зашит в приложение (защита от случайного взгляда, не от разбора кода) ---- */
+const CK2SEC='31da4c25eea146a30e90121fef574d3fe4a3a3464c832adf';
+const ck2key=async()=>crypto.subtle.importKey('raw',await crypto.subtle.digest('SHA-256',te.encode(CK2SEC)),'AES-GCM',false,['encrypt','decrypt']);
+async function ck2enc(o){
+  const iv=crypto.getRandomValues(new Uint8Array(12)),ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},await ck2key(),te.encode(JSON.stringify(o))));
+  const u=new Uint8Array(12+ct.length);u.set(iv);u.set(ct,12);return 'CLK2.'+b64e(u);
+}
+async function parseComboA(t){
+  const m=/CLK2\.([A-Za-z0-9_-]+)/.exec(t);
+  if(m){try{const u=b64d(m[1]),j=JSON.parse(td.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:u.subarray(0,12)},await ck2key(),u.subarray(12))));
+    if(j&&j.i&&j.h&&j.p)return{id:String(j.i),hash:String(j.h),phone:String(j.p),viewer:true}}catch(e){}return{}}
+  return parseCombo(t);
+}
 function ordBuild(L){
   const g=new Map();
   for(const x of L){const k=x.r+'\n'+x.p;let q=g.get(k);if(!q){q={r:x.r,p:x.p,parts:new Map(),mids:[]};g.set(k,q)}q.mids.push(x.mid);if(!q.parts.has(x.n))q.parts.set(x.n,x.o)}
@@ -675,7 +712,9 @@ function aheadIdx(pi,len,shuf,repm,sh,n,rnd=Math.random){
 const $=s=>document.querySelector(s);
 const ld=(k,d)=>{try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}};
 const sv=(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}};
-let S=ld('tgm',{}),files=[],folders=[],cur='',openId=null,ready=false,showSetup=true;
+const cvK=id=>id;
+let S=ld('tgm',{});if(S.main&&S.chat&&S.chat!==S.main){S.chat=S.main;sv('tgm',S)}  /* раньше приложение могло остаться внутри директории: возвращаем в основной канал */
+let files=[],folders=[],cur='',openId=null,ready=false,showSetup=true;
 let lib,client,pid;
 const U={on:false,total:0,done:0,fin:0,ok:0,n:0,name:'',t0:0,lastP:0,got:false,cancel:false,waitMsg:'',retry:'',nextNo:1,tick:0,jobs:new Set(),byPid:new Map()};
 function upPaint(){
@@ -843,9 +882,11 @@ async function bioELoad(r){
   if(!await bioAsk())return null;
   const rec=await idbOp('m','readonly',s=>s.get('bk:'+r));
   if(!rec||!rec.k)return null;
-  await aesD(rec.k,b64d(encOf(r).c));return rec.k;
+  const ee=encOf(r);await aesD(rec.k,b64d(ee.k||ee.c));return rec.k;
 }
 function bioEOff(r){delete BIO.e[r];saveBio();try{idbOp('m','readwrite',s=>s.delete('bk:'+r)).catch(()=>{})}catch(x){}}
+/* репозиторий удалён: забываем все его отпечатки (пароль репозитория, пароли его папок, ключ шифрования) */
+function bioForget(r){const pre=r+'\n';for(const o of[BIO.k,BIO.no])for(const k of Object.keys(o))if(k.startsWith(pre))delete o[k];delete BIO.eno[r];bioEOff(r)}
 async function bioEOffer(r){
   return;
   const e=encOf(r);if(BIOSKIP||!BIOSUP||!e||!KEYS[r]||bioEOn(r)||BIO.eno[r]===e.c)return;
@@ -883,10 +924,14 @@ async function toggleLock(r,p){
   locks.push({id:m.id,r,p,h});unAdd(r+'\n'+p,h);jlog('lock',lkn(r,p));say('Пароль установлен');render();setTimeout(()=>bioOffer({r,p,h}),400);
 }
 function drawRepos(){
+  {const cb=$('#conb');if(cb){cb.hidden=!isAdmin();cb.style.display=isAdmin()?'':'none'}}
+  try{const w=$('#whoami');w.hidden=!S.guestUser;w.textContent=S.guestUser?'Вы вошли как: '+S.guestUser:''}catch(e){}
+  document.body.classList.toggle('own',isAdmin());
   $('#rsw').setAttribute('aria-checked',String(!!P.all));
   const L=[['','Облако'],...repos.filter(x=>showRepo(x)||x.name===R()).map(x=>[x.name,x.name+(x.owner&&x.owner!==S.guestUser?' · '+x.owner:(S.viewer&&!x.guest?' · владелец':''))])];
   const dots='<svg class="i" viewBox="0 0 24 24" style="fill:currentColor;stroke:none"><circle cx="12" cy="5" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="12" cy="19" r="1.8"/></svg>';
-  $('#repl').innerHTML=L.map(([r,t])=>`<div class="rrow"><button class="rp${r===R()?' on':''}" data-r="${esc(r)}">${icon(r?'repo':'cloud')}<span>${esc(t)}</span>${lockOf(r,'')?`<span class="lkb">${icon(UN.has(r+'\n')?'unlock':'lock')}</span>`:''}</button><button class="rdots" data-rm="${esc(r)}" aria-label="Меню репозитория">${dots}</button></div>`).join('');
+  const rowH=([r,t])=>`<div class="rrow"><button class="rp${r===R()?' on':''}" data-r="${esc(r)}">${icon(r?'repo':'cloud')}<span>${esc(t)}</span>${lockOf(r,'')?`<span class="lkb">${icon(UN.has(r+'\n')?'unlock':'lock')}</span>`:''}</button><button class="rdots" data-rm="${esc(r)}" aria-label="Меню репозитория">${dots}</button></div>`;
+  $('#repl').innerHTML=L.map(rowH).join('');
   $('#fsec').hidden=!cur;$('#lkf').hidden=!cur||!canPw(R());$('#mvf').hidden=!cur;$('#rnf').hidden=!cur;$('#cpf').hidden=!cur;
   if(cur)$('#lkf').lastChild.textContent=lockOf(R(),cur)?'Снять пароль с папки':'Запаролить папку';
 }
@@ -913,14 +958,19 @@ document.addEventListener('visibilitychange',()=>{
   if(HIDAT&&Date.now()-HIDAT>60000&&FUN.size){for(const k of FUN.keys())UN.delete(k);FUN.clear();try{render()}catch(e){}}
   HIDAT=0;
 });
-const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','ann-':'удалил оповещение'};
+const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение'};
 function openAdm(t){$('#admt').textContent=t;$('#adm').hidden=false}
-let fromSet=false;
-$('#admx').onclick=()=>{if(fromSet&&$('#admt').textContent!=='Настройки'){drawSettings();return}fromSet=false;$('#adm').hidden=true};
+let fromSet=false,admParent=null;
+$('#admx').onclick=()=>{if(fromSet&&admParent){admParent();return}fromSet=false;admParent=null;$('#adm').hidden=true};
 function drawSettings(){
-  fromSet=false;openAdm('Настройки');
+  fromSet=false;admParent=null;openAdm('Настройки');
   const LKB=`<div class="uc"><div class="un">Кнопка открытия репозитория</div><div class="us">Как открывать зашифрованный или запароленный репозиторий.</div><div class="row"><button class="chip${ld('lkstyle','round')==='slide'?'':' on'}" data-lks="round">Круглая</button><button class="chip${ld('lkstyle','round')==='slide'?' on':''}" data-lks="slide">Слайдер</button></div></div>`;
-  $('#admb').innerHTML=S.viewer?`<div class="stl"><button data-set="cov">${icon('music')}<span>Обложки музыки</span></button></div><div style="padding:10px 14px">${LKB}</div>`:`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button><button data-set="cov">${icon('music')}<span>Обложки музыки</span></button></div><div style="padding:10px 14px">${LKB}<div class="uc"><div class="un">Кэш файлов и музыки</div><div class="us" id="cachei">Считаю…</div><div class="us">Размер не ограничен. Хранится неделю после последнего прослушивания. Файлы в канале не затрагиваются.</div><div class="row"><button class="del" id="cachex">Сбросить кэш</button></div><div class="us" style="margin-top:10px">Если на этом устройстве старая версия приложения, обновите её. Вход и файлы не затрагиваются.</div><div class="row"><button id="appupd">Обновить приложение</button></div><div class="us" style="margin-top:10px">Что приложение делало при загрузке файлов и создании папок, по шагам.</div><div class="row"><button id="ulogb">Журнал загрузки</button></div></div></div>`;
+  $('#admb').innerHTML=`<div class="stl"><button data-set="cov">${icon('music')}<span>Обложки музыки</span></button></div><div style="padding:10px 14px">${LKB}</div>`;
+}
+function drawConsole(){
+  if(S.viewer){drawSettings();return}
+  fromSet=false;admParent=null;openAdm('Консоль администратора');
+  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button></div><div style="padding:10px 14px"><div class="uc"><div class="un">Кэш файлов и музыки</div><div class="us" id="cachei">Считаю…</div><div class="us">Размер не ограничен. Хранится неделю после последнего прослушивания. Файлы в канале не затрагиваются.</div><div class="row"><button class="del" id="cachex">Сбросить кэш</button></div><div class="us" style="margin-top:10px">Если на этом устройстве старая версия приложения, обновите её. Вход и файлы не затрагиваются.</div><div class="row"><button id="appupd">Обновить приложение</button></div><div class="us" style="margin-top:10px">Что приложение делало при загрузке файлов и создании папок, по шагам.</div><div class="row"><button id="ulogb">Журнал загрузки</button></div></div></div>`;
   Promise.all([cacheInfo(),cacheQuota()]).then(([i,q])=>{const el=$('#cachei');if(el)el.textContent=(i.n?`Занимает ${size(i.size)} · файлов: ${i.n}`:'Пока пусто — 0 МБ')+(q?` · всего приложение использует ${size(q.used)} из ${size(q.quota)} доступных браузером`:'')});
 }
 $('#admb').addEventListener('click',async e=>{
@@ -943,15 +993,44 @@ function openCov(){
 }
 const applyEq=()=>document.body.classList.toggle('noeq',ld('cveq','on')==='off');applyEq();
 $('#setb').onclick=drawSettings;
-$('#admb').addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(!b)return;fromSet=true;({usr:openUsers,jrn:openJournal,key:makeKey,ann:openAnn,cov:openCov})[b.dataset.set]()});
+
+/* ---- «Консоль» только у администратора (в шторке); шестерёнка настроек папки — у всех ---- */
+$('#conb').onclick=()=>{if(isAdmin())drawConsole()};
+function openFolderSet(){
+  const r=R(),c=cur;fromSet=false;admParent=null;
+  openAdm(c?'Папка «'+base(c)+'»':(r||'Облако'));
+  const it=[];
+  if(c){
+    if(canPw(r))it.push(['lkf','lock',lockOf(r,c)?'Снять пароль с папки':'Запаролить папку']);
+    it.push(['rnf','edit','Переименовать'],['mvf','move','Переместить'],['cpf','copy','Копировать'],['delf','trash','Удалить папку','del']);
+  }else{
+    it.push(['newf','folderplus','Новая папка']);
+    if(r)it.push(['repo','repo','Настройки репозитория']);
+  }
+  $('#admb').innerHTML=(c?'':'<div class="fsn">Вы в корне. Откройте папку, чтобы настроить её.</div>')+`<div class="stl">${it.map(([k,ic,tx,cl])=>`<button data-fs="${k}"${cl?` class="${cl}"`:''}>${icon(ic)}<span>${tx}</span></button>`).join('')}</div>`;
+}
+$('#gearb').onclick=e=>{e.stopPropagation();openFolderSet()};
+$('#admb').addEventListener('click',e=>{
+  const b=e.target.closest('[data-fs]');if(!b)return;
+  const k=b.dataset.fs;$('#adm').hidden=true;fromSet=false;admParent=null;
+  if(k==='repo')openRepoMenu(R());
+  else if(k==='newf')$('#fabd').click();
+  else $('#'+k).click();
+});
+$('#admb').addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(!b)return;const k=b.dataset.set;
+  if(S.viewer&&k!=='cov')return;  /* консоль и всё из неё — только у владельца */
+  fromSet=true;admParent=k==='cov'?drawSettings:drawConsole;({con:drawConsole,usr:openUsers,jrn:openJournal,key:makeKey,ann:openAnn,cov:openCov})[k]()});
+
+const isAdmin=()=>!S.viewer&&!S.guestUser;
 
 /* ---- объявления: пишет владелец, пользователи видят один раз ---- */
 const annDate=t=>new Date(t||Date.now()).toLocaleDateString('ru',{day:'numeric',month:'long',year:'numeric'});
 const annNext=()=>{const l=ANN[ANN.length-1];if(!l)return '1.0';const m=String(l.v).match(/^(.*?)(\d+)$/);return m?m[1]+(+m[2]+1):l.v+'.1'};
+const PGLOGO='<svg class="rglogo" viewBox="0 0 64 64" aria-hidden="true"><path d="M17 46a11 11 0 0 1-1.6-21.9A17 17 0 0 1 48 23.5 11.6 11.6 0 0 1 48.5 46z" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linejoin="round"/><path d="M32 41V28m-6 6l6-6 6 6" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 function annView(a,preview,done){
   let o=$('#ann');if(o)o.remove();
-  o=document.createElement('div');o.id='ann';
-  o.innerHTML=`<div class="annb">${preview?'<div class="annp">Так увидят пользователи</div>':''}<div class="annh">Что нового</div><div class="annv">Версия ${esc(a.v)} · ${esc(annDate(a.d))}</div><ul>${a.l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><button class="p" id="annok">${preview?'Закрыть':'Понятно'}</button></div>`;
+  o=document.createElement('div');o.id='ann';o.className='pg';
+  o.innerHTML=`<div class="pgin">${PGLOGO}<h1 class="pgt">Что нового</h1><p class="pgs">Версия ${esc(a.v)} · ${esc(annDate(a.d))}</p>${preview?'<div style="text-align:center"><span class="pgb">Так увидят пользователи</span></div>':''}<div class="pgc"><ul>${a.l.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div></div><div class="pgf"><button class="pgp" id="annok">${preview?'Закрыть':'Понятно'}</button></div>`;
   document.body.appendChild(o);
   $('#annok').onclick=()=>{o.remove();if(done)done()};
 }
@@ -964,6 +1043,7 @@ function annAuto(){
   annTry=0;annView(a,false,()=>annMark(a.id));
 }
 function drawAnnList(){
+  if(!isAdmin())return;
   const el=$('#annlist');if(!el)return;
   const L=[...ANN].sort((a,b)=>b.id-a.id);
   el.innerHTML=L.length?L.map(a=>`<div class="uc"><div class="un">Версия ${esc(a.v)} · ${esc(annDate(a.d))}</div><div class="us">${a.l.map(x=>'• '+esc(x)).join('<br>')}</div><div class="row"><button class="del" data-anndel="${a.id}">Удалить</button></div></div>`).join(''):'<div class="us">Пока ничего не опубликовано</div>';
@@ -977,6 +1057,7 @@ document.addEventListener('click',async e=>{
   catch(x){say('Не удалось удалить: '+err(x),1);b.disabled=false}
 });
 function openAnn(){
+  if(!isAdmin())return;
   if(S.viewer)return;
   openAdm('Оповещения');
   const last=ANN[ANN.length-1],v=annNext(),d=annDate();
@@ -999,6 +1080,7 @@ function openAnn(){
   };
 }
 function drawJournal(flt){
+  if(!isAdmin())return;
   const all=[...JOUR,...JQ],L=all.sort((a,b)=>b.t-a.t).filter(e=>!flt||e.u===flt),us=[...new Set(all.map(e=>e.u))],oldN=all.filter(e=>e.pl).length;
   let h='',day='';
   if(!ownkey)h+='<div class="uc"><div class="us">Сейчас журнал лежит в канале открытым текстом. Включите хранение паролей во вкладке «Пользователи»: новые записи будут шифроваться, и прочитать их сможете только вы по мастер-паролю.</div></div>';
@@ -1013,6 +1095,7 @@ function drawJournal(flt){
   $('#admb').innerHTML=h;
 }
 const openJournal=async()=>{
+  if(!isAdmin())return;
   openAdm('Журнал действий');
   if(ownkey&&!OWNPRIV&&JENC.length){
     $('#admb').innerHTML='<div class="uc"><div class="us">Журнал зашифрован: прочитать его можете только вы.</div><div class="row"><button class="p" id="jun">Ввести мастер-пароль</button></div></div>';
@@ -1074,6 +1157,7 @@ async function jEncryptOld(){
   JOUR=[...JOUR.filter(e=>!e.pl),...fresh];
 }
 function drawUsers(){
+  if(!isAdmin())return;
   const lastIn=u=>{let t=0;for(const e of JOUR)if(e.a==='login'&&e.u===u&&e.t>t)t=e.t;return t};
   let h='';
   if(!ownkey)h+='<div class="uc"><div class="un">Пароли друзей</div><div class="us">Чтобы напомнить пароль, если друг забудет, включите хранение паролей. Они шифруются так, что прочитать их можете только вы, по мастер-паролю.</div><div class="row"><button class="p" id="mkk">Включить хранение паролей</button></div></div>';
@@ -1086,7 +1170,7 @@ function drawUsers(){
   $('#admb').innerHTML=h;
   if(OWNPRIV)document.querySelectorAll('#admb code[data-e]').forEach(async c=>{try{c.textContent=await crypto.subtle.decrypt({name:'RSA-OAEP'},OWNPRIV,b64d(c.dataset.e)).then(b=>td.decode(b))}catch(e){c.textContent='ошибка'}});
 }
-const openUsers=()=>{openAdm('Пользователи');drawUsers()};
+const openUsers=()=>{if(!isAdmin())return;openAdm('Пользователи');drawUsers()};
 $('#admb').onchange=e=>{if(e.target.id==='jsel')drawJournal(e.target.value)};
 $('#admb').onclick=async e=>{
   const t=e.target;
@@ -1185,6 +1269,7 @@ async function connect(){
     password:()=>ask(S.viewer?'Возьмите пароль двухэтапной проверки у владельца облака':'Пароль двухэтапной проверки','password')
   });
   await findChannel();
+  if(!S.main){S.main=S.chat;sv('tgm',S)}
   try{await refresh()}catch(e){
     if(!ACC.test(err(e))||S.viewer)throw e;
     if(!confirm('Канал архива недоступен ('+err(e)+'). Создать новый канал «'+TITLE+'»? Старые файлы останутся в старом канале.'))throw e;
@@ -1246,6 +1331,15 @@ const hasCrypto=()=>!!(window.crypto&&crypto.subtle);
 async function deriveKey(pw,salt){const km=await crypto.subtle.importKey('raw',te.encode(pw),'PBKDF2',false,['deriveKey']);return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},km,{name:'AES-GCM',length:256},false,['encrypt','decrypt'])}
 async function aesE(key,u8,aad){const iv=crypto.getRandomValues(new Uint8Array(12)),p={name:'AES-GCM',iv};if(aad)p.additionalData=aad;const ct=new Uint8Array(await crypto.subtle.encrypt(p,key,u8)),o=new Uint8Array(12+ct.length);o.set(iv);o.set(ct,12);return o}
 const chunkAad=(i,n)=>{const a=new Uint8Array(8),dv=new DataView(a.buffer);dv.setUint32(0,i);dv.setUint32(4,n);return a};
+async function deriveRaw(pw,salt){const km=await crypto.subtle.importKey('raw',te.encode(pw),'PBKDF2',false,['deriveBits']);return new Uint8Array(await crypto.subtle.deriveBits({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},km,256))}
+const keyRaw=raw=>crypto.subtle.importKey('raw',raw,'AES-GCM',false,['encrypt','decrypt']);
+/* Пароль шифрования открывает «обёртку» (e.w) с ключом файлов, поэтому смена пароля не требует перешифровывать файлы.
+   Старые репозитории без e.w работают как раньше: ключ файлов = ключ из пароля. Бросает ошибку при неверном пароле. */
+async function openEnc(pw,e){
+  const salt=b64d(e.s),K=await deriveKey(pw,salt);await aesD(K,b64d(e.c));
+  if(!e.w)return{dk:K,raw:null,salt};
+  const raw=await aesD(K,b64d(e.w));return{dk:await keyRaw(raw),raw,salt};
+}
 async function aesD(key,u8,aad){const p={name:'AES-GCM',iv:u8.subarray(0,12)};if(aad)p.additionalData=aad;return new Uint8Array(await crypto.subtle.decrypt(p,key,u8.subarray(12)))}
 const encOf=r=>{const x=repos.find(q=>q.name===r);return x&&x.enc};
 const encOn=r=>!!(r&&encOf(r)&&encOf(r).on);
@@ -1283,13 +1377,35 @@ async function ensureKey(r){
   const bioFn=bioEOn(r)?async()=>{bk=await bioELoad(r);return !!bk}:undefined;
   const pw=await askPass('Пароль шифрования «'+r+'»','password','',bioFn);if(pw===null)return false;
   if(pw===BIOOK&&bk){KEYS[r]=bk;decAll().then(render);jlog('login','отпечаток: шифрование '+r);return true}
-  try{const k=await deriveKey(pw,b64d(e.s));await aesD(k,b64d(e.c));KEYS[r]=k;decAll().then(render);setTimeout(()=>bioEOffer(r),400);return true}
+  try{const o=await openEnc(pw,e);KEYS[r]=o.dk;decAll().then(render);setTimeout(()=>bioEOffer(r),400);return true}
   catch(x){alert('Неверный пароль шифрования');return false}
 }
 async function setRepoEnc(r,enc){
   const x=repos.find(q=>q.name===r);
   const m=await withChat(()=>client.sendMessage(S.chat,RP+r+'\n'+ENC+JSON.stringify(enc)+(x.guest?'\n'+GU+(x.owner?' '+x.owner:''):'')));
   await withChat(()=>client.deleteMessages(S.chat,[x.id]));x.id=m.id;x.enc=enc;
+}
+async function changeEncPw(r){
+  if(!canPw(r)){alert('Менять пароли здесь нельзя: этот репозиторий создан не вами.');return}
+  const e=encOf(r);if(!e){alert('Репозиторий «'+r+'» не зашифрован.');return}
+  if(!hasCrypto()){alert('Шифрование недоступно: при таком способе открытия приложения браузер не даёт доступ к криптографии. Откройте приложение с хостинга по https.');return}
+  const a=await askPass('Текущий пароль шифрования «'+r+'»');if(a===null)return;
+  let raw;
+  try{const o=await openEnc(a,e);raw=o.raw||await deriveRaw(a,o.salt)}
+  catch(x){alert('Неверный пароль шифрования');return}
+  const n1=await askPass('Новый пароль шифрования для «'+r+'». Если забудете, файлы не восстановить');if(!n1)return;
+  const n2=await askPass('Повторите новый пароль');if(n1!==n2){alert('Пароли не совпали');return}
+  const salt=crypto.getRandomValues(new Uint8Array(16)),K2=await deriveKey(n1,salt),dk=await keyRaw(raw);
+  const ne={s:b64e(salt),c:b64e(await aesE(K2,te.encode('ok'))),w:b64e(await aesE(K2,raw)),k:b64e(await aesE(dk,te.encode('ok'))),on:e.on};
+  /* проверка до записи: новый пароль должен открыть ключ, а ключ — реальные зашифрованные файлы этого репозитория */
+  try{
+    const o=await openEnc(n1,ne),tf=files.find(f=>f.repo===r&&f.enc&&f.encName);
+    if(tf)await aesD(o.dk,b64d(tf.encName));
+  }catch(x){alert('Проверка не прошла, пароль не изменён: '+err(x));return}
+  await setRepoEnc(r,ne);
+  KEYS[r]=dk;bioEOff(r);
+  jlog('chg','шифрование: '+r);say('Пароль шифрования изменён. Файлы открываются как раньше');
+  try{drawRepos()}catch(x){}
 }
 async function forceEnc(r){
   if(!r)return true;
@@ -1368,7 +1484,7 @@ async function refresh(){
   files=out;folders=fol;repos=reps;locks=lks;users=usr;JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);ownkey=okk;CVRM=cvx;syncUN();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
   if(R()&&!repos.some(x=>x.name===R()&&showRepo(x)))P.repo='';
   if(cur&&!allPaths().includes(cur))cur='';
-  annAuto();
+  try{annAuto()}catch(e){}
 }
 
 
@@ -1641,8 +1757,8 @@ const COV=new Map(),CVA=new Map(),CVT=new Map(),CVQ={q:[],set:new Set(),run:fals
 const cvWebOn=()=>ld('cvweb','on')!=='off';
 const CVDB=()=>CVDB.p||(CVDB.p=new Promise((ok,no)=>{try{const r=indexedDB.open('oblachko-cov',1);r.onupgradeneeded=()=>r.result.createObjectStore('c');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}catch(e){no(e)}}));
 const cvIO=(mode,fn)=>CVDB().then(db=>new Promise((ok,no)=>{const t=db.transaction('c',mode),q=fn(t.objectStore('c'));t.oncomplete=()=>ok(q&&q.result);t.onerror=()=>no(t.error);t.onabort=()=>no(t.error)}));
-const cvGet=id=>cvIO('readonly',s=>s.get(id)).catch(()=>null);
-const cvPut=(id,rec)=>cvIO('readwrite',s=>s.put(rec,id)).catch(()=>{});
+const cvGet=id=>cvIO('readonly',s=>s.get(cvK(id))).catch(()=>null);
+const cvPut=(id,rec)=>cvIO('readwrite',s=>s.put(rec,cvK(id))).catch(()=>{});
 const cvEqm='<span class="eqm"><i></i><i></i><i></i></span>';
 const CVG=new Map();
 function cvGen(id){
@@ -1953,13 +2069,13 @@ async function makeRepo(n){
 $('#addrepo').onclick=async()=>{const n=clean(await uiPrompt('Название репозитория')||'');if(!n)return;if(n==='Облако'||repos.some(x=>x.name===n)){alert('Такой репозиторий уже есть');return}try{if(await makeRepo(n)){cur='';render()}}catch(x){say(err(x),1)}};
 $('#rsw').onclick=()=>{P.all=!P.all;if(R()&&!repos.some(x=>x.name===R()&&showRepo(x))){P.repo='';cur=''}sv('tgmp',P);render()};
 $('#lkf').onclick=()=>toggleLock(R(),cur).catch(x=>say(err(x),1));
-$('#mvf').onclick=()=>{pickMode='folder';openPick(null)};
 /* ---- меню репозитория (три точки) ---- */
 let rmRepo='';
 function openRepoMenu(r){
   rmRepo=r;const lk=lockOf(r,''),open=UN.has(r+'\n'),it=[];
   if(canPw(r)){it.push(lk?['chg','Сменить пароль','lock']:['set','Поставить пароль','lock']);
   if(lk)it.push(['rm','Снять пароль','unlock'])}
+  if(encOf(r)&&canPw(r))it.push(['cpe','Сменить пароль шифрования','lock']);
   if(lk&&window.PublicKeyCredential)it.push(bioOn(lk)?['bio-','Отключить отпечаток','finger']:['bio+','Включить отпечаток','finger']);
   if(encOf(r)&&window.PublicKeyCredential)it.push(bioEOn(r)?['bioe-','Отключить отпечаток для шифрования','finger']:['bioe+','Отпечаток вместо пароля шифрования','finger']);
   if(lk&&open)it.push(['cls','Закрыть на этом устройстве','lock']);
@@ -1994,6 +2110,7 @@ async function deleteRepo(r){
   for(let i=0;i<ids.length;i+=100){const part=ids.slice(i,i+100);await withChat(()=>client.deleteMessages(S.chat,part))}
   files=files.filter(f=>f.repo!==r);folders=folders.filter(x=>x.repo!==r);locks=locks.filter(l=>l.r!==r);repos=repos.filter(x=>x.name!==r);
   for(const k of[...UN])if(k.startsWith(r+'\n'))unDel(k);
+  bioForget(r);delete KEYS[r];
   if(R()===r){P.repo='';sv('tgmp',P);cur=''}
   jlog('rep-',r);say('Репозиторий удалён');render();
 }
@@ -2003,6 +2120,7 @@ $('#rml').onclick=async e=>{
   try{
     if(a==='set'||a==='rm')await toggleLock(r,'');
     else if(a==='chg')await changeLock(r,'');
+    else if(a==='cpe')await changeEncPw(r);
     else if(a==='cls')closeRepo(r);
     else if(a==='bio+'){const l=lockOf(r,'');if(l){BIOSKIP=true;try{if(!UN.has(r+'\n')&&!await checkLock(l))return;if(await bioEnable(l))say('Отпечаток включён');drawRepos()}finally{setTimeout(()=>{BIOSKIP=false},1000)}}}
     else if(a==='bioe+'){if(!bioReady())return;BIOSKIP=true;try{if(await ensureKey(r)&&await bioEPut(r))say('Отпечаток для шифрования включён');drawRepos()}finally{setTimeout(()=>{BIOSKIP=false},1000)}}
@@ -2441,14 +2559,28 @@ async function newFolder(){
   }catch(x){ulog(`✖ Папку не создал: ${err(x)}`);say('Не удалось создать папку: '+err(x),1)}
 }
 $('#delf').onclick=async()=>{
-  const r=R();
-  if(files.some(f=>f.repo===r&&inTree(f.path,cur))){alert('В папке есть файлы. Сначала переместите или удалите их.');return}
-  if(!confirm(`Удалить пустую папку «${cur}»?`))return;
-  const mk=folders.filter(x=>x.repo===r&&inTree(x.path,cur)),lk=locks.filter(l=>l.r===r&&l.p&&inTree(l.p,cur)),ids=[...mk,...lk].map(x=>x.id);
+  const r=R(),t=cur;if(!t)return;
+  const fl=files.filter(f=>f.repo===r&&inTree(f.path,t)),mk=folders.filter(x=>x.repo===r&&inTree(x.path,t)),lk=locks.filter(l=>l.r===r&&l.p&&inTree(l.p,t)),od=ORD.filter(x=>x.r===r&&x.p&&inTree(x.p,t));
+  for(const l of lk){if(!await unlock(r,l.p))return}
+  const sub=allPaths(r).filter(x=>x!==t&&inTree(x,t)).length;
+  const msg=fl.length?`В папке «${t}» файлов: ${fl.length}`+(sub?`, вложенных папок: ${sub}`:'')+`. Удалить папку вместе со всеми файлами навсегда? Отменить это нельзя.`:`Удалить пустую папку «${t}»?`;
+  if(!confirm(msg))return;
+  const meta=[...mk,...lk].map(x=>x.id),ords=od.flatMap(x=>x.mids||[]).filter(Boolean),fids=fl.map(f=>f.id),done=new Set();let e0=null;
   try{
-    if(ids.length)await withChat(()=>client.deleteMessages(S.chat,ids));
-    folders=folders.filter(x=>!mk.includes(x));locks=locks.filter(l=>!lk.includes(l));jlog('fo-',(r||'Облако')+' / '+cur);cur=parentPath(cur);render();
-  }catch(x){say(err(x),1)}
+    /* сначала файлы, потом служебные сообщения папки: если оборвётся связь, папка останется и её можно удалить повторно */
+    for(let i=0;i<fids.length;i+=100){
+      say(`Удаляю ${Math.min(i+100,fids.length)} из ${fids.length}…`);
+      const part=fids.slice(i,i+100);await withChat(()=>client.deleteMessages(S.chat,part));part.forEach(x=>done.add(x));
+    }
+    const rest=[...meta,...ords];
+    for(let i=0;i<rest.length;i+=100){const part=rest.slice(i,i+100);await withChat(()=>client.deleteMessages(S.chat,part))}
+  }catch(x){e0=x}
+  files=files.filter(f=>!done.has(f.id));done.forEach(i=>C.delete(i));
+  if(e0){say(`Удалено файлов ${done.size} из ${fids.length}, папка осталась: `+err(e0),1);render();return}
+  folders=folders.filter(x=>!mk.includes(x));locks=locks.filter(l=>!lk.includes(l));ORD=ORD.filter(x=>!od.includes(x));
+  jlog('fo-',(r||'Облако')+' / '+t+(fids.length?' (файлов: '+fids.length+')':''));
+  cur=parentPath(t);render();try{saveIndex()}catch(x){}
+  say(fids.length?`Папка удалена вместе с файлами (${fids.length})`:'Папка удалена');
 };
 $('#fab').onclick=e=>{e.stopPropagation();const m=$('#fabm');m.hidden=!m.hidden;$('#fab').classList.toggle('open',!m.hidden)};
 const fabClose=()=>{$('#fabm').hidden=true;$('#fab').classList.remove('open')};
@@ -2796,7 +2928,6 @@ $('#sdl').onclick=async()=>{
   }
   say('Готово');
 };
-$('#smv').onclick=()=>{if(sel.size){pickMode='batch';openPick(null)}};
 
 /* зашифрованные файлы привязаны к ключу своего репозитория */
 function encMoveBlock(fl,nr,rr){
@@ -2829,7 +2960,7 @@ async function moveFolder(np,nr,nm){
   try{
     for(const f of fl){say(`Переношу ${++i} из ${fl.length}…`);await withChat(()=>client.editMessageCaption(S.chat,f.id,{caption:caption(f.no,mp(f.path),capName(f),nr)}));f.path=mp(f.path);f.repo=nr}
     for(const p of new Set([nb,...mk.map(x=>mp(x.path))])){const m=await withChat(()=>client.sendMessage(S.chat,(nr?RP+nr+'\n':'')+FP+p));folders.push({id:m.id,path:p,repo:nr})}
-    for(const l of lk){const np2=mp(l.p),m=await withChat(()=>client.sendMessage(S.chat,LK+JSON.stringify({r:nr,p:np2,h:l.h})));locks.push({id:m.id,r:nr,p:np2,h:l.h});unAdd(nr+'\n'+np2,l.h)}
+    for(const l of lk){const np2=mp(l.p),m=await withChat(()=>client.sendMessage(S.chat,LK+JSON.stringify({r:nr,p:np2,h:l.h})));locks.push({id:m.id,r:nr,p:np2,h:l.h});unAdd(nr+'\n'+np2,l.h);if(BIO.k[bioKey(l.r,l.p)]===l.h){delete BIO.k[bioKey(l.r,l.p)];BIO.k[bioKey(nr,np2)]=l.h;saveBio()}}
     const del=[...mk,...lk].map(x=>x.id);
     if(del.length)await withChat(()=>client.deleteMessages(S.chat,del));
     folders=folders.filter(x=>!mk.includes(x));locks=locks.filter(l=>!lk.includes(l));
@@ -2862,6 +2993,8 @@ async function copyFolder(np,nr){
   }catch(x){say(err(x),1);try{await refresh()}catch(e){}render()}
 }
 $('#rnf').onclick=async()=>{const n=clean(await uiPrompt('Новое имя папки',base(cur))||'');if(!n||n===base(cur))return;moveFolder(parentPath(cur),R(),n)};
+$('#smv').onclick=()=>{if(sel.size){pickMode='batch';openPick(null)}};
+$('#mvf').onclick=()=>{pickMode='folder';openPick(null)};
 $('#cpf').onclick=()=>{pickMode='fcopy';openPick(null)};
 function openPick(cp){
   const out=[];
@@ -3152,7 +3285,10 @@ $('#vrm').onclick=async()=>{
 /* ---- вход / выход ---- */
 const CSK=['id','hash','phone'];
 function drawCs(){
-  const r=parseCombo($('#combo').value);
+  const v=$('#combo').value;
+  if(/CLK2\./.test(v))parseComboA(v).then(paintCs);else paintCs(parseCombo(v));
+}
+function paintCs(r){
   [...$('#cs').children].forEach((el,i)=>{
     const on=!!r[CSK[i]];clearTimeout(el._t);
     if(on===el.classList.contains('ok'))return;
@@ -3165,7 +3301,7 @@ $('#eye').onclick=()=>{const c=$('#combo'),on=!c.classList.contains('show');c.cl
 $('#go').onclick=async()=>{
   const c=$('#combo').value.trim(),wasV=!!S.viewer,same=c===[S.apiId,S.apiHash,S.phone].join(' ');S.viewer=false;
   if(c){
-    const r=parseCombo(c),miss=[!r.id&&'api_id',!r.hash&&'api_hash',!r.phone&&'телефон'].filter(Boolean);
+    const r=await parseComboA(c),miss=[!r.id&&'api_id',!r.hash&&'api_hash',!r.phone&&'телефон'].filter(Boolean);
     if(miss.length){say('Не нашёл в строке: '+miss.join(', '),1);return}
     $('#aid').value=r.id;$('#ahash').value=r.hash;$('#phone').value=r.phone;S.viewer=!!r.viewer||(wasV&&same);if(r.viewer){S.guestUser='';S.guestHash=''}
   }
@@ -3176,11 +3312,19 @@ $('#go').onclick=async()=>{
   catch(x){say('Не вышло: '+err(x),1)}
 };
 const makeKey=async()=>{
-  if(!S.apiId||!S.apiHash){alert('Сначала войдите в приложение');return}
+  if(!isAdmin())return;
+  if(S.viewer)return;
+  const id=((await uiPrompt('api_id (цифры с my.telegram.org)'))||'').replace(/\s/g,'');
+  if(!id)return;
+  if(!/^\d{3,12}$/.test(id)){alert('Неверный api_id: только цифры');return}
+  const hs=((await uiPrompt('api_hash (32 символа)'))||'').replace(/\s/g,'');
+  if(!hs)return;
+  if(!/^[0-9a-f]{32}$/i.test(hs)){alert('Неверный api_hash: нужно ровно 32 символа, цифры и буквы a–f');return}
   const ph=(await uiPrompt('Номер ВТОРОГО аккаунта (им будет пользоваться друг), например +79991234567')||'').replace(/[^\d+]/g,'');
   if(!ph)return;
   if(!/^\+\d{10,15}$/.test(ph)){alert('Неверный номер. Нужен формат +79991234567');return}
-  jlog('key','');const key='CLK1.'+b64e(te.encode(JSON.stringify({i:S.apiId,h:S.apiHash,p:ph})));
+  jlog('key','');const kd={i:id,h:hs,p:ph};let key;
+  try{key=await ck2enc(kd)}catch(e){key='CLK1.'+b64e(te.encode(JSON.stringify(kd)))}
   try{await navigator.clipboard.writeText(key);alert('Ключ скопирован. Отправьте его другу. С этим ключом друг сможет загружать, переносить и удалять файлы так же, как вы.\n\nПеред этим второй аккаунт должен быть АДМИНИСТРАТОРОМ канала «'+TITLE+'» (права: публикация, изменение и удаление сообщений). Когда друг нажмёт «Войти», код придёт в Telegram второго аккаунта: передайте его другу не через Telegram (SMS, звонок).')}
   catch(e){prompt('Скопируйте ключ целиком и отправьте другу',key)}
 };
