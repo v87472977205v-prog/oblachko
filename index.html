@@ -499,6 +499,14 @@ body.pl-on .fab{bottom:calc(176px + env(safe-area-inset-bottom))}
 #admb .mus textarea{min-height:150px}
 #admb .mus #musl{max-height:150px;min-height:40px;margin:4px 0 0}
 #admb .mus .row{margin:8px 0 0}
+
+#adm .ah #musq{margin-left:auto;flex:none;width:44px;height:44px;padding:0;border-radius:50%;font:700 24px system-ui,sans-serif;border:1px solid var(--line);background:var(--card);color:var(--ink);display:flex;align-items:center;justify-content:center}
+#adm .ah #musq[hidden]{display:none}
+#adm .ah #musq.on{background:var(--acc);color:var(--accink);border-color:var(--acc)}
+#admb .mus .mpb{height:12px;border-radius:99px;background:var(--bg);border:1px solid var(--line);overflow:hidden;margin:8px 0 6px}
+#admb .mus .mpb i{display:block;height:100%;width:0;background:var(--acc);border-radius:99px;transition:width .3s}
+#admb .mus .mpt{font-size:15px;font-weight:600}
+#admb .mus .mps{font-size:13px;color:var(--mute);margin-top:3px;min-height:18px;word-break:break-word}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-v4-192.png" type="image/png">
@@ -593,7 +601,7 @@ body.pl-on .fab{bottom:calc(176px + env(safe-area-inset-bottom))}
   <div class="pr4"><button id="pshuf">Перемешать</button><button id="prep">Повтор: нет</button><button id="pspd">1×</button><button id="pslp">Таймер сна</button></div>
 </div>
 <div id="rmn" hidden><div id="rml"></div></div>
-<div id="adm" hidden><div class="ah"><button class="ib2" id="admx" aria-label="Назад" data-ic="close"></button><span id="admt"></span></div><div id="admb"></div></div>
+<div id="adm" hidden><div class="ah"><button class="ib2" id="admx" aria-label="Назад" data-ic="close"></button><span id="admt"></span><button id="musq" hidden aria-label="Журнал">?</button></div><div id="admb"></div></div>
 
 <div id="vw" hidden>
   <div id="vtop">
@@ -978,7 +986,7 @@ document.addEventListener('visibilitychange',()=>{
   HIDAT=0;
 });
 const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение'};
-function openAdm(t){$('#admt').textContent=t;$('#adm').hidden=false}
+function openAdm(t){$('#admt').textContent=t;$('#adm').hidden=false;const q=$('#musq');if(q)q.hidden=true}
 let fromSet=false,admParent=null;
 $('#admx').onclick=()=>{if(fromSet&&admParent){admParent();return}fromSet=false;admParent=null;$('#adm').hidden=true};
 function drawSettings(){
@@ -1032,7 +1040,8 @@ $('#conb').onclick=()=>{if(isAdmin())drawConsole()};
    Вход в Telegram берётся тот же, что у Облачка (api_id / api_hash / сессия), второй раз входить не нужно.
    Из чата или бота скачиваются голосовые и аудио, и сразу кладутся в выбранный репозиторий и папку Облачка. */
 const MUS_BOT='@audio_storm_bot';
-const MUS={rows:[],stop:false,busy:false,log:[]};
+const MUS={rows:[],stop:false,busy:false,log:[],total:0,done:0,proc:0,stage:'',showLog:false};
+function mstage(t){MUS.stage=t;musPaint()}
 let MS=ld('tgmus',{chat:'',repo:'',folder:'',list:''});
 const msv=()=>sv('tgmus',MS);
 function mlog(m){
@@ -1081,7 +1090,9 @@ async function musGet(it){
 }
 async function musSave(it,tg){
   if(files.some(f=>f.repo===tg.r&&f.path===tg.p&&f.name===it.name)){mlog('Уже есть, пропускаю: '+it.name);return false}
+  mstage('Скачиваю: '+it.title);
   const b=await musGet(it);if(!b.size)throw new Error('пустой файл');
+  mstage('Передаю в облако: '+it.title);
   await enqueue([new File([b],it.name,{type:it.mime})],tg.r,tg.p);
   mlog('✓ Передано в загрузку: '+it.name);return true;
 }
@@ -1113,7 +1124,7 @@ async function musWait(chat,baseId,ms){
     const inc=b.filter(m=>m.id>baseId&&!m.out).sort((a,c)=>a.id-c.id);
     const au=inc.find(m=>musAud(m));if(au)return au;
     const lst=inc.slice().reverse().find(m=>musRowsOf(m).length>=2&&!clicked.has(m.id));
-    if(lst){clicked.add(lst.id);mlog('   Бот прислал список ('+musRowsOf(lst).length+' рядов кнопок), жму первую…');if(await musClick(chat,lst))end=Math.max(end,Date.now()+30000)}
+    if(lst){clicked.add(lst.id);mlog('   Бот прислал список ('+musRowsOf(lst).length+' рядов кнопок), жму первую…');mstage('Выбираю трек из списка…');if(await musClick(chat,lst))end=Math.max(end,Date.now()+30000);mstage('Жду трек от бота…')}
     await sleep(2000);
   }
   return null;
@@ -1123,28 +1134,38 @@ async function musPlaylist(){
   const ta=$('#musp');if(ta){MS.list=ta.value;msv()}
   const lines=String(MS.list||'').split('\n').map(x=>x.trim()).filter(Boolean);
   if(!lines.length){say('Введите хотя бы одну строку: Исполнитель - Название',1);return}
-  MUS.busy=true;MUS.stop=false;musPaint();
+  MUS.busy=true;MUS.stop=false;MUS.total=lines.length;MUS.done=0;MUS.proc=0;mstage('Подготовка…');
   try{
-    const chat=await musResolve(),tg=await musTarget();let ok=0,n=0;
+    const chat=await musResolve(),tg=await musTarget();let n=0;
     mlog('Плейлист: '+lines.length+' строк → '+(tg.r||'Облако')+(tg.p?' / '+tg.p:''));
     for(const line of lines){
       if(MUS.stop){mlog('Остановлено');break}
       n++;mlog('['+n+'/'+lines.length+'] Запрашиваю: '+line);
-      let sent;try{sent=await client.sendMessage(chat,line)}catch(x){mlog('⚠ Не удалось отправить «'+line+'»: '+err(x));await sleep(6000+Math.random()*1000);continue}
+      mstage('Отправляю запрос: '+line);
+      let sent;try{sent=await client.sendMessage(chat,line)}catch(x){mlog('⚠ Не удалось отправить «'+line+'»: '+err(x));MUS.proc++;musPaint();await sleep(6000+Math.random()*1000);continue}
+      mstage('Жду ответ бота…');
       await sleep(6000+Math.random()*1000);
       const tm=await musWait(chat,sent.id,30000);
       if(!tm){mlog('⚠ Нет ответа с треком на «'+line+'», пропускаю.')}
-      else{try{const it=musInfo(tm);if(await musSave(it,tg))ok++}catch(x){mlog('✖ '+line+': '+err(x))}}
-      await sleep(6000+Math.random()*1000);
+      else{try{const it=musInfo(tm);if(await musSave(it,tg))MUS.done++}catch(x){mlog('✖ '+line+': '+err(x))}}
+      MUS.proc++;musPaint();
+      if(n<lines.length){mstage('Пауза перед следующим запросом…');await sleep(6000+Math.random()*1000)}
     }
-    mlog('Плейлист готов: передано в загрузку '+ok+' из '+lines.length);
-  }catch(x){mlog('✖ '+err(x));say(err(x),1)}
+    mlog('Плейлист готов: передано в загрузку '+MUS.done+' из '+lines.length);
+    MUS.stage=MUS.stop?'Остановлено':'Готово. Ход загрузки в облако — в окне загрузок';
+  }catch(x){mlog('✖ '+err(x));say(err(x),1);MUS.stage='Ошибка: '+err(x)}
   finally{MUS.busy=false;musPaint()}
 }
 function musPaint(){
   const g=$('#musg');if(!g)return;
   g.textContent=MUS.busy?'Остановить':'Начать скачивание';g.classList.toggle('del',MUS.busy);g.classList.toggle('p',!MUS.busy);
-  const el=$('#musl');if(el){el.textContent=MUS.log.join('\n');el.scrollTop=el.scrollHeight}
+  const f=$('#mpf'),t=$('#mpt'),st=$('#mps');
+  if(f)f.style.width=(MUS.total?Math.min(100,Math.round(MUS.proc/MUS.total*100)):0)+'%';
+  if(t){const sk=MUS.proc-MUS.done;t.textContent='Скачано '+MUS.done+' из '+MUS.total+(sk>0?' · не получилось: '+sk:'')}
+  if(st)st.textContent=MUS.stage||'';
+  const w=$('#musw');if(w)w.hidden=!MUS.showLog;
+  const q=$('#musq');if(q)q.classList.toggle('on',MUS.showLog);
+  const el=$('#musl');if(el&&MUS.showLog){el.textContent=MUS.log.join('\n');el.scrollTop=el.scrollHeight}
 }
 function musFolders(){
   const r=$('#musrp').value,dl=$('#musdl');
@@ -1159,7 +1180,9 @@ function openMusic(){
       <input id="musfo" list="musdl" autocomplete="off" spellcheck="false" placeholder="Папка (пусто — корень)" value="${esc(MS.folder)}"><datalist id="musdl"></datalist></div>
     <div class="uc"><textarea id="musp" placeholder="Исполнитель - Название&#10;по одному в строке">${esc(MS.list)}</textarea>
       <div class="row"><button class="p" id="musg">Начать скачивание</button><button id="musk">Очистить</button></div></div>
-    <div class="uc"><label class="ml">Журнал</label><pre id="musl"></pre></div></div>`;
+    <div class="uc"><div class="mpt" id="mpt"></div><div class="mpb"><i id="mpf"></i></div><div class="mps" id="mps"></div></div>
+    <div class="uc" id="musw" hidden><pre id="musl"></pre></div></div>`;
+  const q=$('#musq');q.hidden=false;q.onclick=()=>{MUS.showLog=!MUS.showLog;musPaint()};
   musFolders();musPaint();
 }
 $('#admb').addEventListener('change',e=>{
