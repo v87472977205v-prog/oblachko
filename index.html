@@ -507,6 +507,13 @@ body.pl-on .fab{bottom:calc(176px + env(safe-area-inset-bottom))}
 #admb .mus .mpb i{display:block;height:100%;width:0;background:var(--acc);border-radius:99px;transition:width .3s}
 #admb .mus .mpt{font-size:15px;font-weight:600}
 #admb .mus .mps{font-size:13px;color:var(--mute);margin-top:3px;min-height:18px;word-break:break-word}
+
+#admb .exl{padding:6px 14px}
+#admb .exr{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+#admb .exr .exo{flex:1;display:flex;gap:14px;align-items:center;text-align:left;border:0;background:none;padding:18px 6px;font-size:17px;color:inherit;border-radius:0;min-width:0}
+#admb .exr .exp{flex:none;width:40px;height:40px;padding:0;border-radius:50%;font:400 26px/1 system-ui,sans-serif;display:flex;align-items:center;justify-content:center;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+#admb .exr .us{flex:none;color:var(--mute);font-size:13px}
+.pg .pgp.no{background:none;color:#2ee6cb;box-shadow:none;border:1px solid #1fb8a0}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-v4-192.png" type="image/png">
@@ -581,6 +588,7 @@ body.pl-on .fab{bottom:calc(176px + env(safe-area-inset-bottom))}
   <div class="dgrp" id="whoami" hidden></div>
   <hr>
   <button id="setb" data-ic="gear">Настройки</button>
+  <button id="extb" data-ic="plus" hidden>Расширения</button>
   <button id="conb" data-ic="users">Консоль</button>
   <div class="sec" id="fsec" hidden>Эта папка</div>
   <button id="lkf" hidden data-ic="lock">Пароль папки</button>
@@ -985,7 +993,7 @@ document.addEventListener('visibilitychange',()=>{
   if(HIDAT&&Date.now()-HIDAT>60000&&FUN.size){for(const k of FUN.keys())UN.delete(k);FUN.clear();try{render()}catch(e){}}
   HIDAT=0;
 });
-const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение'};
+const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','ext+':'предложил расширение:',extok:'подключил расширение:',extno:'отказался от расширения:','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение'};
 function openAdm(t){$('#admt').textContent=t;$('#adm').hidden=false;const q=$('#musq');if(q)q.hidden=true}
 let fromSet=false,admParent=null;
 $('#admx').onclick=()=>{if(fromSet&&admParent){admParent();return}fromSet=false;admParent=null;$('#adm').hidden=true};
@@ -997,7 +1005,7 @@ function drawSettings(){
 function drawConsole(){
   if(!isAdmin()){drawSettings();return}
   fromSet=false;admParent=null;openAdm('Консоль администратора');
-  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button><button data-set="mus">${icon('music')}<span>Музыка из чата</span></button></div>`;
+  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button><button data-set="ext">${icon('plus')}<span>Расширения</span></button></div>`;
 }
 function openLks(){
   openAdm('Кнопка открытия репозитория');
@@ -1197,6 +1205,77 @@ $('#admb').addEventListener('click',e=>{
   if(b.id==='musg'){if(MUS.busy){MUS.stop=true;mlog('Остановка запрошена…')}else musPlaylist()}
   else if(b.id==='musk'){const ta=$('#musp');ta.value='';MS.list='';msv();ta.focus()}
 });
+
+/* ---- Расширения ----
+   Владелец (Консоль → Расширения) нажимает «+» у расширения и выбирает пользователя: тому приходит вопрос.
+   Если он нажал «Да», в его шторке появляется раздел «Расширения». Записи лежат в канале (🧩): предложение, согласие, отказ. */
+const EXR='🧩 ';
+let EXT=[];
+const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>openMusic()}];
+const extState=(x,u)=>{let k='';for(const r of EXT)if(r.x===x&&r.u===u)k=r.k;return k};
+const extMine=()=>EXTS.filter(e=>isAdmin()||(S.guestUser&&extState(e.id,S.guestUser)==='a'));
+function extSync(){const b=$('#extb');if(b)b.hidden=isAdmin()||!extMine().length}
+async function extSend(rec){
+  const m=await withChat(()=>client.sendMessage(S.chat,EXR+JSON.stringify(rec)));
+  EXT.push({id:m.id,...rec});EXT.sort((a,b)=>a.id-b.id);saveIndex();return m;
+}
+function openExtAdmin(){
+  if(!isAdmin())return;
+  fromSet=true;admParent=drawConsole;openAdm('Расширения');
+  $('#admb').innerHTML=`<div class="exl">${EXTS.map(e=>`<div class="exr"><button class="exo" data-exo="${e.id}">${icon(e.ic)}<span>${esc(e.name)}</span></button><button class="exp" data-exp="${e.id}" aria-label="Предложить пользователю">+</button></div>`).join('')}</div>`;
+}
+function openExtUsers(x){
+  if(!isAdmin())return;
+  fromSet=true;admParent=openExtAdmin;openAdm('Кому предложить');
+  const st={a:'подключено',o:'ждёт ответа',d:'отказался'};
+  $('#admb').innerHTML=users.length?`<div class="exl">${users.map(u=>`<div class="exr"><button class="exo" data-exu="${esc(x)}" data-u="${esc(u.u)}"><span>${esc(u.u)}</span></button><span class="us">${st[extState(x,u.u)]||''}</span></div>`).join('')}</div>`:'<div class="empty">Пользователей пока нет</div>';
+}
+function openExts(){
+  fromSet=false;admParent=null;openAdm('Расширения');
+  const L=extMine();
+  $('#admb').innerHTML=L.length?`<div class="exl">${L.map(e=>`<div class="exr"><button class="exo" data-exm="${e.id}">${icon(e.ic)}<span>${esc(e.name)}</span></button></div>`).join('')}</div>`:'<div class="empty">Пока нет расширений</div>';
+}
+$('#extb').onclick=openExts;
+$('#admb').addEventListener('click',async e=>{
+  const g=a=>e.target.closest('['+a+']');
+  const o=g('data-exo'),p=g('data-exp'),u=g('data-exu'),m=g('data-exm');
+  if(o){const x=EXTS.find(q=>q.id===o.dataset.exo);if(x&&isAdmin()){fromSet=true;admParent=openExtAdmin;x.open()}return}
+  if(m){const x=EXTS.find(q=>q.id===m.dataset.exm);if(x&&extMine().includes(x)){fromSet=true;admParent=openExts;x.open()}return}
+  if(p){if(isAdmin())openExtUsers(p.dataset.exp);return}
+  if(u){
+    if(!isAdmin()||u.disabled)return;
+    const id=u.dataset.exu,name=u.dataset.u,x=EXTS.find(q=>q.id===id);if(!x)return;
+    const s0=extState(id,name);
+    if(s0==='a'){say('У пользователя «'+name+'» это расширение уже подключено');return}
+    if(s0==='o'){say('Предложение уже отправлено, ждём ответа');return}
+    if(!confirm('Предложить расширение «'+x.name+'» пользователю «'+name+'»?'))return;
+    u.disabled=true;
+    try{await extSend({k:'o',x:id,u:name});jlog('ext+',x.name+' → '+name);say('Предложение отправлено');openExtUsers(id)}
+    catch(err2){say('Не удалось отправить: '+err(err2),1);u.disabled=false}
+  }
+});
+function extAsk(x){
+  const o=document.createElement('div');o.id='extq';o.className='pg';
+  o.innerHTML=`<div class="pgin">${PGLOGO}<h1 class="pgt">Новое расширение</h1><p class="pgs">${esc(x.name)}</p><div class="pgc"><p>Владелец предлагает вам подключить расширение «${esc(x.name)}». Подключить?</p></div></div><div class="pgf"><button class="pgp" id="extyes">Да</button><button class="pgp no" id="extno">Нет</button></div>`;
+  document.body.appendChild(o);
+  const bs=[$('#extyes'),$('#extno')];
+  const reply=async k=>{
+    bs.forEach(b=>b.disabled=true);
+    try{
+      await extSend({k,x:x.id,u:S.guestUser});jlog(k==='a'?'extok':'extno',x.name);o.remove();extSync();
+      say(k==='a'?'Расширение подключено: '+x.name+'. Оно в меню → Расширения':'Вы отказались от расширения');
+      setTimeout(extAuto,400);
+    }catch(err2){say('Не удалось ответить: '+err(err2),1);bs.forEach(b=>b.disabled=false)}
+  };
+  $('#extyes').onclick=()=>reply('a');$('#extno').onclick=()=>reply('d');
+}
+const extAsked=new Set();let extTry=0;
+function extAuto(){
+  if(isAdmin()||!S.guestUser||$('#extq'))return;
+  const x=EXTS.find(q=>extState(q.id,S.guestUser)==='o'&&!extAsked.has(q.id));if(!x)return;
+  if(booting||!ready||showSetup||$('#ann')){if(extTry++<600)setTimeout(extAuto,700);return}
+  extTry=0;extAsked.add(x.id);extAsk(x);
+}
 function openFolderSet(){
   const r=R(),c=cur;fromSet=false;admParent=null;
   openAdm(c?'Папка «'+base(c)+'»':(r||'Облако'));
@@ -1219,7 +1298,7 @@ $('#admb').addEventListener('click',e=>{
   else $('#'+k).click();
 });
 $('#admb').addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(!b)return;const k=b.dataset.set;
-  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,jrn:openJournal,key:makeKey,ann:openAnn,mus:openMusic};
+  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,jrn:openJournal,key:makeKey,ann:openAnn,ext:openExtAdmin};
   if(ACT[k]){ACT[k]();return}
   if(SETK[k]){fromSet=true;admParent=drawSettings;SETK[k]();return}
   if(ADMK[k]){if(!isAdmin())return;fromSet=true;admParent=drawConsole;ADMK[k]()}  /* консоль и всё из неё — только у владельца */
@@ -1655,7 +1734,7 @@ async function readFast(prog){
   return[...all.values()].sort((x,y)=>y.id-x.id);
 }
 async function refresh(){
-  const out=[],fol=[],reps=[],lks=[],usr=[],jr=[],jenc=[],ordp=[],ans=[],cvx=[],seen=new Set();let off,okk=null;
+  const out=[],fol=[],reps=[],lks=[],usr=[],jr=[],jenc=[],ordp=[],ans=[],cvx=[],exr=[],seen=new Set();let off,okk=null;
   const proc=m=>{
     if(seen.has(m.id))return;seen.add(m.id);
       const e=entry(m);
@@ -1666,6 +1745,7 @@ async function refresh(){
         else if(t.startsWith(ORR)){try{const j=JSON.parse(t.slice(ORR.length));ordp.push({mid:m.id,r:j.r||'',p:j.p||'',n:j.n||0,o:String(j.o||'')})}catch(x){}}
         else if(t.startsWith(CVX)){try{const j=JSON.parse(t.slice(CVX.length));if(j&&j.d)cvx.push({mid:m.id,r:j.r||'',e:j.e?1:0,d:j.d})}catch(x){}}
         else if(t.startsWith(AN)){try{const j=JSON.parse(t.slice(AN.length));if(j&&j.v&&Array.isArray(j.l))ans.push({id:m.id,v:String(j.v),d:j.d||0,l:j.l.map(String)})}catch(x){}}
+        else if(t.startsWith(EXR)){try{const j=JSON.parse(t.slice(EXR.length));if(j&&j.k&&j.x&&j.u)exr.push({id:m.id,k:String(j.k),x:String(j.x),u:String(j.u)})}catch(x){}}
         else if(t.startsWith(OKR)){try{okk={id:m.id,...JSON.parse(t.slice(OKR.length))}}catch(x){}}
         else if(t.startsWith(LK)){try{const j=JSON.parse(t.slice(LK.length));lks.push({id:m.id,r:j.r||'',p:j.p||'',h:j.h})}catch(x){}}
         else if(t.startsWith(RP)||t.startsWith(FP)){
@@ -1686,10 +1766,10 @@ async function refresh(){
       off=Math.min(...b.map(m=>m.id));
     }
   }
-  files=out;folders=fol;repos=reps;locks=lks;users=usr;JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);ownkey=okk;CVRM=cvx;syncUN();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
+  files=out;folders=fol;repos=reps;locks=lks;users=usr;JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);EXT=exr.sort((a,b)=>a.id-b.id);ownkey=okk;CVRM=cvx;syncUN();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
   if(R()&&!repos.some(x=>x.name===R()&&showRepo(x)))P.repo='';
   if(cur&&!allPaths().includes(cur))cur='';
-  try{annAuto()}catch(e){}
+  try{annAuto()}catch(e){}try{extSync();extAuto()}catch(e){}
 }
 
 
@@ -1789,16 +1869,16 @@ async function cacheReset(){
   return before;
 }
 let _si=0;
-function saveIndex(){clearTimeout(_si);_si=setTimeout(()=>{if(OFFLINE)return;idbOp('m','readwrite',s=>s.put({id:'idx',t:Date.now(),d:{files,folders,repos,locks,users,ord:ORD,chat:S.chat}})).catch(()=>{})},3000)}
+function saveIndex(){clearTimeout(_si);_si=setTimeout(()=>{if(OFFLINE)return;idbOp('m','readwrite',s=>s.put({id:'idx',t:Date.now(),d:{files,folders,repos,locks,users,ord:ORD,chat:S.chat,ext:EXT}})).catch(()=>{})},3000)}
 async function loadOffline(){
   try{const r=await idbOp('m','readonly',s=>s.get('idx'));if(!r||Date.now()-r.t>TTL*1.5)return false;
-  files=r.d.files||[];folders=r.d.folders||[];repos=r.d.repos||[];locks=r.d.locks||[];users=r.d.users||[];ORD=r.d.ord||[];S.chat=r.d.chat;OFFLINE=true;document.body.classList.add('off');try{syncUN()}catch(e){}return true}catch(e){return false}
+  files=r.d.files||[];folders=r.d.folders||[];repos=r.d.repos||[];locks=r.d.locks||[];users=r.d.users||[];EXT=r.d.ext||[];ORD=r.d.ord||[];S.chat=r.d.chat;OFFLINE=true;document.body.classList.add('off');try{syncUN()}catch(e){}return true}catch(e){return false}
 }
 async function loadCachedIdx(){
   try{
     const r=await idbOp('m','readonly',s=>s.get('idx'));
     if(!r||!r.d||Date.now()-r.t>30*864e5||(S.chat&&r.d.chat!==S.chat))return false;
-    files=r.d.files||[];folders=r.d.folders||[];repos=r.d.repos||[];locks=r.d.locks||[];users=r.d.users||[];ORD=r.d.ord||[];if(!S.chat)S.chat=r.d.chat;
+    files=r.d.files||[];folders=r.d.folders||[];repos=r.d.repos||[];locks=r.d.locks||[];users=r.d.users||[];EXT=r.d.ext||[];ORD=r.d.ord||[];if(!S.chat)S.chat=r.d.chat;
     try{syncUN()}catch(e){}return true;
   }catch(e){return false}
 }
