@@ -965,22 +965,34 @@ let fromSet=false,admParent=null;
 $('#admx').onclick=()=>{if(fromSet&&admParent){admParent();return}fromSet=false;admParent=null;$('#adm').hidden=true};
 function drawSettings(){
   fromSet=false;admParent=null;openAdm('Настройки');
-  const LKB=`<div class="uc"><div class="un">Кнопка открытия репозитория</div><div class="us">Как открывать зашифрованный или запароленный репозиторий.</div><div class="row"><button class="chip${ld('lkstyle','round')==='slide'?'':' on'}" data-lks="round">Круглая</button><button class="chip${ld('lkstyle','round')==='slide'?' on':''}" data-lks="slide">Слайдер</button></div></div>`;
-  $('#admb').innerHTML=`<div class="stl"><button data-set="cov">${icon('music')}<span>Обложки музыки</span></button></div><div style="padding:10px 14px">${LKB}</div>`;
+  $('#admb').innerHTML=`<div class="stl"><button data-set="cov">${icon('music')}<span>Обложки музыки</span></button><button data-set="lks">${icon('repo')}<span>Кнопка открытия репозитория</span></button><button data-set="cch">${icon('cloud')}<span>Кэш файлов и музыки</span></button><button data-set="upd">${icon('refresh')}<span>Обновить приложение</span></button><button data-set="ulg">${icon('list')}<span>Журнал загрузки</span></button></div>`;
 }
+/* консоль — только у администратора (у остальных не открывается ни кнопкой, ни напрямую) */
 function drawConsole(){
-  if(S.viewer){drawSettings();return}
+  if(!isAdmin()){drawSettings();return}
   fromSet=false;admParent=null;openAdm('Консоль администратора');
-  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button></div><div style="padding:10px 14px"><div class="uc"><div class="un">Кэш файлов и музыки</div><div class="us" id="cachei">Считаю…</div><div class="us">Размер не ограничен. Хранится неделю после последнего прослушивания. Файлы в канале не затрагиваются.</div><div class="row"><button class="del" id="cachex">Сбросить кэш</button></div><div class="us" style="margin-top:10px">Если на этом устройстве старая версия приложения, обновите её. Вход и файлы не затрагиваются.</div><div class="row"><button id="appupd">Обновить приложение</button></div><div class="us" style="margin-top:10px">Что приложение делало при загрузке файлов и создании папок, по шагам.</div><div class="row"><button id="ulogb">Журнал загрузки</button></div></div></div>`;
+  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button></div>`;
+}
+function openLks(){
+  openAdm('Кнопка открытия репозитория');
+  const sl=ld('lkstyle','round')==='slide';
+  $('#admb').innerHTML=`<div style="padding:10px 14px"><div class="uc"><div class="un">Кнопка открытия репозитория</div><div class="us">Как открывать зашифрованный или запароленный репозиторий.</div><div class="row"><button class="chip${sl?'':' on'}" data-lks="round">Круглая</button><button class="chip${sl?' on':''}" data-lks="slide">Слайдер</button></div></div></div>`;
+}
+function openCache(){
+  openAdm('Кэш файлов и музыки');
+  $('#admb').innerHTML=`<div style="padding:10px 14px"><div class="uc"><div class="un">Кэш файлов и музыки</div><div class="us" id="cachei">Считаю…</div><div class="us">Размер не ограничен. Хранится неделю после последнего прослушивания. Файлы в канале не затрагиваются.</div><div class="row"><button class="del" id="cachex">Сбросить кэш</button></div></div></div>`;
   Promise.all([cacheInfo(),cacheQuota()]).then(([i,q])=>{const el=$('#cachei');if(el)el.textContent=(i.n?`Занимает ${size(i.size)} · файлов: ${i.n}`:'Пока пусто — 0 МБ')+(q?` · всего приложение использует ${size(q.used)} из ${size(q.quota)} доступных браузером`:'')});
+}
+async function appUpdate(){
+  if(!confirm('Обновить приложение? Вход и файлы не затрагиваются.'))return;
+  try{const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}catch(x){}
+  location.reload();
 }
 $('#admb').addEventListener('click',async e=>{
   {const ks=e.target.closest('[data-lks]');if(ks){const v=ks.dataset.lks;sv('lkstyle',v);applyLks();document.querySelectorAll('[data-lks]').forEach(x=>x.classList.toggle('on',x.dataset.lks===v));return}}
   {const ce=e.target.closest('[data-cveq]');if(ce){const v=ce.dataset.cveq;sv('cveq',v);applyEq();document.querySelectorAll('[data-cveq]').forEach(x=>x.classList.toggle('on',x.dataset.cveq===v));return}}
   {const cw=e.target.closest('[data-cvw]');if(cw){const v=cw.dataset.cvw;sv('cvweb',v);cvWebChanged();document.querySelectorAll('[data-cvw]').forEach(x=>x.classList.toggle('on',x.dataset.cvw===v));return}}
   if(e.target.closest('#cvx')){if(confirm('Удалить сохранённые обложки и подобрать заново?'))cvReset();return}
-  if(e.target.closest('#ulogb')){ulShow();return}
-  if(e.target.closest('#appupd')){(async()=>{try{const rs=await navigator.serviceWorker.getRegistrations();await Promise.all(rs.map(r=>r.unregister()));const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}catch(x){}location.reload()})();return}
   const b=e.target.closest('#cachex');if(!b||b.disabled)return;
   b.disabled=true;
   try{const was=await cacheReset();const el=$('#cachei');if(el)el.textContent='Пока пусто';say(was.n?'Кэш сброшен: освобождено '+size(was.size):'Кэш и так пуст')}
@@ -1019,8 +1031,11 @@ $('#admb').addEventListener('click',e=>{
   else $('#'+k).click();
 });
 $('#admb').addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(!b)return;const k=b.dataset.set;
-  if(S.viewer&&k!=='cov')return;  /* консоль и всё из неё — только у владельца */
-  fromSet=true;admParent=k==='cov'?drawSettings:drawConsole;({con:drawConsole,usr:openUsers,jrn:openJournal,key:makeKey,ann:openAnn,cov:openCov})[k]()});
+  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,jrn:openJournal,key:makeKey,ann:openAnn};
+  if(ACT[k]){ACT[k]();return}
+  if(SETK[k]){fromSet=true;admParent=drawSettings;SETK[k]();return}
+  if(ADMK[k]){if(!isAdmin())return;fromSet=true;admParent=drawConsole;ADMK[k]()}  /* консоль и всё из неё — только у владельца */
+});
 
 const isAdmin=()=>!S.viewer&&!S.guestUser;
 
