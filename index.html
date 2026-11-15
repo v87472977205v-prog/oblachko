@@ -836,9 +836,17 @@ async function ck2enc(o){
   const u=new Uint8Array(12+ct.length);u.set(iv);u.set(ct,12);return 'CLK2.'+b64e(u);
 }
 async function parseComboA(t){
-  const m=/CLK2\.([A-Za-z0-9_-]+)/.exec(t);
-  if(m){try{const u=b64d(m[1]),j=JSON.parse(td.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:u.subarray(0,12)},await ck2key(),u.subarray(12))));
-    if(j&&j.i&&j.h&&j.p)return{id:String(j.i),hash:String(j.h),phone:String(j.p),viewer:true}}catch(e){}return{}}
+  const m=/CLK2\.([A-Za-z0-9_\-\s]+)/i.exec(t);
+  if(m){
+    const tk=m[1].split(/\s+/).filter(Boolean);
+    for(let k=tk.length;k>=1;k--){
+      try{
+        const u=b64d(tk.slice(0,k).join('')),j=JSON.parse(td.decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:u.subarray(0,12)},await ck2key(),u.subarray(12))));
+        if(j&&j.i&&j.h&&j.p)return{id:String(j.i),hash:String(j.h),phone:String(j.p),viewer:true}
+      }catch(e){}
+    }
+    return{bad:true};
+  }
   return parseCombo(t);
 }
 function ordBuild(L){
@@ -4443,7 +4451,8 @@ $('#eye').onclick=()=>{const c=$('#combo'),on=!c.classList.contains('show');c.cl
 $('#go').onclick=async()=>{
   const c=$('#combo').value.trim(),wasV=!!S.viewer,same=c===[S.apiId,S.apiHash,S.phone].join(' ');S.viewer=false;
   if(c){
-    const r=await parseComboA(c),miss=[!r.id&&'api_id',!r.hash&&'api_hash',!r.phone&&'телефон'].filter(Boolean);
+    const r=await parseComboA(c);if(r.bad){say('Ключ повреждён или обрезан при передаче. Попросите прислать его заново (лучше QR)',1);return}
+    const miss=[!r.id&&'api_id',!r.hash&&'api_hash',!r.phone&&'телефон'].filter(Boolean);
     if(miss.length){say('Не нашёл в строке: '+miss.join(', '),1);return}
     $('#aid').value=r.id;$('#ahash').value=r.hash;$('#phone').value=r.phone;S.viewer=!!r.viewer||(wasV&&same);if(r.viewer){S.guestUser='';S.guestHash=''}
   }
@@ -4453,18 +4462,17 @@ $('#go').onclick=async()=>{
   try{await connectRetry();if(S.viewer&&!await guestGate())throw new Error('Без имени пользователя войти нельзя');if(S.viewer)jlog('login','вход');await firstRepo();S.auto=true;sv('tgm',S);ready=true;showSetup=false;show();say('Готово')}
   catch(x){say('Не вышло: '+err(x),1)}
 };
-const makeKey=async()=>{
-  if(!isAdmin())return;
-  if(S.viewer)return;
-  const id=((await uiPrompt('api_id (цифры с my.telegram.org)'))||'').replace(/\s/g,'');
-  if(!id)return;
-  if(!/^\d{3,12}$/.test(id)){alert('Неверный api_id: только цифры');return}
-  const hs=((await uiPrompt('api_hash (32 символа)'))||'').replace(/\s/g,'');
-  if(!hs)return;
-  if(!/^[0-9a-f]{32}$/i.test(hs)){alert('Неверный api_hash: нужно ровно 32 символа, цифры и буквы a–f');return}
-  const ph=(await uiPrompt('Номер ВТОРОГО аккаунта (им будет пользоваться друг), например +79991234567')||'').replace(/[^\d+]/g,'');
-  if(!ph)return;
-  if(!/^\+\d{10,15}$/.test(ph)){alert('Неверный номер. Нужен формат +79991234567');return}
+const makeKey=()=>{
+  if(!isAdmin()||S.viewer)return;
+  openAdm('Ключ для друга');
+  $('#admb').innerHTML=`<div class="shs"><div class="uc"><div class="un">Данные второго аккаунта</div><div class="us">Вставьте api_id, api_hash и номер телефона ВТОРОГО аккаунта. Каждое с новой строки, порядок любой (подписи вроде «api_id:» не мешают).</div><textarea id="kdin" rows="4" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="api_id&#10;api_hash&#10;+79991234567" style="display:block;width:100%;box-sizing:border-box;margin-top:10px;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:14px/1.5 ui-monospace,Menlo,monospace;resize:vertical"></textarea><div class="row"><button class="p" id="kdgo">Сделать QR</button></div></div></div>`;
+  $('#kdgo').onclick=()=>makeKeyGo($('#kdin').value);
+};
+const makeKeyGo=async txt=>{
+  const r=parseCombo(String(txt||'')),miss=[!r.id&&'api_id',!r.hash&&'api_hash',!r.phone&&'номер'].filter(Boolean);
+  if(miss.length){say('Не нашёл: '+miss.join(', ')+'. api_id: 3–9 цифр, api_hash: 32 символа (цифры и буквы a–f), номер: +79991234567',1);return}
+  const id=r.id,hs=r.hash,ph=r.phone;
+  if(!/^\+\d{10,15}$/.test(ph)){say('Неверный номер. Нужен формат +79991234567',1);return}
   jlog('key','');const kd={i:id,h:hs,p:ph};let key,weak=false;
   try{key=await ck2enc(kd)}catch(e){weak=true;key='CLK1.'+b64e(te.encode(JSON.stringify(kd)))}
   const link=location.href.split('#')[0]+'#key='+key;
@@ -4473,8 +4481,9 @@ const makeKey=async()=>{
   const cx=cv.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,cv.width,cv.height);cx.fillStyle='#000';
   for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(mx[r][c])cx.fillRect((c+q)*sc,(r+q)*sc,sc,sc);
   openAdm('QR-ключ для друга');
-  $('#admb').innerHTML=`<div class="shs"><div class="uc"><div class="us">Друг наводит камеру телефона на QR и открывает ссылку: ключ сам подставится в строку входа, останется нажать «Войти».${weak?'<br><b>Внимание:</b> шифрование здесь недоступно (нужен https-адрес), поэтому в QR ключ без шифрования.':''}${/^https?:$/.test(location.protocol)?'':'<br><b>Внимание:</b> приложение открыто не по https-адресу, ссылка из QR у друга не откроется.'}</div></div><div style="text-align:center;margin:10px 0"><img id="kqr" alt="QR-ключ" style="width:min(100%,340px);border-radius:12px;background:#fff"></div><div class="row"><button class="p" id="kqs">Отправить картинкой</button></div><div class="us">Второй аккаунт должен быть АДМИНИСТРАТОРОМ канала «${esc(TITLE)}» (публикация, изменение и удаление сообщений). Когда друг нажмёт «Войти», код придёт в Telegram второго аккаунта: передайте его не через Telegram (SMS, звонок). Картинку с QR после входа друга удалите: по ней можно войти.</div></div>`;
+  $('#admb').innerHTML=`<div class="shs"><div class="uc"><div class="us">Друг наводит камеру телефона на QR и открывает ссылку: ключ сам подставится в строку входа, останется нажать «Войти».${weak?'<br><b>Внимание:</b> шифрование здесь недоступно (нужен https-адрес), поэтому в QR ключ без шифрования.':''}${/^https?:$/.test(location.protocol)?'':'<br><b>Внимание:</b> приложение открыто не по https-адресу, ссылка из QR у друга не откроется.'}</div></div><div style="text-align:center;margin:10px 0"><img id="kqr" alt="QR-ключ" style="width:min(100%,340px);border-radius:12px;background:#fff"></div><div class="row"><button class="p" id="kqs">Отправить картинкой</button></div><div class="uc"><div class="un">Запасной вариант: ключ текстом</div><div class="us">Если QR не открылся, отправьте этот зашифрованный ключ: друг вставит его в поле «Ключ доступа».</div><code id="kqt" style="display:block;word-break:break-all;margin-top:8px">${esc(key)}</code><div class="row"><button id="kqc">Скопировать ключ</button></div></div><div class="us">Второй аккаунт должен быть АДМИНИСТРАТОРОМ канала «${esc(TITLE)}» (публикация, изменение и удаление сообщений). Когда друг нажмёт «Войти», код придёт в Telegram второго аккаунта: передайте его не через Telegram (SMS, звонок). Картинку с QR и сообщение с ключом после входа друга удалите: по ним можно войти.</div></div>`;
   $('#kqr').src=cv.toDataURL('image/png');
+  $('#kqc').onclick=async()=>{try{await navigator.clipboard.writeText(key);say('Ключ скопирован')}catch(e){prompt('Скопируйте ключ целиком',key)}};
   $('#kqs').onclick=()=>cv.toBlob(async bl=>{
     if(!bl)return;const f=new File([bl],'oblachko-key.png',{type:'image/png'});
     try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return}}catch(e){if(e&&e.name==='AbortError')return}
