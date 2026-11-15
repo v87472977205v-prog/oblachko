@@ -1869,7 +1869,8 @@ const openJournal=async()=>{
   drawJournal('');
 };
 /* ---- пользователи и хранение паролей для владельца ---- */
-let OWNPRIV=null;
+let OWNPRIV=null,OWNPRIVS=[],OKS=[];
+async function ownDec(b){let le=null;for(const k of(OWNPRIVS.length?OWNPRIVS:[OWNPRIV])){try{return await crypto.subtle.decrypt({name:'RSA-OAEP'},k,b)}catch(e){le=e}}throw le||new Error('нет ключа')}
 async function setupOwnerKey(){
   if(!hasCrypto()){alert('Недоступно: при таком способе открытия файла браузер не даёт доступ к криптографии. Откройте файл через file:// или с хостинга.');return}
   const a=await askPass('Мастер-пароль владельца (им защищаются пароли друзей)');if(!a)return;
@@ -1877,13 +1878,16 @@ async function setupOwnerKey(){
   const kp=await crypto.subtle.generateKey({name:'RSA-OAEP',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},true,['encrypt','decrypt']);
   const pub=await crypto.subtle.exportKey('jwk',kp.publicKey),pk=new Uint8Array(await crypto.subtle.exportKey('pkcs8',kp.privateKey)),salt=crypto.getRandomValues(new Uint8Array(16)),k=await deriveKey(a,salt),w=b64e(await aesE(k,pk));
   const m=await withChat(()=>client.sendMessage(S.chat,OKR+JSON.stringify({pub,s:b64e(salt),w})));
-  ownkey={id:m.id,pub,s:b64e(salt),w};OWNPRIV=kp.privateKey;jlog('own','');say('Хранение паролей включено');drawUsers();
+  ownkey={id:m.id,pub,s:b64e(salt),w};OWNPRIV=kp.privateKey;OWNPRIVS=[OWNPRIV];OKS=[ownkey];jlog('own','');say('Хранение паролей включено');drawUsers();
 }
 async function unlockOwner(){
   if(OWNPRIV)return true;if(!ownkey)return false;
   const a=await askPass('Мастер-пароль владельца');if(a===null)return false;
-  try{const k=await deriveKey(a,b64d(ownkey.s));OWNPRIV=await crypto.subtle.importKey('pkcs8',await aesD(k,b64d(ownkey.w)),{name:'RSA-OAEP',hash:'SHA-256'},false,['decrypt']);await jDecryptAll();return true}
-  catch(e){alert('Неверный мастер-пароль');return false}
+  /* ключей владельца в канале может быть несколько (например, включали хранение дважды): пробуем открыть все этим паролем */
+  const ps=[];
+  for(const o of(OKS.length?OKS:[ownkey])){try{const k=await deriveKey(a,b64d(o.s));ps.push(await crypto.subtle.importKey('pkcs8',await aesD(k,b64d(o.w)),{name:'RSA-OAEP',hash:'SHA-256'},false,['decrypt']))}catch(e){}}
+  if(!ps.length){alert('Неверный мастер-пароль');return false}
+  OWNPRIV=ps[0];OWNPRIVS=ps;try{await jDecryptAll()}catch(e){}return true
 }
 async function encPw(pw){
   if(!ownkey||!hasCrypto())return '';
@@ -1923,7 +1927,7 @@ async function jDecryptAll(){
   const rest=[];
   for(const x of JENC){
     try{
-      const raw=await crypto.subtle.decrypt({name:'RSA-OAEP'},OWNPRIV,b64d(x.k)),ak=await crypto.subtle.importKey('raw',raw,'AES-GCM',false,['decrypt']);
+      const raw=await ownDec(b64d(x.k)),ak=await crypto.subtle.importKey('raw',raw,'AES-GCM',false,['decrypt']);
       for(const e of JSON.parse(td.decode(await aesD(ak,b64d(x.d)))))JOUR.push({...e,mid:x.mid});
     }catch(e){rest.push(x)}
   }
@@ -1944,7 +1948,8 @@ function drawUsers(){
   const lastIn=u=>{let t=0;for(const e of JOUR)if(e.a==='login'&&e.u===u&&e.t>t)t=e.t;return t};
   let h='';
   if(!ownkey)h+='<div class="uc"><div class="un">Пароли друзей</div><div class="us">Чтобы восстановить доступ, если друг потеряет пароли (вход, шифрование репозиториев, коды папок), включите хранение паролей. Они шифруются так, что прочитать их можете только вы, по мастер-паролю. Старые пароли дописываются сами, когда друг вводит их в следующий раз.</div><div class="row"><button class="p" id="mkk">Включить хранение паролей</button></div></div>';
-  else if(!OWNPRIV)h+='<div class="uc"><div class="us">Пароли защищены мастер-паролем.</div><div class="row"><button id="unl2">Показать пароли</button></div></div>';
+  else if(OKS.length>1)h+=`<div class="uc"><div class="us">Ключей владельца в канале: ${OKS.length}, открыто этим паролем: ${OWNPRIVS.length}. Пароль, записанный под ключом, который не открылся, показать нельзя.</div></div>`;
+  if(ownkey&&!OWNPRIV)h+='<div class="uc"><div class="us">Пароли защищены мастер-паролем.</div><div class="row"><button id="unl2">Показать пароли</button></div></div>';
   if(!users.length)h+='<div class="empty">Друзья ещё не входили</div>';
   const pwLine=(lbl,x)=>`<div class="us">${lbl}: ${OWNPRIV&&x?`<code data-e="${esc(x)}">…</code>`:x?'скрыт':'не сохранён'}</div>`;
   for(const u of users){
@@ -1959,7 +1964,7 @@ function drawUsers(){
     h+=`<div class="uc"><div class="un">${esc(u.u)}${u.b?' · 🚫 доступ закрыт':''}</div>${(u.r&&u.r.length)?'<div class="us">Закрыт доступ к: '+u.r.map(x=>esc(x||'Облако')).join(', ')+'</div>':''}<div class="us">Репозиториев: ${rs.length} · файлов: ${fl.length} · ${size(sz)}</div><div class="us">${u.c?'Создан '+new Date(u.c).toLocaleDateString('ru'):''}${li?' · был '+new Date(li).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div><div class="us">Пароль: ${OWNPRIV&&u.e?`<code data-e="${esc(u.e)}">…</code>`:u.e?'скрыт':'не сохранён (профиль создан до включения хранения)'}</div>${rpl?'<div class="un" style="font-size:13px;margin-top:6px">Репозитории и коды</div>'+rpl:''}<div class="row"><button data-ba="${esc(u.u)}">Доступ</button><button class="del" data-du="${esc(u.u)}">Удалить профиль</button></div></div>`;
   }
   $('#admb').innerHTML=h;
-  if(OWNPRIV)document.querySelectorAll('#admb code[data-e]').forEach(async c=>{try{c.textContent=await crypto.subtle.decrypt({name:'RSA-OAEP'},OWNPRIV,b64d(c.dataset.e)).then(b=>td.decode(b))}catch(e){c.textContent='ошибка'}});
+  if(OWNPRIV)document.querySelectorAll('#admb code[data-e]').forEach(async c=>{try{c.textContent=await ownDec(b64d(c.dataset.e)).then(b=>td.decode(b))}catch(e){c.textContent='не открывается этим мастер-паролем'}});
 }
 function usrUniq(a){const m=new Map();for(const x of a){const q=m.get(x.u);if(!q||q.id<x.id)m.set(x.u,x)}return[...m.values()]}
 async function saveUserRec(u){
@@ -2298,7 +2303,7 @@ async function readFast(prog){
   return[...all.values()].sort((x,y)=>y.id-x.id);
 }
 async function refresh(){
-  const out=[],fol=[],reps=[],lks=[],usr=[],jr=[],jenc=[],ordp=[],ans=[],cvx=[],exr=[],ntp=[],seen=new Set();let off,okk=null;
+  const out=[],fol=[],reps=[],lks=[],usr=[],jr=[],jenc=[],ordp=[],ans=[],cvx=[],exr=[],ntp=[],seen=new Set();let off,okk=null;const oks=[];
   const proc=m=>{
     if(seen.has(m.id))return;seen.add(m.id);
       const e=entry(m);
@@ -2311,7 +2316,7 @@ async function refresh(){
         else if(t.startsWith(AN)){try{const j=JSON.parse(t.slice(AN.length));if(j&&j.v&&Array.isArray(j.l))ans.push({id:m.id,v:String(j.v),d:j.d||0,l:j.l.map(String)})}catch(x){}}
         else if(t.startsWith(NTP)){try{const j=JSON.parse(t.slice(NTP.length));if(j&&j.id&&typeof j.s==='string')ntp.push({m:m.id,u:String(j.u||''),id:String(j.id),v:+j.v||0,p:+j.p||0,n:+j.n||1,s:j.s,e:j.e?1:0})}catch(x){}}
         else if(t.startsWith(EXR)){try{const j=JSON.parse(t.slice(EXR.length));if(j&&j.k&&j.x&&j.u)exr.push({id:m.id,k:String(j.k),x:String(j.x),u:String(j.u),n:String(j.n||'')})}catch(x){}}
-        else if(t.startsWith(OKR)){try{okk={id:m.id,...JSON.parse(t.slice(OKR.length))}}catch(x){}}
+        else if(t.startsWith(OKR)){try{const r={id:m.id,...JSON.parse(t.slice(OKR.length))};oks.push(r);if(!okk||r.id>okk.id)okk=r}catch(x){}}
         else if(t.startsWith(LK)){try{const j=JSON.parse(t.slice(LK.length));lks.push({id:m.id,r:j.r||'',p:j.p||'',h:j.h,x:j.x||''})}catch(x){}}
         else if(t.startsWith(RP)||t.startsWith(FP)){
           const ls=t.split('\n'),rl=ls.find(l=>l.startsWith(RP)),pl=ls.find(l=>l.startsWith(FP));
@@ -2331,7 +2336,7 @@ async function refresh(){
       off=Math.min(...b.map(m=>m.id));
     }
   }
-  files=out;folders=fol;repos=reps;locks=lks;users=usrUniq(usr);JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);EXT=exr.sort((a,b)=>a.id-b.id);NTS=ntBuild(ntp);ownkey=okk;CVRM=cvx;syncUN();guestBlockedCheck();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
+  files=out;folders=fol;repos=reps;locks=lks;users=usrUniq(usr);JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);EXT=exr.sort((a,b)=>a.id-b.id);NTS=ntBuild(ntp);ownkey=okk;OKS=oks;CVRM=cvx;syncUN();guestBlockedCheck();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
   if(R()&&!repos.some(x=>x.name===R()&&showRepo(x)))P.repo='';
   if(repoBlocked(R())){const c=[...(repoBlocked('')?[]:['']),...repos.filter(x=>showRepo(x)&&!repoBlocked(x.name)).map(x=>x.name)];if(c.length){P.repo=c[0];cur=''}}
   if(cur&&!allPaths().includes(cur))cur='';
