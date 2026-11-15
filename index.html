@@ -576,7 +576,7 @@ button.ntfab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bo
 #ntfm button{display:flex;gap:9px;align-items:center;padding:10px 16px;border-radius:99px;background:var(--card);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.4);font-size:15px;color:var(--ink);animation:fanin .16s ease backwards}
 #ntfm button:nth-child(2){animation-delay:.05s}
 .ntfab .i{transition:transform .18s}.ntfab.open .i{transform:rotate(45deg)}
-body.shv #vrm,body.shv #vmore{display:none!important}
+body.shv #vrm,body.shv #vmore,body.shv #smv,body.shv #srm,body.shv #gearb,body.shv #fsec,body.shv #lkf,body.shv #rnf,body.shv #mvf,body.shv #cpf,body.shv #delf,body.shv #addrepo{display:none!important}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-v4-192.png" type="image/png">
@@ -878,13 +878,13 @@ function allPaths(r=R()){
   return[...s].sort((a,b)=>a.localeCompare(b,'ru'));
 }
 const R=()=>P.repo||'';
-const fabBlocked=()=>repoBlocked(R())||repoRO(R())||isLocked(R(),cur)||needKey(R());
+const fabBlocked=()=>!!SHV||repoBlocked(R())||repoRO(R())||isLocked(R(),cur)||needKey(R());
 
 /* ---- пароли (защита внутри приложения) ---- */
 const lockOf=(r,p)=>locks.find(l=>l.r===r&&l.p===p);
 const GU='👤';
 const UR='🙋 ',JR='📝 ',OKR='🗝 ',ORR='🔢 ',AN='📣 ',CVX='🖼 ';
-let ANN=[],CVRM=[],SHR=[];
+let ANN=[],CVRM=[],SHR=[],SHV=null;
 const repoGuest=r=>{const x=r&&repos.find(q=>q.name===r);return !!(x&&x.guest&&(!x.owner||x.owner===S.guestUser))};
 const guestRec=()=>S.viewer&&S.guestUser?users.find(x=>x.u===S.guestUser):null;
 const repoBlocked=r=>{const g=guestRec();return !!(g&&g.r&&g.r.includes(r||''))};
@@ -894,11 +894,13 @@ const roDeny=r=>{if(!repoRO(r))return false;say('Вы потеряли прав�
 const canMake=()=>{const g=guestRec();return !(g&&g.nc)};
 const visRepo=x=>!S.viewer||((!x.guest||!x.owner||x.owner===S.guestUser)&&!repoBlocked(x.name));
 const mineRepo=x=>S.viewer?(!!(x.guest&&(!x.owner||x.owner===S.guestUser))&&!repoBlocked(x.name)):!x.guest;
-const showRepo=x=>!!P.all||mineRepo(x);
+const showRepo=x=>!!P.all||mineRepo(x)||!!(SHV&&x.name===SHV.r);
+const shIn=f=>!SHV||!SHV.p||inTree(f.path,SHV.p);
 const GOWN=()=>(S.viewer&&S.guestUser?'\n'+GU+' '+S.guestUser:S.viewer?'\n'+GU:'');
 const canPw=r=>!S.viewer||repoGuest(r);
 const noDel=r=>!!S.viewer&&locks.some(l=>l.r===r);
 function blocker(r,p){
+  if(SHV&&r===SHV.r&&(!SHV.p||inTree(p,SHV.p)))return null;
   const ch=[''];let acc='';for(const sg of p?p.split('/'):[]){acc=acc?acc+'/'+sg:sg;ch.push(acc)}
   for(const q of ch){const l=lockOf(r,q);if(l&&!UN.has(r+'\n'+q))return l}return null;
 }
@@ -2926,6 +2928,7 @@ $('#fltb').onclick=e=>{e.stopPropagation();$('#sortm').hidden=true;$('#fltm').hi
 $('#fltm').onclick=e=>{const b=e.target.closest('[data-ft]');if(!b)return;FT=b.dataset.ft;$('#fltm').hidden=true;render()};
 document.addEventListener('click',e=>{if(!e.target.closest('#fltm,#fltb'))$('#fltm').hidden=true});
 function render(){
+  if(SHV){if(P.repo!==SHV.r)P.repo=SHV.r;if(SHV.p&&!inTree(cur,SHV.p))cur=SHV.p}
   if(!_dd&&files.some(f=>f.enc&&!f.dec&&KEYS[f.repo])){_dd=1;decAll().then(()=>{_dd=0;render()},()=>{_dd=0})}
   const q=$('#q').value.trim().toLowerCase();
   const segs=cur?cur.split('/'):[];let acc='';
@@ -2933,7 +2936,7 @@ function render(){
   drawFltMenu();
   $('#delf').hidden=!cur;
   $('#vmode').innerHTML=icon(P.view==='grid'?'list':'grid');drawSortMenu();
-  {const lst=((repoBlocked(R())||isLocked(R(),''))?[]:(q?files.filter(f=>f.repo===R()&&!isLocked(f.repo,f.path)&&f.name.toLowerCase().includes(q)):files.filter(f=>f.repo===R()&&f.path===cur))).filter(ftOk);
+  {const lst=((repoBlocked(R())||isLocked(R(),''))?[]:(q?files.filter(f=>f.repo===R()&&shIn(f)&&!isLocked(f.repo,f.path)&&f.name.toLowerCase().includes(q)):files.filter(f=>f.repo===R()&&f.path===cur))).filter(ftOk);
    AM=P.view==='grid'&&lst.length>0&&lst.filter(isAud).length/lst.length>=.6;GR=P.view==='grid'&&!AM}
   $('#list').className=(GR?'grid':'')+(selMode?' selm':'');
   $('#selbar').hidden=!selMode;$('#selc').textContent='Выбрано: '+sel.size;
@@ -2946,7 +2949,7 @@ function render(){
   else if(!isLocked(R(),'')&&needKey(R())){html=''+lkScr('Репозиторий зашифрован','AES-256: LOCKED')+'<button class="lockbtn unk" aria-label="Ввести пароль шифрования"><span class="lk">'+icon('lock')+'</span><span class="lt">Потяните, чтобы открыть</span></button>'}
   else if(isLocked(R(),'')){html=''+lkScr('Репозиторий защищён паролем','ACCESS: PASSWORD')+'<button class="lockbtn unl" aria-label="Ввести пароль"><span class="lk">'+icon('lock')+'</span><span class="lt">Потяните, чтобы открыть</span></button>'}
   else if(q){
-    const L=files.filter(f=>f.repo===R()&&!isLocked(f.repo,f.path)&&f.name.toLowerCase().includes(q)).filter(ftOk).sort(cmp);
+    const L=files.filter(f=>f.repo===R()&&shIn(f)&&!isLocked(f.repo,f.path)&&f.name.toLowerCase().includes(q)).filter(ftOk).sort(cmp);
     html=L.length?L.map(f=>fileRow(f,true)).join(''):'<div class="empty"><span class="big">🔍</span>Ничего не найдено</div>';
   }else{
     const subs=allPaths().filter(p=>parentPath(p)===cur);
@@ -2998,7 +3001,7 @@ $('#rsw').onclick=async()=>{
 $('#lkf').onclick=()=>toggleLock(R(),cur).catch(x=>say(err(x),1));
 /* ---- меню репозитория (три точки) ---- */
 let rmRepo='';
-function openRepoMenu(r){
+function openRepoMenu(r){if(SHV)return;
   rmRepo=r;const lk=lockOf(r,''),open=UN.has(r+'\n'),it=[];
   if(canPw(r)){it.push(lk?['chg','Сменить пароль','lock']:['set','Поставить пароль','lock']);
   if(lk)it.push(['rm','Снять пароль','unlock'])}
@@ -3872,7 +3875,7 @@ async function ordDo(r,p){
   e.mids=mids;
   if(old.length)try{await withChat(()=>client.deleteMessages(S.chat,old))}catch(x){}
 }
-function armDrag(id){
+function armDrag(id){if(SHV)return;
   if($('#q').value.trim())return;
   const el=document.querySelector('#list [data-o="'+id+'"]');if(!el)return;
   DR={id,el,started:false,x:lpX,y:lpY,lx:lpX,ly:lpY,cl:null,ox:0,oy:0,tm:0};
@@ -4426,7 +4429,7 @@ $('#admb').addEventListener('click',async e=>{
 });
 /* получатель: ссылка запоминается, пока он входит, и открывается, когда приложение готово */
 (function(){const m=/[#&]sh=([a-z0-9]+)/.exec(location.hash);if(m){try{localStorage.setItem('tgsh',m[1]);history.replaceState(history.state,'',location.pathname+location.search)}catch(e){}}})();
-let shTry=0,SHV=null;
+let shTry=0;
 function shAuto(){
   let id='';try{id=localStorage.getItem('tgsh')||''}catch(e){}
   if(!id)return;
@@ -4443,19 +4446,27 @@ async function shOpen(id){
     if(s.k&&!KEYS[s.r]){KEYS[s.r]=await keyRaw(b64d(s.k));s.own=1}
     await decAll();
   }catch(x){say(err(x),1);return}
-  shView(s);
+  shEnter(s);
 }
 function shEnd(){
-  const s=SHV;SHV=null;document.body.classList.remove('shv');
-  if(s&&s.own){delete KEYS[s.r];s.own=0}
-  fromSet=false;admParent=null;$('#adm').hidden=true;
+  const s=SHV;if(!s)return;SHV=null;document.body.classList.remove('shv');
+  if(s.own){delete KEYS[s.r];s.own=0}
+  const b=$('#shb');if(b)b.remove();
+  if(s.prev){P.repo=s.prev.repo;cur=s.prev.cur;sv('tgmp',P)}
+  selMode=false;sel.clear();render();
 }
-function shView(s){
-  SHV=s;fromSet=true;admParent=shEnd;openAdm('Общая папка');
-  const L=files.filter(f=>f.repo===s.r&&(!s.p||inTree(f.path,s.p))).sort(SORTS.name);
-  $('#admb').innerHTML='<div style="padding:10px 14px"><div class="uc"><div class="un">'+esc(kpName(s.r,s.p))+'</div><div class="us">Только просмотр и скачивание.</div></div>'+(L.length?L.map((f,i)=>`<div class="uc"><div class="un">${esc(f.name)}</div><div class="us">${esc(f.path.slice(s.p.length).replace(/^\//,''))}${f.path.length>s.p.length?' · ':''}${size(f.size)}</div><div class="row"><button data-sho="${i}">Открыть</button></div></div>`).join(''):'<div class="us" style="padding:10px 0">В папке пока ничего нет</div>')+'</div>';
-  $('#admb').onclick=null;
-  $('#admb').querySelectorAll('[data-sho]').forEach(b=>b.onclick=()=>{curList=L.map(f=>f.id);document.body.classList.add('shv');showAt(+b.dataset.sho)});
+/* ссылка открывает саму папку в обычном виде: только просмотр и скачивание, выше папки не выйти */
+function shEnter(s){
+  if(SHV)shEnd();
+  s.prev={repo:P.repo,cur};SHV=s;
+  document.body.classList.add('shv');
+  P.repo=s.r;cur=s.p;selMode=false;sel.clear();$('#q').value='';
+  const b=document.createElement('div');b.id='shb';
+  b.style.cssText='display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 14px;background:var(--acc,#5fc3a6);color:#04120f;font-size:13px';
+  b.innerHTML='<span>Общая папка · только просмотр и скачивание</span><button style="background:none;border:0;color:inherit;font-weight:700;font-size:13px">Закрыть</button>';
+  b.querySelector('button').onclick=shEnd;
+  $('#list').before(b);
+  closeDrawer();render();
 }
 $('#out').onclick=async()=>{
   if(!confirm('Выйти из аккаунта? Файлы в канале останутся.'))return;
