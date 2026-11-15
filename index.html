@@ -2072,7 +2072,7 @@ async function connect(){
     const p=(ctx&&ctx.update&&ctx.update.uploadProgress)||(ctx&&ctx.uploadProgress);
     if(!p||!U.on)return;
     let j=p.id!==undefined?U.byPid.get(String(p.id)):null;
-    if(!j&&U.jobs.size===1)j=[...U.jobs][0];
+    if(!j){const c=[...U.jobs].filter(x=>!x.pid);if(c.length===1)j=c[0];else if(U.jobs.size===1)j=[...U.jobs][0]}
     if(!j)return;
     const up=+p.uploaded||0,tot=+p.total||+p.partCount||j.size||0;
     let fr=tot?up/tot:0;if(fr>1)fr=j.size?up/j.size:1;
@@ -3416,8 +3416,8 @@ document.addEventListener('click',e=>{if(!e.target.closest('#fabm,#fab'))fabClos
 $('#rf').onclick=async()=>{try{if(OFFLINE){OFFLINE=false;try{await connectRetry()}catch(e){OFFLINE=true;throw e}document.body.classList.remove('off');say('Связь восстановлена')}await refresh();render()}catch(x){say(err(x),1)}};
 
 
-/* ---- загрузка: очередь, 3 файла одновременно, повторы, защита от зависаний ---- */
-const CONC=3;let UQ=[],UF=[],needRef=false,rt=0,wl=null;
+/* ---- загрузка: очередь, 2 файла одновременно, повторы, защита от зависаний ---- */
+const CONC=2,MAXA=5;let UQ=[],UF=[],needRef=false,rt=0,wl=null,_rc=null,_rcAt=0;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const scheduleRender=()=>{if(!rt)rt=setTimeout(()=>{rt=0;render()},700)};
 async function keepAwake(on){
@@ -3431,8 +3431,34 @@ $('#upl').onclick=()=>ulShow();
 $('#upx').onclick=()=>{ulog('Нажата «Отмена»');U.cancel=true;UQ=[];for(const j of U.jobs){try{j.abort?j.abort():j.ctl&&j.ctl.abort()}catch(e){}}};
 async function maxNoSync(){
   let m=0;for(const x of files)if(x.no>m)m=x.no;
-  try{const b=await Promise.race([client.getHistory(S.chat,{limit:30}),new Promise((_,r)=>setTimeout(()=>r(0),8000))]);for(const msg of b){const e=entry(msg);if(e&&e.no>m)m=e.no}}catch(e){}
+  maxNoSync.bad=true;
+  try{const b=await Promise.race([client.getHistory(S.chat,{limit:30}),new Promise((_,r)=>setTimeout(()=>r(0),8000))]);maxNoSync.bad=false;for(const msg of b){const e=entry(msg);if(e&&e.no>m)m=e.no}}catch(e){}
   return m;
+}
+/* Соединение с Telegram могло «умереть» тихо (фон, смена сети, VPN): тогда новые отправки тоже зависают.
+   Переподключаемся один раз на всех; чаще, чем раз в 20 с, не трогаем, чтобы не рвать живые загрузки. */
+function reconnectTG(why){
+  if(_rc)return _rc;
+  if(Date.now()-_rcAt<20000)return Promise.resolve(true);
+  _rc=(async()=>{
+    ulog(`Переподключаюсь к Telegram (${why})`);
+    try{await Promise.race([client.disconnect(),sleep(5000)])}catch(e){}
+    for(let i=0;i<3;i++){
+      try{await Promise.race([client.connect(),new Promise((_,r)=>setTimeout(()=>r(new Error('таймаут подключения')),12000))]);ulog('Связь с Telegram восстановлена');return true}
+      catch(e){ulog(`Переподключение ${i+1} из 3 не удалось: ${err(e)}`);await sleep(1500*(i+1))}
+    }
+    return false;
+  })().finally(()=>{_rc=null;_rcAt=Date.now()});
+  return _rc;
+}
+/* запуск очереди: если связь не отвечает, сначала переподключаемся; любой сбой не оставляет «вечную загрузку» */
+async function startPool(bad){
+  try{if(bad)await reconnectTG('нет ответа при старте');await runPool()}
+  catch(x){
+    ulog('✖ Сбой очереди: '+err(x));
+    clearInterval(U.tick);keepAwake(false);U.cancel=false;U.on=false;U.jobs.clear();U.byPid.clear();UQ=[];UF=[];upPaint();
+    say('Загрузка прервалась: '+err(x),1);
+  }
 }
 let _em=Promise.resolve();
 const encMutex=fn=>{const r=_em.then(fn,fn);_em=r.catch(()=>{});return r};
@@ -3499,7 +3525,7 @@ async function enqueue(fs,rrO,ppO){
   Object.assign(U,{on:true,total:add,done:0,fin:0,ok:0,n:fs.length,name:fs[0].name,t0:Date.now(),lastP:Date.now(),got:false,cancel:false,waitMsg:'',retry:'',nextNo:m+1});
   U.jobs.clear();U.byPid.clear();UQ=items;UF=[];needRef=false;
   keepAwake(true);U.tick=setInterval(upPaint,1000);upPaint();
-  runPool();
+  startPool(maxNoSync.bad);
 }
 async function runPool(){
   /* место в очереди освобождается, как только файл целиком ушёл (100%): ответ Telegram он ждёт уже «на фоне», а следующий файл тем временем грузится */
@@ -3510,7 +3536,7 @@ async function runPool(){
       const p=((it.enc&&it.f.size>3e7)?encMutex(()=>runJob(it)):runJob(it)).catch(()=>{UF.push(it)});
       pend.add(p);p.finally(()=>pend.delete(p));
       await Promise.race([p,new Promise(res=>{const iv=setInterval(()=>{if(it._job&&it._job.cur>=.99)res()},400);p.finally(()=>{clearInterval(iv);res()})})]);
-      while(pend.size>=CONC*2&&!U.cancel)await Promise.race([...pend]);
+      while(pend.size>=CONC+1&&!U.cancel)await Promise.race([...pend]);
     }
   }));
   await Promise.all([...pend]);
@@ -3530,7 +3556,7 @@ function retryFailed(items){
   const add=items.reduce((a,x)=>a+x.f.size,0);let m=0;for(const x of files)if(x.no>m)m=x.no;
   Object.assign(U,{on:true,total:add,done:0,fin:0,ok:0,n:items.length,name:items[0].f.name,t0:Date.now(),lastP:Date.now(),got:false,cancel:false,waitMsg:'',retry:'',nextNo:m+1});
   U.jobs.clear();U.byPid.clear();UQ=items.slice();UF=[];needRef=false;
-  keepAwake(true);U.tick=setInterval(upPaint,1000);upPaint();runPool();
+  keepAwake(true);U.tick=setInterval(upPaint,1000);upPaint();startPool(false);
 }
 let ULOG=ld('tgulog',[]),_ulS=0,ulOpen=false;
 function ulog(m){
@@ -3568,15 +3594,16 @@ async function runJob(it){
   const f=it.f,job={name:f.name,size:f.size,cur:0,got:false,lastP:Date.now(),t0:Date.now(),ctl:null};
   U.jobs.add(job);it._job=job;U.lastP=Date.now();upPaint();
   const no=U.nextNo++;ulog(`▶ Начинаю: ${f.name} · ${size(f.size)}${it.enc?' · с шифрованием':''}${it.path?' · папка '+it.path:''}`);let done=false,floods=0;
-  for(let a=1;a<=3&&!done&&!U.cancel;a++){
+  for(let a=1;a<=MAXA&&!done&&!U.cancel;a++){
     job.cur=0;job.q=0;job.got=false;job.lastP=Date.now();job.t0=Date.now();
-    ulog(`Попытка ${a} из 3: ${f.name}`);
+    ulog(`Попытка ${a} из ${MAXA}: ${f.name}`);
     if(a>1){const e0=await sentAlready(it,no);if(e0){ulog(`Файл ${f.name} уже в канале, повторно не отправляю`);files.push(e0);done=true;jlog('up',(it.enc?'зашифрованный файл':f.name)+' → '+(it.repo||'Облако')+(it.path?' / '+it.path:''));scheduleRender();saveIndex();break}}
-    U.retry=a>1?`Повтор ${a} из 3: ${f.name}`:'';
+    U.retry=a>1?`Повтор ${a} из ${MAXA}: ${f.name}`:'';
     let timer=0,pv;
     try{
       try{pv=await Promise.race([client.getProgressId(),new Promise(r=>setTimeout(()=>r(undefined),5000))])}catch(x){pv=undefined}
       ulog(pv!==undefined?'Получен номер загрузки':'Номер загрузки не получен за 5 с, иду без него');
+      job.pid=pv!==undefined;
       if(pv!==undefined)U.byPid.set(String(pv),job);
       const big=f.size>1.5e8&&!it.enc;
       if(it.enc&&f.size>3e8)throw new Error('Файл больше 300 МБ нельзя зашифровать');
@@ -3586,10 +3613,12 @@ async function runJob(it){
       const ctl=new AbortController();job.ctl=ctl;
       let kill;const dead=new Promise((_,rej)=>{kill=rej});dead.catch(()=>{});
       job.abort=()=>{try{ctl.abort()}catch(e){}kill(new Error('Нет ответа от Telegram'))};
+      const ts0=Date.now();
       timer=setInterval(()=>{
         const now=Date.now(),hi=job.cur>=.99;
-        if(job.got&&now-job.lastP>(hi?240000:stallLim(job,now))){ulog(`⏱ Нет движения ${Math.round((now-job.lastP)/1000)} с${hi?' (после 100%)':''}: обрываю попытку`);job.abort()}
-        else if(now-job.t0>120000+f.size/10+(hi?240000:0)){ulog('⏱ Вышло общее время попытки: обрываю');job.abort()}
+        if(job.got&&now-job.lastP>(hi?90000:stallLim(job,now))){ulog(`⏱ Нет движения ${Math.round((now-job.lastP)/1000)} с${hi?' (после 100%)':''}: обрываю попытку`);job.abort()}
+        else if(!job.got&&(job.pid||U.jobs.size===1)&&now-ts0>45000){ulog('⏱ Отправка не началась за 45 с: обрываю попытку');job.abort()}
+        else if(now-job.t0>120000+f.size/50+(hi?90000:0)){ulog('⏱ Вышло общее время попытки: обрываю');job.abort()}
       },3000);
       const eN=it.enc?await encName(it.repo,f):null;
       const o={caption:caption(no,it.path,eN?'🔐'+eN:f.name,it.repo),fileName:eN?'enc'+no+'.bin':f.name,signal:ctl.signal};
@@ -3625,7 +3654,11 @@ async function runJob(it){
         floods++;a--;ulog(`Telegram просит подождать ${m[1]} с`);
         for(let sec=Math.min(+m[1],180);sec>0&&!U.cancel;sec--){U.waitMsg=`Telegram просит подождать: ещё ${sec} с`;upPaint();await sleep(1000)}
         U.waitMsg='';
-      }else if(a<3){ulog(`Повтор через ${a*2.5} с`);await sleep(a*2500)}
+      }else if(a<MAXA){
+        /* зависание или обрыв: старое соединение ненадёжно, перед повтором поднимаем новое */
+        if(/Нет ответа от Telegram|завис|disconnect|network|connection|timeout|timed out|websocket|closed|fetch/i.test(msg))await reconnectTG('зависла отправка '+f.name);
+        ulog(`Повтор через ${a*2.5} с`);await sleep(a*2500)
+      }
     }finally{clearInterval(timer);if(pv!==undefined)U.byPid.delete(String(pv))}
   }
   U.jobs.delete(job);U.fin++;U.done+=f.size;U.retry='';
