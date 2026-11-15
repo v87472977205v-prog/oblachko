@@ -21,6 +21,8 @@ input,select{width:100%;padding:11px 12px;border:1px solid var(--line);border-ra
 button,.btn{padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:15px;cursor:pointer;display:inline-block;text-align:center}
 button.p,.btn.p{background:var(--acc);color:var(--accink);border-color:var(--acc);font-weight:600}
 :focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.kall{display:block;width:100%;text-align:left;margin:6px 0 8px;border-color:var(--acc);color:var(--acc);font-weight:600}
+.kall.on{background:var(--acc);color:var(--accink)}
 .row{display:flex;gap:8px;margin:10px 0;align-items:center;flex-wrap:wrap}
 .row>*{flex:1}.row>button,.row>.btn{flex:none}
 .chips{display:flex;gap:6px;overflow-x:auto;padding:4px 0}
@@ -1341,7 +1343,7 @@ async function musFolderEnsure(r,p){
 }
 async function musTarget(){
   const r=MS.repo||'',p=clean(String(MS.folder||'').replace(/^\/+|\/+$/g,'')).replace(/\s*\/\s*/g,'/');
-  if(r&&!repos.some(x=>x.name===r&&mineRepo(x)))throw new Error('Репозиторий «'+r+'» не найден');
+  if(r&&!repos.some(x=>x.name===r&&(mineRepo(x)||isAdmin())))throw new Error('Репозиторий «'+r+'» не найден');
   if(!await unlock(r,p))throw new Error('Нужен пароль папки или репозитория');
   if(!await forceEnc(r))throw new Error('Нужен код шифрования репозитория');
   if(r&&encOn(r)&&!KEYS[r]&&!await ensureKey(r))throw new Error('Нужен код шифрования репозитория');
@@ -1444,7 +1446,7 @@ function musPaintTo(){
 }
 function openMusic(){
   openAdm(extName('music'));
-  const rl=[...(repoBlocked('')?[]:[['','Облако']]),...repos.filter(mineRepo).map(x=>[x.name,x.name])];
+  const rl=[...(repoBlocked('')?[]:[['','Облако']]),...repos.filter(x=>isAdmin()||mineRepo(x)).map(x=>[x.name,x.name])];
   if(!rl.some(x=>x[0]===MS.repo)){MS.repo='';msv()}
   $('#admb').innerHTML=`<div class="mus">
     <div class="uc"><label class="ml">Куда</label><button class="mto" id="musto"></button></div>
@@ -1460,7 +1462,7 @@ $('#admb').addEventListener('input',e=>{
 });
 $('#admb').addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('.mus button');if(!b||b.disabled)return;
-  if(b.id==='musto'){kpOpen((r,p)=>{MS.repo=r;MS.folder=p;msv();musPaintTo()},{r:MS.repo||'',p:MS.folder||''});return}
+  if(b.id==='musto'){kpOpen((r,p)=>{MS.repo=r;MS.folder=p;msv();musPaintTo()},{r:MS.repo||'',p:MS.folder||''},{allowAll:true});return}
   if(b.id==='musg'){if(MUS.busy){MUS.stop=true;mlog('Остановка запрошена…')}else musPlaylist()}
   else if(b.id==='musk'){const ta=$('#musp');ta.value='';MS.list='';MS.run=false;MS.pos=0;msv();ta.focus()}
 });
@@ -1520,11 +1522,12 @@ $('#admb').addEventListener('click',async e=>{
    Всё на одной странице деревом: нажатие на строку выбирает репозиторий или папку, стрелка справа раскрывает вложенные.
    Запароленные помечены замком: и выбрать их, и раскрыть можно только после ввода пароля.
    Вложенные папки запароленной папки не видны, пока она не разблокирована. */
-const KP={cb:null,cur:{r:null,p:''},open:new Set()};
+const KP={cb:null,cur:{r:null,p:''},open:new Set(),all:false,openU:new Set(),allowAll:false};
 const kpName=(r,p)=>(r||'Облако')+(p?' › '+p.split('/').join(' › '):'');
 const kpKids=(r,p)=>allPaths(r).filter(x=>parentPath(x)===p);
-function kpOpen(cb,cur){
-  KP.cb=cb;KP.cur=cur||{r:null,p:''};KP.open=new Set();
+function kpOpen(cb,cur,opts){
+  KP.cb=cb;KP.cur=cur||{r:null,p:''};KP.open=new Set();KP.allowAll=!!(opts&&opts.allowAll);KP.all=false;KP.openU=new Set();
+  if(KP.allowAll&&isAdmin()&&cur&&cur.r){const o=repos.find(x=>x.name===cur.r&&x.guest&&x.owner);if(o){KP.all=true;KP.openU.add(o.owner)}}
   if(cur&&cur.r!==null){KP.open.add(cur.r+'\n');let a='';for(const sg of cur.p?cur.p.split('/'):[]){a=a?a+'/'+sg:sg;KP.open.add(cur.r+'\n'+a)}}
   $('#kpick').hidden=false;kpDraw();
 }
@@ -1542,6 +1545,17 @@ function kpDraw(){
     }
   };
   for(const[r,n]of[...(repoBlocked('')?[]:[['','Облако']]),...repos.filter(mineRepo).map(x=>[x.name,x.name])])row(r,'',n,icon(r?'repo':'cloud'),0);
+  if(KP.allowAll&&isAdmin()){
+    const owners=[...new Set(repos.filter(x=>x.guest&&x.owner).map(x=>x.owner))].sort((a,b)=>a.localeCompare(b,'ru'));
+    if(owners.length){
+      if(KP.all)for(const u of owners){
+        const op=KP.openU.has(u);
+        out.push(`<div class="kr"><button class="ko" data-ku="${esc(u)}"><span>👤</span><span class="n">${esc(u)}</span><span class="kb">${op?'▾':'▸'}</span></button></div>`);
+        if(op)for(const x of repos.filter(x=>x.guest&&x.owner===u))row(x.name,'',x.name,icon('repo'),1);
+      }
+      out.unshift(`<button class="kall${KP.all?' on':''}" data-kall="1">👥 ${KP.all?'Скрыть пользователей':'Выбрать всех пользователей'}</button>`);
+    }
+  }
   $('#kpb').innerHTML=out.join('');
 }
 async function kpPick(r,p){
@@ -1555,6 +1569,9 @@ $('#kpx').onclick=kpClose;
 let kpBusy=false;
 $('#kpb').addEventListener('click',async e=>{
   const g=a=>e.target.closest('['+a+']');
+  const ab=g('data-kall'),ub=g('data-ku');
+  if(ab){KP.all=!KP.all;if(KP.all)for(const x of repos)if(x.guest&&x.owner)KP.openU.add(x.owner);kpDraw();return}
+  if(ub){const u=ub.dataset.ku;if(KP.openU.has(u))KP.openU.delete(u);else KP.openU.add(u);kpDraw();return}
   const sb=g('data-ks'),xb=g('data-kx'),nb=g('data-knew');
   const el=sb||xb||nb;if(!el||kpBusy)return;
   const r=el.dataset.r,p=el.dataset.p;
