@@ -1062,7 +1062,7 @@ document.addEventListener('visibilitychange',()=>{
   if(HIDAT&&Date.now()-HIDAT>60000&&FUN.size){for(const k of FUN.keys())UN.delete(k);FUN.clear();try{render()}catch(e){}}
   HIDAT=0;
 });
-const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','ext+':'предложил расширение:',extok:'подключил расширение:',extno:'отказался от расширения:',extrn:'переименовал расширение:',extrv:'отозвал расширение:','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение'};
+const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','ext+':'предложил расширение:',extok:'подключил расширение:',extno:'отказался от расширения:',extrn:'переименовал расширение:',extrv:'отозвал расширение:','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',ublock:'закрыл доступ пользователю',uunblock:'открыл доступ пользователю',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение'};
 function openAdm(t){try{gymReset()}catch(e){}$('#admt').textContent=t;$('#adm').hidden=false;const q=$('#musq');if(q)q.hidden=true}
 let fromSet=false,admParent=null;
 $('#admx').onclick=()=>{if(fromSet&&admParent){admParent();return}fromSet=false;admParent=null;$('#adm').hidden=true};
@@ -1923,10 +1923,33 @@ function drawUsers(){
   if(!users.length)h+='<div class="empty">Друзья ещё не входили</div>';
   for(const u of users){
     const rs=repos.filter(x=>x.owner===u.u),fl=files.filter(f=>rs.some(x=>x.name===f.repo)),sz=fl.reduce((a,f)=>a+(f.size||0),0),li=lastIn(u.u);
-    h+=`<div class="uc"><div class="un">${esc(u.u)}</div><div class="us">Репозиториев: ${rs.length} · файлов: ${fl.length} · ${size(sz)}</div><div class="us">${u.c?'Создан '+new Date(u.c).toLocaleDateString('ru'):''}${li?' · был '+new Date(li).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div><div class="us">Пароль: ${OWNPRIV&&u.e?`<code data-e="${esc(u.e)}">…</code>`:u.e?'скрыт':'не сохранён (профиль создан до включения хранения)'}</div><div class="row"><button class="del" data-du="${esc(u.u)}">Удалить профиль</button></div></div>`;
+    h+=`<div class="uc"><div class="un">${esc(u.u)}${u.b?' · 🚫 доступ закрыт':''}</div><div class="us">Репозиториев: ${rs.length} · файлов: ${fl.length} · ${size(sz)}</div><div class="us">${u.c?'Создан '+new Date(u.c).toLocaleDateString('ru'):''}${li?' · был '+new Date(li).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div><div class="us">Пароль: ${OWNPRIV&&u.e?`<code data-e="${esc(u.e)}">…</code>`:u.e?'скрыт':'не сохранён (профиль создан до включения хранения)'}</div><div class="row"><button data-bu="${esc(u.u)}">${u.b?'Открыть доступ':'Закрыть доступ'}</button><button class="del" data-du="${esc(u.u)}">Удалить профиль</button></div></div>`;
   }
   $('#admb').innerHTML=h;
   if(OWNPRIV)document.querySelectorAll('#admb code[data-e]').forEach(async c=>{try{c.textContent=await crypto.subtle.decrypt({name:'RSA-OAEP'},OWNPRIV,b64d(c.dataset.e)).then(b=>td.decode(b))}catch(e){c.textContent='ошибка'}});
+}
+function usrUniq(a){const m=new Map();for(const x of a){const q=m.get(x.u);if(!q||q.id<x.id)m.set(x.u,x)}return[...m.values()]}
+async function toggleBlock(name){
+  if(!isAdmin())return;
+  const u=users.find(x=>x.u===name);if(!u)return;
+  const on=!u.b;
+  if(!confirm(on?'Закрыть доступ пользователю «'+name+'»? Он не сможет войти в облако, пока вы не откроете доступ. Его репозитории и файлы останутся.':'Открыть доступ пользователю «'+name+'»?'))return;
+  const rec={u:u.u,h:u.h,e:u.e,c:u.c};if(on)rec.b=1;
+  const m=await withChat(()=>client.sendMessage(S.chat,UR+JSON.stringify(rec)));
+  try{await withChat(()=>client.deleteMessages(S.chat,[u.id]))}catch(x){}
+  u.id=m.id;u.b=on?1:0;
+  jlog(on?'ublock':'uunblock',name);say(on?'Доступ закрыт':'Доступ открыт');drawUsers();
+}
+/* если администратор закрыл доступ, пока пользователь в приложении: показываем заглушку при ближайшем обновлении */
+function guestBlockedCheck(){
+  if(!S.viewer||!S.guestUser||document.getElementById('blkscr'))return;
+  const r=users.find(x=>x.u===S.guestUser);if(!r||!r.b)return;
+  S.guestUser='';S.guestHash='';sv('tgm',S);
+  try{if(U.on){U.cancel=true;UQ=[]}}catch(e){}
+  const o=document.createElement('div');o.id='blkscr';
+  o.style.cssText='position:fixed;inset:0;z-index:99999;background:#0b1f1a;color:#e8f3ef;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font:16px system-ui,sans-serif';
+  o.innerHTML='<div style="font-size:20px;font-weight:700">Доступ закрыт</div><div>Администратор закрыл вам доступ к облаку.</div>';
+  document.body.appendChild(o);
 }
 const openUsers=()=>{if(!isAdmin())return;openAdm('Пользователи');drawUsers()};
 $('#admb').onchange=e=>{if(e.target.id==='jsel')drawJournal(e.target.value)};
@@ -1937,6 +1960,7 @@ $('#admb').onclick=async e=>{
     else if(t.id==='unl2'){if(await unlockOwner())drawUsers()}
     else if(t.id==='jun'){if(await unlockOwner())drawJournal('')}
     else if(t.id==='jold'){t.disabled=true;t.textContent='Шифрую…';try{await jEncryptOld();say('Журнал зашифрован')}finally{drawJournal('')}}
+    else if(t.dataset.bu){await toggleBlock(t.dataset.bu)}
     else if(t.dataset.du){
       if(!confirm('Удалить профиль «'+t.dataset.du+'»? Его репозитории и файлы останутся. Друг сможет заново занять это имя.'))return;
       const u=users.find(x=>x.u===t.dataset.du);if(u){await withChat(()=>client.deleteMessages(S.chat,[u.id]));users=users.filter(x=>x!==u);jlog('user-',u.u)}drawUsers();
@@ -1966,6 +1990,7 @@ function regScreen(check){return new Promise(res=>{
 })}
 async function guestGate(){
   const rec=users.find(x=>x.u===S.guestUser);
+  if(rec&&rec.b){S.guestUser='';S.guestHash='';sv('tgm',S);throw new Error('Доступ закрыт администратором')}
   if(S.guestUser&&rec&&rec.h===S.guestHash)return true;
   S.guestUser='';S.guestHash='';
   const ok=await regScreen(async(raw,a,b)=>{
@@ -1974,6 +1999,7 @@ async function guestGate(){
     if(!/^[\p{L}\p{N}_.-]{2,24}$/u.test(name))return 'Имя: от 2 до 24 символов, буквы, цифры, _ . -';
     const ex=users.find(x=>x.u.toLowerCase()===name.toLowerCase());
     if(ex){
+      if(ex.b)return 'Доступ закрыт администратором';
       if(!a)return 'Введите пароль';
       if(hashPw(a,ex.h.split(':')[0])!==ex.h)return 'Неверный пароль';
       try{await ntLogin(ex.u,a)}catch(e){}S.guestUser=ex.u;S.guestHash=ex.h;sv('tgm',S);return null;
@@ -2216,7 +2242,7 @@ async function refresh(){
       const e=entry(m);
       if(e)out.push(e);
       else{const t=m.text;if(typeof t==='string'){
-        if(t.startsWith(UR)){try{const j=JSON.parse(t.slice(UR.length));if(j.u&&j.h)usr.push({id:m.id,u:j.u,h:j.h,e:j.e||'',c:j.c||0})}catch(x){}}
+        if(t.startsWith(UR)){try{const j=JSON.parse(t.slice(UR.length));if(j.u&&j.h)usr.push({id:m.id,u:j.u,h:j.h,e:j.e||'',c:j.c||0,b:j.b?1:0})}catch(x){}}
         else if(t.startsWith(JR)){try{const j=JSON.parse(t.slice(JR.length));if(Array.isArray(j)){for(const e of j)jr.push({...e,mid:m.id,pl:1})}else if(j&&j.k&&j.d)jenc.push({mid:m.id,k:j.k,d:j.d})}catch(x){}}
         else if(t.startsWith(ORR)){try{const j=JSON.parse(t.slice(ORR.length));ordp.push({mid:m.id,r:j.r||'',p:j.p||'',n:j.n||0,o:String(j.o||'')})}catch(x){}}
         else if(t.startsWith(CVX)){try{const j=JSON.parse(t.slice(CVX.length));if(j&&j.d)cvx.push({mid:m.id,r:j.r||'',e:j.e?1:0,d:j.d})}catch(x){}}
@@ -2243,7 +2269,7 @@ async function refresh(){
       off=Math.min(...b.map(m=>m.id));
     }
   }
-  files=out;folders=fol;repos=reps;locks=lks;users=usr;JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);EXT=exr.sort((a,b)=>a.id-b.id);NTS=ntBuild(ntp);ownkey=okk;CVRM=cvx;syncUN();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
+  files=out;folders=fol;repos=reps;locks=lks;users=usrUniq(usr);JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);EXT=exr.sort((a,b)=>a.id-b.id);NTS=ntBuild(ntp);ownkey=okk;CVRM=cvx;syncUN();guestBlockedCheck();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
   if(R()&&!repos.some(x=>x.name===R()&&showRepo(x)))P.repo='';
   if(cur&&!allPaths().includes(cur))cur='';
   try{annAuto()}catch(e){}try{extSync();extAuto()}catch(e){}
