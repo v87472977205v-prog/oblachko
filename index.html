@@ -1460,12 +1460,12 @@ function openExts(){
 $('#extb').onclick=openExts;
 /* ---- Расширение «Журнал тренировок»: приложение gym-log целиком, внутри изолированного фрейма на весь экран.
    «Назад» переадресуется в приложение, выход — его ползунком. Данные лежат на устройстве (gym_*, IndexedDB gymlog). ---- */
-const GYM={on:false,recs:new Map(),sx:'',q:null};
+const GYM={on:false,recs:new Map(),sx:'',q:null,last:0,pend:null,pt:0};let FLOODT=0;
 function gymReset(){if(!GYM.on)return;GYM.on=false;const h=$('#adm .ah');if(h)h.hidden=false;$('#admb').style.cssText='';removeEventListener('message',gymMsg)}
 /* «Назад» из календаря журнала возвращает в меню расширений */
 function gymMsg(e){const f=$('#gymf');if(!GYM.on||!f||e.source!==f.contentWindow||!e.data)return;
-  if(e.data.gym==='exit'){gymReset();$('#admb').innerHTML='';if(isAdmin())openExtAdmin();else openExts()}
-  else if(e.data.gym==='sync')gySyncOut(e.data);
+  if(e.data.gym==='exit'){gyFlush();gymReset();$('#admb').innerHTML='';if(isAdmin())openExtAdmin();else openExts()}
+  else if(e.data.gym==='sync'){GYM.pend=e.data;clearTimeout(GYM.pt);GYM.pt=setTimeout(gyFlush,6000)}
   else if(e.data.gym==='rest')gyRest(e.data.end);
   else if(e.data.gym==='vib'){const p=e.data.p;try{if(navigator.vibrate&&(typeof p==='number'||(Array.isArray(p)&&p.length<=20&&p.every(x=>typeof x==='number'))))navigator.vibrate(p)}catch(x){}}}
 /* Таймер отдыха в фоне: пока идёт отсчёт, тихая дорожка не даёт странице «заснуть»; по окончании в свёрнутом приложении
@@ -1483,15 +1483,19 @@ function gyRest(end){
   try{if('Notification' in window&&Notification.permission==='default')Notification.requestPermission()}catch(e){}
   try{if(!GYR.ka){GYR.ka=new Audio(gySilence());GYR.ka.loop=true}GYR.ka.play().catch(()=>{})}catch(e){}
   clearInterval(GYR.iv);GYR.iv=setInterval(()=>{if(GYR.end&&Date.now()>=GYR.end)gyRestDone()},1000)}
-document.addEventListener('visibilitychange',()=>{if(document.hidden)return;
+document.addEventListener('visibilitychange',()=>{if(document.hidden){gyFlush();return}
   try{navigator.serviceWorker&&navigator.serviceWorker.ready.then(r=>r.getNotifications({tag:'gymrest'}).then(a=>a.forEach(n=>n.close())))}catch(e){}});
+function gyFlush(){clearTimeout(GYM.pt);const d=GYM.pend;GYM.pend=null;if(d)gySyncOut(d)}
 function gymBack(){const f=$('#gymf');if(f&&f.contentWindow)f.contentWindow.postMessage({gym:'back'},'*')}
 /* Синхронизация: день = одна запись в канале (📓, вид g, шифруется ключом пользователя, как заметки).
    Уходят подходы, текст заметок и настройки; фото и голос остаются на устройстве. Пустой день — «надгробие», чтобы удаление дошло до других устройств. */
 const gyJ=s=>{try{const o=JSON.parse(s);return o&&typeof o==='object'&&!Array.isArray(o)?o:{}}catch(x){return{}}};
 const gyOkD=k=>/^\d{4}-\d{2}-\d{2}$/.test(k);
 const gyDay=(d,n)=>JSON.stringify({d:d||[],n:(n||[]).map(x=>({text:(x&&x.text)||'',t:(x&&x.t)||''}))});
-function gyPush(id,b){let n=GYM.recs.get(id);if(!n){const t=Date.now();n={id,t:'',b:'',c:[],k:'g',p:0,cr:t,up:t};GYM.recs.set(id,n)}n.b=b;n.up=Date.now();return ntPush(n)}
+async function gyPush(id,b){let n=GYM.recs.get(id);if(!n){const t=Date.now();n={id,t:'',b:'',c:[],k:'g',p:0,cr:t,up:t};GYM.recs.set(id,n)}n.b=b;n.up=Date.now();
+  for(let a=0;a<4;a++){const w=Math.max(FLOODT-Date.now(),GYM.last+1500-Date.now(),0);if(w)await new Promise(r=>setTimeout(r,w));
+    GYM.last=Date.now();if(await ntPush(n))return true;if(FLOODT<=Date.now())break}
+  if(!n._m||!n._m.length)GYM.recs.delete(id);return false}
 async function gyPull(){
   GYM.recs=new Map();for(const n of (await ntMine()).filter(n=>n.k==='g'))GYM.recs.set(n.id,n);
   const kd='gym_log'+GYM.sx,kn='gym_notes'+GYM.sx,ks='gym_settings'+GYM.sx;
@@ -1589,7 +1593,7 @@ function ntPush(n){
     for(let i=0;i<old.length;i+=100){try{await withChat(()=>client.deleteMessages(S.chat,old.slice(i,i+100)))}catch(x){}}
   }finally{NT.f--}};
   const p=(NTQ[n.id]||Promise.resolve()).then(run);NTQ[n.id]=p.catch(()=>{});
-  return p.then(()=>true,x=>{say('Заметка не сохранилась в облаке: '+err(x),1);return false})}
+  return p.then(()=>true,x=>{const f=/FLOOD_WAIT_(\d+)/.exec(String(err(x))+' '+String(x&&x.message||x));if(f){FLOODT=Date.now()+(+f[1]+1)*1000;say('Лимит Telegram: досохраню автоматически через '+f[1]+' с',1)}else say('Заметка не сохранилась в облаке: '+err(x),1);return false})}
 function ntFlush(){clearTimeout(NT.t);const L=[...NT.d];NT.d.clear();for(const n of L)ntPush(n)}
 const ntTouch=()=>{NT.n.up=Date.now();NT.d.add(NT.n);clearTimeout(NT.t);NT.t=setTimeout(ntFlush,1500)};
 function ntDel(n){NTS=NTS.filter(r=>!(r.id===n.id&&r.u===ntMe()));NT.d.delete(n);
