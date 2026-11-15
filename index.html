@@ -812,6 +812,7 @@ let S=ld('tgm',{});if(S.main&&S.chat&&S.chat!==S.main){S.chat=S.main;sv('tgm',S)
 let files=[],folders=[],cur='',openId=null,ready=false,showSetup=true;
 let lib,client,pid;
 const U={on:false,total:0,done:0,fin:0,ok:0,n:0,name:'',t0:0,lastP:0,got:false,cancel:false,waitMsg:'',retry:'',nextNo:1,tick:0,jobs:new Set(),byPid:new Map()};
+function stallLim(j,now){const sp=j.cur*j.size/Math.max((now-j.t0)/1000,1);return Math.max(40000,Math.min(240000,6*524288/Math.max(sp,2000)*1000))}
 function upPaint(){
   $('#up').hidden=!U.on;if(!U.on)return;
   let part=0;for(const j of U.jobs)part+=j.cur*j.size;
@@ -826,7 +827,7 @@ function upPaint(){
   else if(ind)t='Отправка…';
   else{
     t=Math.floor(pct)+'% · '+size(sent)+' из '+size(U.total)+(sec>2&&sent>0?' · '+size(spd)+'/с · ещё '+fmtT((U.total-sent)/spd):'');
-    const sj=act.filter(j=>j.cur<.99&&now-j.lastP>15000);
+    const sj=act.filter(j=>j.cur<.99&&now-j.lastP>stallLim(j,now)*.6);
     if(sj.length)t='Нет прогресса '+Math.floor(Math.max(...sj.map(j=>now-j.lastP))/1000)+' с — не выключайте экран · '+t;
     else if(act.length&&act.every(j=>j.cur>=.99))t='Telegram подтверждает приём · '+t;
   }
@@ -3425,7 +3426,7 @@ async function keepAwake(on){
     else if(wl){await wl.release();wl=null}
   }catch(e){}
 }
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&U.on){keepAwake(true);for(const j of U.jobs)if(j.abort&&j.cur<.99&&Date.now()-j.lastP>20000){ulog(`Вернулись в приложение: загрузка ${j.name} стояла, обрываю`);j.abort()}}});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&U.on){keepAwake(true);for(const j of U.jobs)if(j.abort&&j.cur<.99&&Date.now()-j.lastP>stallLim(j,Date.now())*.5){ulog(`Вернулись в приложение: загрузка ${j.name} стояла, обрываю`);j.abort()}}});
 $('#upl').onclick=()=>ulShow();
 $('#upx').onclick=()=>{ulog('Нажата «Отмена»');U.cancel=true;UQ=[];for(const j of U.jobs){try{j.abort?j.abort():j.ctl&&j.ctl.abort()}catch(e){}}};
 async function maxNoSync(){
@@ -3561,6 +3562,7 @@ async function runJob(it){
   for(let a=1;a<=3&&!done&&!U.cancel;a++){
     job.cur=0;job.q=0;job.got=false;job.lastP=Date.now();job.t0=Date.now();
     ulog(`Попытка ${a} из 3: ${f.name}`);
+    if(a>1){const e0=await sentAlready(it,no);if(e0){ulog(`Файл ${f.name} уже в канале, повторно не отправляю`);files.push(e0);done=true;jlog('up',(it.enc?'зашифрованный файл':f.name)+' → '+(it.repo||'Облако')+(it.path?' / '+it.path:''));scheduleRender();saveIndex();break}}
     U.retry=a>1?`Повтор ${a} из 3: ${f.name}`:'';
     let timer=0,pv;
     try{
@@ -3577,8 +3579,8 @@ async function runJob(it){
       job.abort=()=>{try{ctl.abort()}catch(e){}kill(new Error('Нет ответа от Telegram'))};
       timer=setInterval(()=>{
         const now=Date.now(),hi=job.cur>=.99;
-        if(job.got&&now-job.lastP>(hi?240000:40000)){ulog(`⏱ Нет движения ${Math.round((now-job.lastP)/1000)} с${hi?' (после 100%)':''}: обрываю попытку`);job.abort()}
-        else if(now-job.t0>60000+f.size/40+(hi?240000:0)){ulog('⏱ Вышло общее время попытки: обрываю');job.abort()}
+        if(job.got&&now-job.lastP>(hi?240000:stallLim(job,now))){ulog(`⏱ Нет движения ${Math.round((now-job.lastP)/1000)} с${hi?' (после 100%)':''}: обрываю попытку`);job.abort()}
+        else if(now-job.t0>120000+f.size/10+(hi?240000:0)){ulog('⏱ Вышло общее время попытки: обрываю');job.abort()}
       },3000);
       const eN=it.enc?await encName(it.repo,f):null;
       const o={caption:caption(no,it.path,eN?'🔐'+eN:f.name,it.repo),fileName:eN?'enc'+no+'.bin':f.name,signal:ctl.signal};
