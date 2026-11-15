@@ -1343,7 +1343,7 @@ async function musFolderEnsure(r,p){
 }
 async function musTarget(){
   const r=MS.repo||'',p=clean(String(MS.folder||'').replace(/^\/+|\/+$/g,'')).replace(/\s*\/\s*/g,'/');
-  if(r&&!repos.some(x=>x.name===r&&(mineRepo(x)||isAdmin())))throw new Error('Репозиторий «'+r+'» не найден');
+  if(r&&!repos.some(x=>x.name===r&&visRepo(x)))throw new Error('Репозиторий «'+r+'» не найден');
   if(!await unlock(r,p))throw new Error('Нужен пароль папки или репозитория');
   if(!await forceEnc(r))throw new Error('Нужен код шифрования репозитория');
   if(r&&encOn(r)&&!KEYS[r]&&!await ensureKey(r))throw new Error('Нужен код шифрования репозитория');
@@ -1446,7 +1446,7 @@ function musPaintTo(){
 }
 function openMusic(){
   openAdm(extName('music'));
-  const rl=[...(repoBlocked('')?[]:[['','Облако']]),...repos.filter(x=>isAdmin()||mineRepo(x)).map(x=>[x.name,x.name])];
+  const rl=[...(repoBlocked('')?[]:[['','Облако']]),...repos.filter(visRepo).map(x=>[x.name,x.name])];
   if(!rl.some(x=>x[0]===MS.repo)){MS.repo='';msv()}
   $('#admb').innerHTML=`<div class="mus">
     <div class="uc"><label class="ml">Куда</label><button class="mto" id="musto"></button></div>
@@ -1523,11 +1523,12 @@ $('#admb').addEventListener('click',async e=>{
    Запароленные помечены замком: и выбрать их, и раскрыть можно только после ввода пароля.
    Вложенные папки запароленной папки не видны, пока она не разблокирована. */
 const KP={cb:null,cur:{r:null,p:''},open:new Set(),all:false,openU:new Set(),allowAll:false};
+const kpOthers=()=>repos.filter(x=>visRepo(x)&&!mineRepo(x)&&!repoBlocked(x.name)&&!repoRO(x.name));
 const kpName=(r,p)=>(r||'Облако')+(p?' › '+p.split('/').join(' › '):'');
 const kpKids=(r,p)=>allPaths(r).filter(x=>parentPath(x)===p);
 function kpOpen(cb,cur,opts){
   KP.cb=cb;KP.cur=cur||{r:null,p:''};KP.open=new Set();KP.allowAll=!!(opts&&opts.allowAll);KP.all=false;KP.openU=new Set();
-  if(KP.allowAll&&isAdmin()&&cur&&cur.r){const o=repos.find(x=>x.name===cur.r&&x.guest&&x.owner);if(o){KP.all=true;KP.openU.add(o.owner)}}
+  if(KP.allowAll&&cur&&cur.r){const o=kpOthers().find(x=>x.name===cur.r);if(o){KP.all=true;KP.openU.add(o.owner||'')}}
   if(cur&&cur.r!==null){KP.open.add(cur.r+'\n');let a='';for(const sg of cur.p?cur.p.split('/'):[]){a=a?a+'/'+sg:sg;KP.open.add(cur.r+'\n'+a)}}
   $('#kpick').hidden=false;kpDraw();
 }
@@ -1545,13 +1546,14 @@ function kpDraw(){
     }
   };
   for(const[r,n]of[...(repoBlocked('')?[]:[['','Облако']]),...repos.filter(mineRepo).map(x=>[x.name,x.name])])row(r,'',n,icon(r?'repo':'cloud'),0);
-  if(KP.allowAll&&isAdmin()){
-    const owners=[...new Set(repos.filter(x=>x.guest&&x.owner).map(x=>x.owner))].sort((a,b)=>a.localeCompare(b,'ru'));
+  if(KP.allowAll){
+    const oth=kpOthers();
+    const owners=[...new Set(oth.map(x=>x.owner||''))].sort((a,b)=>a.localeCompare(b,'ru'));
     if(owners.length){
       if(KP.all)for(const u of owners){
         const op=KP.openU.has(u);
-        out.push(`<div class="kr"><button class="ko" data-ku="${esc(u)}"><span>👤</span><span class="n">${esc(u)}</span><span class="kb">${op?'▾':'▸'}</span></button></div>`);
-        if(op)for(const x of repos.filter(x=>x.guest&&x.owner===u))row(x.name,'',x.name,icon('repo'),1);
+        out.push(`<div class="kr"><button class="ko" data-ku="${esc(u)}"><span>👤</span><span class="n">${esc(u||'Владелец')}</span><span class="kb">${op?'▾':'▸'}</span></button></div>`);
+        if(op)for(const x of oth.filter(x=>(x.owner||'')===u))row(x.name,'',x.name,icon('repo'),1);
       }
       out.unshift(`<button class="kall${KP.all?' on':''}" data-kall="1">👥 ${KP.all?'Скрыть пользователей':'Выбрать всех пользователей'}</button>`);
     }
@@ -1570,7 +1572,7 @@ let kpBusy=false;
 $('#kpb').addEventListener('click',async e=>{
   const g=a=>e.target.closest('['+a+']');
   const ab=g('data-kall'),ub=g('data-ku');
-  if(ab){KP.all=!KP.all;if(KP.all)for(const x of repos)if(x.guest&&x.owner)KP.openU.add(x.owner);kpDraw();return}
+  if(ab){KP.all=!KP.all;if(KP.all)for(const x of kpOthers())KP.openU.add(x.owner||'');kpDraw();return}
   if(ub){const u=ub.dataset.ku;if(KP.openU.has(u))KP.openU.delete(u);else KP.openU.add(u);kpDraw();return}
   const sb=g('data-ks'),xb=g('data-kx'),nb=g('data-knew');
   const el=sb||xb||nb;if(!el||kpBusy)return;
