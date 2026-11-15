@@ -577,6 +577,21 @@ button.ntfab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bo
 #ntfm button:nth-child(2){animation-delay:.05s}
 .ntfab .i{transition:transform .18s}.ntfab.open .i{transform:rotate(45deg)}
 body.shv #vrm,body.shv #vmore,body.shv #smv,body.shv #srm,body.shv #gearb,body.shv #fsec,body.shv #lkf,body.shv #rnf,body.shv #mvf,body.shv #cpf,body.shv #delf,body.shv #addrepo{display:none!important}
+
+/* временные ссылки: экран настройки и «барабаны» */
+.shs{padding:10px 14px}
+.shf{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.shf span{flex:1;min-width:0}.shf small{display:block;color:var(--mute);font-size:12px}.shf b{display:block;font-size:15px;word-break:break-word}
+.shw{display:flex;gap:10px;margin:14px 0 8px}
+.shc{flex:1;min-width:0}
+.sht{font:600 12px system-ui;color:var(--mute);text-transform:uppercase;letter-spacing:.04em;text-align:center;margin-bottom:6px}
+.shd{position:relative;height:150px;border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}
+.shsel{position:absolute;left:6px;right:6px;top:50px;height:50px;border-radius:10px;background:color-mix(in srgb,var(--acc) 14%,transparent);border:1px solid color-mix(in srgb,var(--acc) 45%,transparent);pointer-events:none;z-index:1}
+.shl{height:100%;overflow-y:auto;scroll-snap-type:y mandatory;padding:50px 0;box-sizing:border-box;overscroll-behavior:contain;scrollbar-width:none;-webkit-mask-image:linear-gradient(transparent,#000 32%,#000 68%,transparent);mask-image:linear-gradient(transparent,#000 32%,#000 68%,transparent)}
+.shl::-webkit-scrollbar{display:none}
+.shi{height:50px;line-height:50px;text-align:center;scroll-snap-align:center;font-size:16px;color:var(--mute);cursor:pointer;transition:color .12s,transform .12s}
+.shi.on{color:var(--ink);font-weight:700;transform:scale(1.08)}
+.shsum{text-align:center;min-height:36px;margin:2px 0 0}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-v4-192.png" type="image/png">
@@ -1088,7 +1103,7 @@ function drawSettings(){
 function drawConsole(){
   if(!isAdmin()){drawSettings();return}
   fromSet=false;admParent=null;openAdm('Консоль администратора');
-  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="acc">${icon('lock')}<span>Доступ</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button><button data-set="ext">${icon('puzzle')}<span>Расширения</span></button><button data-set="stat">${icon('list')}<span>Статистика</span></button><button data-set="shr">${icon('copy')}<span>Временный доступ</span></button></div>`;
+  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="acc">${icon('lock')}<span>Доступ</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button><button data-set="ext">${icon('puzzle')}<span>Расширения</span></button><button data-set="stat">${icon('list')}<span>Статистика</span></button></div>`;
 }
 function openLks(){
   openAdm('Кнопка открытия репозитория');
@@ -1446,7 +1461,7 @@ $('#kpb').addEventListener('click',async e=>{
    Если он нажал «Да», в его шторке появляется раздел «Расширения». Записи лежат в канале (🧩): предложение, согласие, отказ. */
 const EXR='🧩 ';
 let EXT=[];
-const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>openMusic()},{id:'notes',name:'Заметки',ic:'edit',open:()=>openNotes()},{id:'gym',name:'Журнал тренировок',ic:'dumb',open:()=>openGym()}];
+const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>openMusic()},{id:'notes',name:'Заметки',ic:'edit',open:()=>openNotes()},{id:'gym',name:'Журнал тренировок',ic:'dumb',open:()=>openGym()},{id:'links',name:'Временные ссылки',ic:'copy',open:()=>openShares()}];
 const extName=id=>{let n='';for(const r of EXT)if(r.x===id&&r.k==='n'&&r.n)n=r.n;return n||(EXTS.find(e=>e.id===id)||{}).name||id};
 const extState=(x,u)=>{let k='';for(const r of EXT)if(r.x===x&&r.u===u)k=r.k;return k};
 const extMine=()=>EXTS.filter(e=>isAdmin()||(S.guestUser&&extState(e.id,S.guestUser)==='a'));
@@ -1799,7 +1814,7 @@ $('#admb').addEventListener('click',e=>{
   else $('#'+k).click();
 });
 $('#admb').addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(!b)return;const k=b.dataset.set;
-  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,acc:openAccList,jrn:openJournal,key:makeKey,ann:openAnn,ext:openExtAdmin,stat:openStats,shr:openShares};
+  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,acc:openAccList,jrn:openJournal,key:makeKey,ann:openAnn,ext:openExtAdmin,stat:openStats};
   if(ACT[k]){ACT[k]();return}
   if(SETK[k]){fromSet=true;admParent=drawSettings;SETK[k]();return}
   if(ADMK[k]){if(!isAdmin())return;fromSet=true;admParent=drawConsole;ADMK[k]()}  /* консоль и всё из неё — только у владельца */
@@ -2377,7 +2392,7 @@ async function refresh(){
         else if(t.startsWith(CVX)){try{const j=JSON.parse(t.slice(CVX.length));if(j&&j.d)cvx.push({mid:m.id,r:j.r||'',e:j.e?1:0,d:j.d})}catch(x){}}
         else if(t.startsWith(AN)){try{const j=JSON.parse(t.slice(AN.length));if(j&&j.v&&Array.isArray(j.l))ans.push({id:m.id,v:String(j.v),d:j.d||0,l:j.l.map(String)})}catch(x){}}
         else if(t.startsWith(NTP)){try{const j=JSON.parse(t.slice(NTP.length));if(j&&j.id&&typeof j.s==='string')ntp.push({m:m.id,u:String(j.u||''),id:String(j.id),v:+j.v||0,p:+j.p||0,n:+j.n||1,s:j.s,e:j.e?1:0})}catch(x){}}
-        else if(t.startsWith('🔗 ')){try{const j=JSON.parse(t.slice(3));if(j&&j.i)shr.push({id:m.id,i:String(j.i),r:j.r||'',p:j.p||'',e:+j.e||0,m:+j.m||0,c:+j.c||0,x:j.x?1:0,t:+j.t||0,k:j.k||''})}catch(x){}}
+        else if(t.startsWith('🔗 ')){try{const j=JSON.parse(t.slice(3));if(j&&j.i)shr.push({id:m.id,i:String(j.i),r:j.r||'',p:j.p||'',e:+j.e||0,m:+j.m||0,c:+j.c||0,x:j.x?1:0,t:+j.t||0,k:j.k||'',o:String(j.o||'')})}catch(x){}}
         else if(t.startsWith(EXR)){try{const j=JSON.parse(t.slice(EXR.length));if(j&&j.k&&j.x&&j.u)exr.push({id:m.id,k:String(j.k),x:String(j.x),u:String(j.u),n:String(j.n||'')})}catch(x){}}
         else if(t.startsWith(OKR)){try{const r={id:m.id,...JSON.parse(t.slice(OKR.length))};oks.push(r);if(!okk||r.id>okk.id)okk=r}catch(x){}}
         else if(t.startsWith(LK)){try{const j=JSON.parse(t.slice(LK.length));lks.push({id:m.id,r:j.r||'',p:j.p||'',h:j.h,x:j.x||''})}catch(x){}}
@@ -4379,49 +4394,86 @@ const makeKey=async()=>{
   catch(e){prompt('Скопируйте ключ целиком и отправьте другу',key)}
 };
 
-/* ---- Временный доступ к папке по ссылке (🔗) ----
-   Создаёт только владелец (Консоль → «Временный доступ»): папка, срок в часах, число переходов. Ссылку открывают зарегистрированные в Облачке:
+/* ---- Временные ссылки: расширение «links» (🔗) ----
+   Создаёт владелец или пользователь с подключённым расширением (Расширения → «Временные ссылки»): папка, срок, число переходов на отдельном экране. Ссылку открывают зарегистрированные в Облачке:
    видят эту папку (с вложенными) только на просмотр и скачивание. Срок и счётчик проверяет приложение; запись правила лежит в канале (🔗).
    Для зашифрованного репозитория ключ файлов кладётся в запись (владелец вводит пароль шифрования при создании). */
 const shUrl=id=>location.href.split('#')[0]+'#sh='+id;
 const shSt=s=>s.x?'отозвана':(s.e&&Date.now()>s.e)?'срок вышел':(s.m&&s.c>=s.m)?'переходы закончились':'действует';
 async function shPut(s){
-  const o={i:s.i,r:s.r,p:s.p,e:s.e,m:s.m,c:s.c,x:s.x?1:0,t:s.t};if(s.k)o.k=s.k;
+  const o={i:s.i,r:s.r,p:s.p,e:s.e,m:s.m,c:s.c,x:s.x?1:0,t:s.t};if(s.k)o.k=s.k;if(s.o)o.o=s.o;
   const m=await withChat(()=>client.sendMessage(S.chat,'🔗 '+JSON.stringify(o)));
   if(s.id)await withChat(()=>client.deleteMessages(S.chat,[s.id]));
   s.id=m.id;return s;
 }
+const SH_TERM=[{l:'Без срока',h:0},{l:'1 час',h:1},{l:'3 часа',h:3},{l:'6 часов',h:6},{l:'12 часов',h:12},{l:'1 день',h:24},{l:'2 дня',h:48},{l:'3 дня',h:72},{l:'7 дней',h:168},{l:'14 дней',h:336},{l:'30 дней',h:720}];
+const SH_VIS=[{l:'Без лимита',n:0},{l:'1 раз',n:1},{l:'2 раза',n:2},{l:'3 раза',n:3},{l:'5 раз',n:5},{l:'10 раз',n:10},{l:'20 раз',n:20},{l:'50 раз',n:50},{l:'100 раз',n:100}];
+const SH_ROW=50;let SHN=null,SHP={f:false,p:null};
+const shCan=()=>isAdmin()||(!!S.guestUser&&extState('links',S.guestUser)==='a');
+const shMine=s=>isAdmin()||(!!S.guestUser&&s.o===S.guestUser);
 function openShares(){
-  if(!isAdmin())return;
-  openAdm('Временный доступ');
-  const L=[...SHR].sort((a,b)=>b.t-a.t);
-  $('#admb').innerHTML='<div style="padding:10px 14px"><div class="uc"><div class="us">Ссылку открывают только те, кто уже зарегистрирован в Облачке. Они видят эту папку и могут только смотреть и скачивать.</div><div class="row"><button class="p" id="shnew">Новая ссылка</button></div></div>'+(L.length?L.map(s=>`<div class="uc"><div class="un">${esc(kpName(s.r,s.p))}</div><div class="us">${shSt(s)} · переходов: ${s.c}${s.m?' из '+s.m:''}${s.e?' · до '+new Date(s.e).toLocaleString('ru'):''}</div><div class="row"><button data-shc="${s.i}">Копировать</button>${shSt(s)==='действует'?`<button data-shx="${s.i}">Отозвать</button>`:''}<button class="del" data-shd="${s.i}">Удалить</button></div></div>`).join(''):'<div class="us" style="padding:10px 0">Ссылок пока нет</div>')+'</div>';
+  if(!shCan())return;
+  openAdm(extName('links'));
+  const L=SHR.filter(shMine).sort((a,b)=>b.t-a.t);
+  $('#admb').innerHTML='<div style="padding:10px 14px"><div class="uc"><div class="us">Ссылку открывают только те, кто уже зарегистрирован в Облачке. Они видят эту папку и могут только смотреть и скачивать.</div><div class="row"><button class="p" id="shnew">Новая ссылка</button></div></div>'+(L.length?L.map(s=>`<div class="uc"><div class="un">${esc(kpName(s.r,s.p))}</div><div class="us">${shSt(s)} · переходов: ${s.c}${s.m?' из '+s.m:''}${s.e?' · до '+new Date(s.e).toLocaleString('ru'):''}${isAdmin()&&s.o?' · от '+esc(s.o):''}</div><div class="row"><button data-shc="${s.i}">Копировать</button>${shSt(s)==='действует'?`<button data-shx="${s.i}">Отозвать</button>`:''}<button class="del" data-shd="${s.i}">Удалить</button></div></div>`).join(''):'<div class="us" style="padding:10px 0">Ссылок пока нет</div>')+'</div>';
 }
+/* настройка новой ссылки — отдельный экран: папка и два «барабана» (срок, число переходов) с щелчками при прокрутке */
 function shNew(){
-  kpOpen(async(r,p)=>{
-    try{
-      const a=await uiPrompt('Срок действия в часах (0 — без срока)','24');if(a==='')return;
-      const b=await uiPrompt('Сколько раз можно открыть (0 — без лимита)','5');if(b==='')return;
-      const h=+String(a).replace(',','.'),n=Math.floor(+b);
-      if(!isFinite(h)||h<0||!isFinite(n)||n<0){alert('Нужны числа не меньше нуля');return}
-      let k='';
-      if(r&&encOf(r)){
-        const pw=await askPass('Пароль шифрования «'+r+'»: он нужен, чтобы файлы открывались по ссылке');if(pw===null)return;
-        let o;try{o=await openEnc(pw,encOf(r))}catch(x){alert('Неверный пароль шифрования');return}
-        k=b64e(o.raw||await deriveRaw(pw,o.salt));
-      }
-      const s={i:Math.random().toString(36).slice(2,10),r,p,e:h?Date.now()+h*36e5:0,m:n,c:0,x:0,t:Date.now(),k};
-      await shPut(s);SHR.push(s);jlog('lnk+',kpName(r,p));
-      try{await navigator.clipboard.writeText(shUrl(s.i));say('Ссылка скопирована')}catch(e){prompt('Скопируйте ссылку',shUrl(s.i))}
-      openShares();
-    }catch(x){say(err(x),1)}
-  },{r:R(),p:cur});
+  if(!shCan())return;
+  SHP={f:fromSet,p:admParent};
+  SHN={r:R(),p:cur,t:5,v:4};
+  shSetup();
+}
+function shBack(){fromSet=SHP.f;admParent=SHP.p;SHN=null;openShares()}
+function shSum(){
+  const T=SH_TERM[SHN.t],V=SH_VIS[SHN.v],el=$('#shsum');if(!el)return;
+  el.textContent=(T.h?'Действует до '+new Date(Date.now()+T.h*36e5).toLocaleString('ru',{day:'numeric',month:'long',hour:'2-digit',minute:'2-digit'}):'Без срока')+' · '+(V.n?'откроют не более '+V.n+(V.n===1?' раза':' раз'):'число переходов не ограничено');
+}
+function shWheel(box,key,items){
+  const lst=box.querySelector('.shl');let last=SHN[key],tm=0;
+  lst.innerHTML=items.map((x,i)=>`<div class="shi${i===last?' on':''}" data-i="${i}">${esc(x.l)}</div>`).join('');
+  const paint=i=>{[...lst.children].forEach((c,j)=>c.classList.toggle('on',j===i))};
+  requestAnimationFrame(()=>{lst.scrollTop=last*SH_ROW});
+  lst.addEventListener('scroll',()=>{
+    const i=Math.max(0,Math.min(items.length-1,Math.round(lst.scrollTop/SH_ROW)));
+    if(i===last)return;
+    last=i;SHN[key]=i;paint(i);shSum();
+    try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}
+  },{passive:true});
+  lst.addEventListener('click',e=>{const c=e.target.closest('.shi');if(c)lst.scrollTo({top:(+c.dataset.i)*SH_ROW,behavior:'smooth'})});
+}
+function shSetup(){
+  if(!shCan()||!SHN)return;
+  fromSet=true;admParent=shBack;openAdm('Новая ссылка');
+  $('#admb').innerHTML=`<div class="shs"><button class="shf" id="shfold">${icon('repo')}<span><small>Папка</small><b>${esc(kpName(SHN.r,SHN.p))}</b></span>${icon('down')}</button><div class="shw"><div class="shc"><div class="sht">Срок</div><div class="shd" id="shdt"><div class="shsel"></div><div class="shl"></div></div></div><div class="shc"><div class="sht">Переходов</div><div class="shd" id="shdv"><div class="shsel"></div><div class="shl"></div></div></div></div><div class="us shsum" id="shsum"></div><div class="row"><button class="p" id="shgo">Создать ссылку</button></div></div>`;
+  shWheel($('#shdt'),'t',SH_TERM);shWheel($('#shdv'),'v',SH_VIS);shSum();
+}
+async function shMake(btn){
+  if(!shCan()||!SHN)return;
+  const{r,p}=SHN,h=SH_TERM[SHN.t].h,n=SH_VIS[SHN.v].n;
+  btn.disabled=true;
+  try{
+    if(!await unlock(r,p))return;
+    let k='';
+    if(r&&encOf(r)){
+      const pw=await askPass('Пароль шифрования «'+r+'»: он нужен, чтобы файлы открывались по ссылке');if(pw===null)return;
+      let o;try{o=await openEnc(pw,encOf(r))}catch(x){alert('Неверный пароль шифрования');return}
+      k=b64e(o.raw||await deriveRaw(pw,o.salt));
+    }
+    const s={i:Math.random().toString(36).slice(2,10),r,p,e:h?Date.now()+h*36e5:0,m:n,c:0,x:0,t:Date.now(),k,o:isAdmin()?'':S.guestUser};
+    await shPut(s);SHR.push(s);jlog('lnk+',kpName(r,p));
+    try{await navigator.clipboard.writeText(shUrl(s.i));say('Ссылка скопирована')}catch(e){prompt('Скопируйте ссылку',shUrl(s.i))}
+    shBack();
+  }catch(x){say(err(x),1)}
+  finally{btn.disabled=false}
 }
 $('#admb').addEventListener('click',async e=>{
-  const t=e.target.closest('#shnew,[data-shc],[data-shx],[data-shd]');if(!t||!isAdmin())return;
+  const t=e.target.closest('#shnew,#shfold,#shgo,[data-shc],[data-shx],[data-shd]');if(!t||!shCan())return;
   try{
     if(t.id==='shnew'){shNew();return}
-    const s=SHR.find(x=>x.i===(t.dataset.shc||t.dataset.shx||t.dataset.shd));if(!s)return;
+    if(t.id==='shfold'){if(SHN)kpOpen((r,p)=>{SHN.r=r;SHN.p=p;shSetup()},{r:SHN.r,p:SHN.p});return}
+    if(t.id==='shgo'){shMake(t);return}
+    const s=SHR.find(x=>x.i===(t.dataset.shc||t.dataset.shx||t.dataset.shd));if(!s||!shMine(s))return;
     if(t.dataset.shc){try{await navigator.clipboard.writeText(shUrl(s.i));say('Ссылка скопирована')}catch(x){prompt('Скопируйте ссылку',shUrl(s.i))}}
     else if(t.dataset.shx){if(!confirm('Отозвать ссылку?'))return;s.x=1;await shPut(s);jlog('lnk-',kpName(s.r,s.p));openShares()}
     else if(t.dataset.shd){if(!confirm('Удалить ссылку?'))return;await withChat(()=>client.deleteMessages(S.chat,[s.id]));SHR=SHR.filter(x=>x!==s);openShares()}
@@ -4442,7 +4494,7 @@ async function shOpen(id){
   if(!s){alert('Ссылка не найдена или удалена');return}
   const st=shSt(s);if(st!=='действует'){alert('Ссылка не действует: '+st);return}
   try{
-    if(!isAdmin()){s.c++;await shPut(s);jlog('lnk',kpName(s.r,s.p))}
+    if(!isAdmin()&&s.o!==S.guestUser){s.c++;await shPut(s);jlog('lnk',kpName(s.r,s.p))}
     if(s.k&&!KEYS[s.r]){KEYS[s.r]=await keyRaw(b64d(s.k));s.own=1}
     await decAll();
   }catch(x){say(err(x),1);return}
