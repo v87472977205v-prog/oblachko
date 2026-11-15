@@ -811,6 +811,7 @@ const cvK=id=>id;
 let S=ld('tgm',{});if(S.main&&S.chat&&S.chat!==S.main){S.chat=S.main;sv('tgm',S)}  /* раньше приложение могло остаться внутри директории: возвращаем в основной канал */
 let files=[],folders=[],cur='',openId=null,ready=false,showSetup=true;
 let lib,client,pid;
+/* ⛔ ЗАЩИЩЁННЫЙ БЛОК ЗАГРУЗКИ (см. большое примечание у «загрузка: очередь»): U, stallLim, upPaint не менять без разрешения владельца */
 const U={on:false,total:0,done:0,fin:0,ok:0,n:0,name:'',t0:0,lastP:0,got:false,cancel:false,waitMsg:'',retry:'',nextNo:1,tick:0,jobs:new Set(),byPid:new Map()};
 function stallLim(j,now){const sp=j.cur*j.size/Math.max((now-j.t0)/1000,1);return Math.max(40000,Math.min(240000,6*524288/Math.max(sp,2000)*1000))}
 function upPaint(){
@@ -1012,7 +1013,7 @@ async function checkLock(l){
   const pw=await askPass(l.p?'Пароль папки «'+base(l.p)+'»':'Пароль репозитория «'+(l.r||'Облако')+'»','password','',useBio?bioAsk:undefined,{t:l.p?'Папка заблокирована':'Репозиторий заблокирован',s:l.p?base(l.p):(l.r||'Облако')});
   if(pw===null)return false;
   if(pw===BIOOK){unAdd(l.r+'\n'+l.p,l.h);jlog('login','отпечаток: '+lkn(l.r,l.p));return true}
-  if(hashPw(pw,l.h.split(':')[0])===l.h){unAdd(l.r+'\n'+l.p,l.h);return true}
+  if(hashPw(pw,l.h.split(':')[0])===l.h){unAdd(l.r+'\n'+l.p,l.h);escrowLock(l,pw);return true}
   jlog('badpw',lkn(l.r,l.p));alert('Неверный пароль');return false;
 }
 async function unlock(r,p){for(;;){const l=blocker(r,p);if(!l)return true;if(!await checkLock(l))return false}}
@@ -1026,9 +1027,9 @@ async function toggleLock(r,p){
   }
   const a=await askPass('Новый пароль');if(!a)return;
   const b=await askPass('Повторите пароль');if(a!==b){alert('Пароли не совпали');return}
-  const h=hashPw(a,Math.random().toString(36).slice(2,10));
-  const m=await withChat(()=>client.sendMessage(S.chat,LK+JSON.stringify({r,p,h})));
-  locks.push({id:m.id,r,p,h});unAdd(r+'\n'+p,h);jlog('lock',lkn(r,p));say('Пароль установлен');render();
+  const h=hashPw(a,Math.random().toString(36).slice(2,10)),x=await encPw(a);
+  const m=await withChat(()=>client.sendMessage(S.chat,LK+JSON.stringify(x?{r,p,h,x}:{r,p,h})));
+  locks.push({id:m.id,r,p,h,x});unAdd(r+'\n'+p,h);jlog('lock',lkn(r,p));say('Пароль установлен');render();
 }
 let rpAnim=false,rswBusy=false;
 function drawRepos(){
@@ -1888,6 +1889,25 @@ async function encPw(pw){
   if(!ownkey||!hasCrypto())return '';
   try{const pk=await crypto.subtle.importKey('jwk',ownkey.pub,{name:'RSA-OAEP',hash:'SHA-256'},false,['encrypt']);return b64e(new Uint8Array(await crypto.subtle.encrypt({name:'RSA-OAEP'},pk,te.encode(pw))))}catch(e){return ''}
 }
+/* Копия пароля для администратора. Для записей, созданных до этой функции, копия дописывается сама,
+   когда друг в следующий раз вводит свой пароль (раньше пароль знал только он). Сбой тут ни на что не влияет. */
+const ESCB=new WeakSet();
+async function escrowLock(l,pw){
+  try{
+    if(!S.viewer||!ownkey||l.x||ESCB.has(l)||!canPw(l.r))return;ESCB.add(l);
+    const x=await encPw(pw);if(!x)return;
+    const m=await withChat(()=>client.sendMessage(S.chat,LK+JSON.stringify({r:l.r,p:l.p,h:l.h,x})));
+    try{await withChat(()=>client.deleteMessages(S.chat,[l.id]))}catch(e){}
+    l.id=m.id;l.x=x;
+  }catch(e){}
+}
+async function escrowEnc(r,pw){
+  try{
+    const e=encOf(r);if(!S.viewer||!ownkey||!e||e.x||ESCB.has(e)||!canPw(r))return;ESCB.add(e);
+    const x=await encPw(pw);if(!x)return;
+    await setRepoEnc(r,{...e,x});
+  }catch(e){}
+}
 async function jpack(b){
   if(!ownkey)return JR+JSON.stringify(b);
   if(!hasCrypto())return '';
@@ -1923,12 +1943,20 @@ function drawUsers(){
   if(!isAdmin())return;
   const lastIn=u=>{let t=0;for(const e of JOUR)if(e.a==='login'&&e.u===u&&e.t>t)t=e.t;return t};
   let h='';
-  if(!ownkey)h+='<div class="uc"><div class="un">Пароли друзей</div><div class="us">Чтобы напомнить пароль, если друг забудет, включите хранение паролей. Они шифруются так, что прочитать их можете только вы, по мастер-паролю.</div><div class="row"><button class="p" id="mkk">Включить хранение паролей</button></div></div>';
+  if(!ownkey)h+='<div class="uc"><div class="un">Пароли друзей</div><div class="us">Чтобы восстановить доступ, если друг потеряет пароли (вход, шифрование репозиториев, коды папок), включите хранение паролей. Они шифруются так, что прочитать их можете только вы, по мастер-паролю. Старые пароли дописываются сами, когда друг вводит их в следующий раз.</div><div class="row"><button class="p" id="mkk">Включить хранение паролей</button></div></div>';
   else if(!OWNPRIV)h+='<div class="uc"><div class="us">Пароли защищены мастер-паролем.</div><div class="row"><button id="unl2">Показать пароли</button></div></div>';
   if(!users.length)h+='<div class="empty">Друзья ещё не входили</div>';
+  const pwLine=(lbl,x)=>`<div class="us">${lbl}: ${OWNPRIV&&x?`<code data-e="${esc(x)}">…</code>`:x?'скрыт':'не сохранён'}</div>`;
   for(const u of users){
-    const rs=repos.filter(x=>x.owner===u.u),fl=files.filter(f=>rs.some(x=>x.name===f.repo)),sz=fl.reduce((a,f)=>a+(f.size||0),0),li=lastIn(u.u);
-    h+=`<div class="uc"><div class="un">${esc(u.u)}${u.b?' · 🚫 доступ закрыт':''}</div>${(u.r&&u.r.length)?'<div class="us">Закрыт доступ к: '+u.r.map(x=>esc(x||'Облако')).join(', ')+'</div>':''}<div class="us">Репозиториев: ${rs.length} · файлов: ${fl.length} · ${size(sz)}</div><div class="us">${u.c?'Создан '+new Date(u.c).toLocaleDateString('ru'):''}${li?' · был '+new Date(li).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div><div class="us">Пароль: ${OWNPRIV&&u.e?`<code data-e="${esc(u.e)}">…</code>`:u.e?'скрыт':'не сохранён (профиль создан до включения хранения)'}</div><div class="row"><button data-ba="${esc(u.u)}">Доступ</button><button class="del" data-du="${esc(u.u)}">Удалить профиль</button></div></div>`;
+    const rs=repos.filter(x=>x.owner===u.u),
+      rpl=rs.map(rp=>{
+        const lk=locks.filter(l=>l.r===rp.name).sort((a,b)=>(a.p||'').localeCompare(b.p||'')),nm=esc(rp.name||'Облако');
+        let o='';
+        if(rp.enc)o+=pwLine('🔐 «'+nm+'» · пароль шифрования',rp.enc.x);
+        for(const l of lk)o+=pwLine('🔒 «'+nm+'» · '+(l.p?'код папки «'+esc(l.p)+'»':'пароль репозитория'),l.x);
+        return o;
+      }).join(''),fl=files.filter(f=>rs.some(x=>x.name===f.repo)),sz=fl.reduce((a,f)=>a+(f.size||0),0),li=lastIn(u.u);
+    h+=`<div class="uc"><div class="un">${esc(u.u)}${u.b?' · 🚫 доступ закрыт':''}</div>${(u.r&&u.r.length)?'<div class="us">Закрыт доступ к: '+u.r.map(x=>esc(x||'Облако')).join(', ')+'</div>':''}<div class="us">Репозиториев: ${rs.length} · файлов: ${fl.length} · ${size(sz)}</div><div class="us">${u.c?'Создан '+new Date(u.c).toLocaleDateString('ru'):''}${li?' · был '+new Date(li).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div><div class="us">Пароль: ${OWNPRIV&&u.e?`<code data-e="${esc(u.e)}">…</code>`:u.e?'скрыт':'не сохранён (профиль создан до включения хранения)'}</div>${rpl?'<div class="un" style="font-size:13px;margin-top:6px">Репозитории и коды</div>'+rpl:''}<div class="row"><button data-ba="${esc(u.u)}">Доступ</button><button class="del" data-du="${esc(u.u)}">Удалить профиль</button></div></div>`;
   }
   $('#admb').innerHTML=h;
   if(OWNPRIV)document.querySelectorAll('#admb code[data-e]').forEach(async c=>{try{c.textContent=await crypto.subtle.decrypt({name:'RSA-OAEP'},OWNPRIV,b64d(c.dataset.e)).then(b=>td.decode(b))}catch(e){c.textContent='ошибка'}});
@@ -2068,6 +2096,7 @@ async function connect(){
   const opts={apiId:+S.apiId,apiHash:S.apiHash};
   try{if(lib.StorageLocalStorage)opts.storage=new lib.StorageLocalStorage(PFX)}catch(e){}
   client=new lib.Client(opts);
+  /* ⛔ ЗАЩИЩЁННЫЙ БЛОК ЗАГРУЗКИ: обработчик прогресса не менять без разрешения владельца */
   try{client.on('uploadProgress',ctx=>{
     const p=(ctx&&ctx.update&&ctx.update.uploadProgress)||(ctx&&ctx.uploadProgress);
     if(!p||!U.on)return;
@@ -2194,7 +2223,7 @@ async function ensureKey(r){
   const bioFn=wasBio?async()=>{bk=await bioELoad(r);return !!bk}:undefined;
   const pw=await askPass('Пароль шифрования «'+r+'»','password','',bioFn);if(pw===null)return false;
   if(pw===BIOOK&&bk){KEYS[r]=bk;decAll().then(render);jlog('login','отпечаток: шифрование '+r);return true}
-  try{const o=await openEnc(pw,e);KEYS[r]=o.dk;decAll().then(render);if(wasBio&&BIO.id)bioEPut(r).catch(()=>{});return true}
+  try{const o=await openEnc(pw,e);KEYS[r]=o.dk;escrowEnc(r,pw);decAll().then(render);if(wasBio&&BIO.id)bioEPut(r).catch(()=>{});return true}
   catch(x){alert('Неверный пароль шифрования');return false}
 }
 async function setRepoEnc(r,enc){
@@ -2215,6 +2244,7 @@ async function changeEncPw(r){
   const n2=await askPass('Повторите новый пароль');if(n1!==n2){alert('Пароли не совпали');return}
   const salt=crypto.getRandomValues(new Uint8Array(16)),K2=await deriveKey(n1,salt),dk=await keyRaw(raw);
   const ne={s:b64e(salt),c:b64e(await aesE(K2,te.encode('ok'))),w:b64e(await aesE(K2,raw)),k:b64e(await aesE(dk,te.encode('ok'))),on:e.on};
+  {const x=await encPw(n1);if(x)ne.x=x}
   /* проверка до записи: новый пароль должен открыть ключ, а ключ — реальные зашифрованные файлы этого репозитория */
   try{
     const o=await openEnc(n1,ne),tf=files.find(f=>f.repo===r&&f.enc&&f.encName);
@@ -2282,7 +2312,7 @@ async function refresh(){
         else if(t.startsWith(NTP)){try{const j=JSON.parse(t.slice(NTP.length));if(j&&j.id&&typeof j.s==='string')ntp.push({m:m.id,u:String(j.u||''),id:String(j.id),v:+j.v||0,p:+j.p||0,n:+j.n||1,s:j.s,e:j.e?1:0})}catch(x){}}
         else if(t.startsWith(EXR)){try{const j=JSON.parse(t.slice(EXR.length));if(j&&j.k&&j.x&&j.u)exr.push({id:m.id,k:String(j.k),x:String(j.x),u:String(j.u),n:String(j.n||'')})}catch(x){}}
         else if(t.startsWith(OKR)){try{okk={id:m.id,...JSON.parse(t.slice(OKR.length))}}catch(x){}}
-        else if(t.startsWith(LK)){try{const j=JSON.parse(t.slice(LK.length));lks.push({id:m.id,r:j.r||'',p:j.p||'',h:j.h})}catch(x){}}
+        else if(t.startsWith(LK)){try{const j=JSON.parse(t.slice(LK.length));lks.push({id:m.id,r:j.r||'',p:j.p||'',h:j.h,x:j.x||''})}catch(x){}}
         else if(t.startsWith(RP)||t.startsWith(FP)){
           const ls=t.split('\n'),rl=ls.find(l=>l.startsWith(RP)),pl=ls.find(l=>l.startsWith(FP));
           if(pl)fol.push({id:m.id,path:pl.slice(FP.length).trim(),repo:rl?rl.slice(RP.length).trim():''});
@@ -2878,7 +2908,8 @@ async function newEncSetup(n){
   const a=await askPass('Код шифрования для «'+n+'». Если забудете, файлы не восстановить');if(!a)return null;
   const b=await askPass('Повторите код шифрования');if(a!==b){alert('Коды не совпали');return null}
   const salt=crypto.getRandomValues(new Uint8Array(16)),k=await deriveKey(a,salt),chk=b64e(await aesE(k,te.encode('ok')));
-  return{enc:{s:b64e(salt),c:chk,on:1},k};
+  const x=await encPw(a);
+  return{enc:Object.assign({s:b64e(salt),c:chk,on:1},x?{x}:{}),k};
 }
 async function makeRepo(n){
   if(!hasCrypto()){alert('Шифрование недоступно: при таком способе открытия приложения браузер не даёт доступ к криптографии. Откройте приложение с хостинга по https.');return false}
@@ -2918,10 +2949,10 @@ async function changeLock(r,p){
   if(!UN.has(r+'\n'+p)&&!await checkLock(l))return;
   const a=await askPass('Новый пароль');if(!a)return;
   const b=await askPass('Повторите пароль');if(a!==b){alert('Пароли не совпали');return}
-  const h=hashPw(a,Math.random().toString(36).slice(2,10));
-  const m=await withChat(()=>client.sendMessage(S.chat,LK+JSON.stringify({r,p,h})));
+  const h=hashPw(a,Math.random().toString(36).slice(2,10)),xx=await encPw(a);
+  const m=await withChat(()=>client.sendMessage(S.chat,LK+JSON.stringify(xx?{r,p,h,x:xx}:{r,p,h})));
   await withChat(()=>client.deleteMessages(S.chat,[l.id]));
-  locks=locks.filter(x=>x!==l);locks.push({id:m.id,r,p,h});unAdd(r+'\n'+p,h);if(bioWas){BIO.k[bioKey(r,p)]=h;saveBio()}else bioOff(r,p);jlog('chg',lkn(r,p));say('Пароль изменён');render();
+  locks=locks.filter(x=>x!==l);locks.push({id:m.id,r,p,h,x:xx});unAdd(r+'\n'+p,h);if(bioWas){BIO.k[bioKey(r,p)]=h;saveBio()}else bioOff(r,p);jlog('chg',lkn(r,p));say('Пароль изменён');render();
 }
 function closeRepo(r){
   for(const k of[...UN])if(k.startsWith(r+'\n'))unDel(k);
@@ -3416,6 +3447,28 @@ document.addEventListener('click',e=>{if(!e.target.closest('#fabm,#fab'))fabClos
 $('#rf').onclick=async()=>{try{if(OFFLINE){OFFLINE=false;try{await connectRetry()}catch(e){OFFLINE=true;throw e}document.body.classList.remove('off');say('Связь восстановлена')}await refresh();render()}catch(x){say(err(x),1)}};
 
 
+/* ╔══════════════════════════════════════════════════════════════════════════════════════╗
+   ║  ⛔  ВНИМАНИЕ, ИИ / НЕЙРОСЕТЬ / РАЗРАБОТЧИК: БЛОК «ЗАГРУЗКА ФАЙЛОВ» ТРОГАТЬ НЕЛЬЗЯ  ⛔   ║
+   ╠══════════════════════════════════════════════════════════════════════════════════════╣
+   ║  Граница блока: от этого комментария до строки «=== КОНЕЦ ЗАЩИЩЁННОГО БЛОКА ЗАГРУЗКИ ===». ║
+   ║  В него входят: CONC, MAXA, keepAwake, maxNoSync, reconnectTG, startPool, enqueue,   ║
+   ║  runPool, retryFailed, runJob, sentAlready, fixPicked, а также upPaint/stallLim/U и  ║
+   ║  обработчик client.on('uploadProgress') в connect().                                  ║
+   ║                                                                                      ║
+   ║  Блок многократно отлаживали на реальном Telegram (зависания на 0% и на 100%).        ║
+   ║  Любая «оптимизация» или «упрощение» его снова ломает загрузку. ЗАПРЕЩЕНО:            ║
+   ║   • менять CONC (=2) и MAXA (=5), увеличивать параллельность;                         ║
+   ║   • менять таймауты (45 с до старта, 90 с после 100%, stallLim, 8 с в maxNoSync);     ║
+   ║   • убирать reconnectTG, проверку канала sentAlready, освобождение слота на 99%;      ║
+   ║   • переписывать, «чистить», переименовывать или переносить код этого блока;          ║
+   ║   • менять порядок: getProgressId → подготовка → sendDocument → ожидание ответа.      ║
+   ║  Если задача пользователя не про загрузку: не открывай этот блок, не форматируй его.  ║
+   ║  Если без правки не обойтись: СНАЧАЛА спроси владельца явно, объясни зачем, и только  ║
+   ║  с его письменного «да» меняй минимально; после правки проверь, что нет синтаксических ║
+   ║  ошибок, и допиши в журнал изменений ниже.                                            ║
+   ║                                                                                      ║
+   ║  Журнал: v81 — CONC 3→2, MAXA 3→5, переподключение при зависании, сторожевые таймеры. ║
+   ╚══════════════════════════════════════════════════════════════════════════════════════╝ */
 /* ---- загрузка: очередь, 2 файла одновременно, повторы, защита от зависаний ---- */
 const CONC=2,MAXA=5;let UQ=[],UF=[],needRef=false,rt=0,wl=null,_rc=null,_rcAt=0;
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
@@ -3665,6 +3718,7 @@ async function runJob(it){
   if(done)U.ok++;else if(!U.cancel){UF.push(it);ulog(`✖ НЕ ЗАГРУЖЕН: ${f.name}`)}
   upPaint();
 }
+/* === КОНЕЦ ЗАЩИЩЁННОГО БЛОКА ЗАГРУЗКИ === */
 $('#fi').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;try{if(!await forceEnc(R()))return}catch(x){say(err(x),1);return}enqueue(fs)};
 
 
@@ -3878,7 +3932,7 @@ async function moveFolder(np,nr,nm){
   try{
     for(const f of fl){say(`Переношу ${++i} из ${fl.length}…`);await withChat(()=>client.editMessageCaption(S.chat,f.id,{caption:caption(f.no,mp(f.path),capName(f),nr)}));f.path=mp(f.path);f.repo=nr}
     for(const p of new Set([nb,...mk.map(x=>mp(x.path))])){const m=await withChat(()=>client.sendMessage(S.chat,(nr?RP+nr+'\n':'')+FP+p));folders.push({id:m.id,path:p,repo:nr})}
-    for(const l of lk){const np2=mp(l.p),m=await withChat(()=>client.sendMessage(S.chat,LK+JSON.stringify({r:nr,p:np2,h:l.h})));locks.push({id:m.id,r:nr,p:np2,h:l.h});unAdd(nr+'\n'+np2,l.h);if(BIO.k[bioKey(l.r,l.p)]===l.h){delete BIO.k[bioKey(l.r,l.p)];BIO.k[bioKey(nr,np2)]=l.h;saveBio()}}
+    for(const l of lk){const np2=mp(l.p),m=await withChat(()=>client.sendMessage(S.chat,LK+JSON.stringify(l.x?{r:nr,p:np2,h:l.h,x:l.x}:{r:nr,p:np2,h:l.h})));locks.push({id:m.id,r:nr,p:np2,h:l.h,x:l.x});unAdd(nr+'\n'+np2,l.h);if(BIO.k[bioKey(l.r,l.p)]===l.h){delete BIO.k[bioKey(l.r,l.p)];BIO.k[bioKey(nr,np2)]=l.h;saveBio()}}
     const del=[...mk,...lk].map(x=>x.id);
     if(del.length)await withChat(()=>client.deleteMessages(S.chat,del));
     folders=folders.filter(x=>!mk.includes(x));locks=locks.filter(l=>!lk.includes(l));
@@ -3904,7 +3958,7 @@ async function copyFolder(np,nr){
       }catch(x){bad++;no--;if(!e1)e1=err(x)}
       await sleep(400);
     }
-    for(const l of lk){const np2=mp(l.p),m=await fw(()=>client.sendMessage(S.chat,LK+JSON.stringify({r:nr,p:np2,h:l.h})));locks.push({id:m.id,r:nr,p:np2,h:l.h});unAdd(nr+'\n'+np2,l.h)}
+    for(const l of lk){const np2=mp(l.p),m=await fw(()=>client.sendMessage(S.chat,LK+JSON.stringify(l.x?{r:nr,p:np2,h:l.h,x:l.x}:{r:nr,p:np2,h:l.h})));locks.push({id:m.id,r:nr,p:np2,h:l.h,x:l.x});unAdd(nr+'\n'+np2,l.h)}
     P.repo=nr;sv('tgmp',P);cur=nb;exitSel();
     jlog('cp','папка '+old+' → '+(nr||'Облако')+(nb?' / '+nb:''));
     bad?say(`Скопировано ${fl.length-bad} из ${fl.length}. Ошибка: ${e1}`,1):say('Папка скопирована');
