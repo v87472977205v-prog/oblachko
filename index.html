@@ -532,6 +532,9 @@ body.pl-on .fab{bottom:calc(176px + env(safe-area-inset-bottom))}
 #admb .mus .mto{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin:4px 0 0;padding:13px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:16px}
 #admb .mus .mto .n{flex:1;min-width:0;word-break:break-word}
 #admb .mus .mto .i:last-child{transform:rotate(-90deg);opacity:.7}
+
+#kpick .kc .i{transition:transform .2s;transform:rotate(-90deg)}
+#kpick .kc.op .i{transform:none}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-v4-192.png" type="image/png">
@@ -858,15 +861,21 @@ function askPass(title,type='password',init='',bio,scr){return new Promise(res=>
   const bb=$('#pwb');bb.hidden=!bio;
   const done=v=>{gone=true;$('#pw').hidden=true;pwEl.classList.remove('scr');i.placeholder='';$('#pwo').textContent='ОК';$('#pwx').hidden=true;$('#pwx').onclick=null;$('#pwo').onclick=$('#pwc').onclick=bb.onclick=null;i.onkeydown=null;i.type='password';bb.hidden=true;res(v)};
   let busy=false,gone=false;
+  const note=m=>{if(pwEl.classList.contains('scr')){$('#pws').textContent=m;$('#pws').hidden=false}else say(m,1);try{i.focus()}catch(x){}};
   const tryBio=async()=>{
     if(busy||gone)return;busy=true;
     try{
       for(let n=0;n<3&&!gone;n++){
         const t0=Date.now();
-        try{if(await bio()){if(!gone)done(BIOOK)}return}
+        try{
+          if(await bio()){if(!gone)done(BIOOK)}
+          else if(!gone)note('Отпечаток принят, но ключ на этом устройстве не найден. Введите пароль или заново включите отпечаток в меню репозитория.');
+          return;
+        }
         catch(e){
           /* если окно отпечатка «моргнуло» и закрылось почти сразу - оно не успело открыться, пробуем снова сами */
           if(Date.now()-t0<900&&n<2){await new Promise(r=>setTimeout(r,350));continue}
+          if(!gone)note(bioErr(e));
           return;
         }
       }
@@ -1217,39 +1226,38 @@ $('#admb').addEventListener('input',e=>{
 });
 $('#admb').addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('.mus button');if(!b||b.disabled)return;
-  if(b.id==='musto'){kpOpen((r,p)=>{MS.repo=r;MS.folder=p;msv();musPaintTo()});return}
+  if(b.id==='musto'){kpOpen((r,p)=>{MS.repo=r;MS.folder=p;msv();musPaintTo()},{r:MS.repo||'',p:MS.folder||''});return}
   if(b.id==='musg'){if(MUS.busy){MUS.stop=true;mlog('Остановка запрошена…')}else musPlaylist()}
   else if(b.id==='musk'){const ta=$('#musp');ta.value='';MS.list='';msv();ta.focus()}
 });
 
 /* ---- Страница выбора репозитория и папки ----
-   Запароленные репозитории и папки видны в списке с замком; чтобы войти в них или выбрать, нужен пароль.
-   Вложенные папки запароленной папки показываются только после её разблокировки. */
-const KP={r:null,p:'',cb:null};
+   Всё на одной странице деревом: нажатие на строку выбирает репозиторий или папку, стрелка справа раскрывает вложенные.
+   Запароленные помечены замком: и выбрать их, и раскрыть можно только после ввода пароля.
+   Вложенные папки запароленной папки не видны, пока она не разблокирована. */
+const KP={cb:null,cur:{r:null,p:''},open:new Set()};
 const kpName=(r,p)=>(r||'Облако')+(p?' › '+p.split('/').join(' › '):'');
 const kpKids=(r,p)=>allPaths(r).filter(x=>parentPath(x)===p);
-function kpOpen(cb){KP.cb=cb;KP.r=null;KP.p='';$('#kpick').hidden=false;kpDraw()}
-function kpClose(){$('#kpick').hidden=true;KP.cb=null}
-function kpBack(){
-  if(KP.r===null){kpClose();return}
-  if(KP.p)KP.p=parentPath(KP.p);else KP.r=null;
-  kpDraw();
+function kpOpen(cb,cur){
+  KP.cb=cb;KP.cur=cur||{r:null,p:''};KP.open=new Set();
+  if(cur&&cur.r!==null){KP.open.add(cur.r+'\n');let a='';for(const sg of cur.p?cur.p.split('/'):[]){a=a?a+'/'+sg:sg;KP.open.add(cur.r+'\n'+a)}}
+  $('#kpick').hidden=false;kpDraw();
 }
+function kpClose(){$('#kpick').hidden=true;KP.cb=null}
+const kpBack=kpClose;
 function kpDraw(){
-  const b=$('#kpb'),f=$('#kpf');
-  const lk=(r,p,w)=>lockOf(r,p)?`<span class="kb">${icon('lock')}${w}</span>`:'';
-  if(KP.r===null){
-    $('#kpt').textContent='Куда сохранять';f.hidden=true;
-    const L=[['','Облако'],...repos.filter(mineRepo).map(x=>[x.name,x.name])];
-    b.innerHTML=L.map(([r,n])=>`<div class="kr"><button class="ko" data-kr="${esc(r)}">${icon(r?'repo':'cloud')}<span class="n">${esc(n)}</span>${lk(r,'','Запаролен')}</button><button class="kc" data-ks="${esc(r)}" data-kp="" aria-label="Выбрать">${icon('check')}</button></div>`).join('');
-    return;
-  }
-  $('#kpt').textContent=kpName(KP.r,KP.p);
-  const kids=kpKids(KP.r,KP.p);
-  b.innerHTML=`<div class="kr kn"><button class="ko" data-knew="1">${icon('folderplus')}<span class="n">Новая папка</span></button></div>`
-    +kids.map(x=>`<div class="kr"><button class="ko" data-kf="${esc(x)}"><span>📁</span><span class="n">${esc(base(x))}</span>${lk(KP.r,x,'Запаролена')}</button><button class="kc" data-ks="${esc(KP.r)}" data-kp="${esc(x)}" aria-label="Выбрать">${icon('check')}</button></div>`).join('')
-    +(kids.length?'':'<div class="empty">Вложенных папок нет</div>');
-  f.hidden=false;$('#kpok').textContent='Сохранять сюда: '+(KP.p?base(KP.p):(KP.r||'Облако')+' (корень)');
+  $('#kpt').textContent='Куда сохранять';$('#kpf').hidden=true;
+  const out=[],at=(r,p)=>`data-r="${esc(r)}" data-p="${esc(p)}"`;
+  const row=(r,p,name,ic,d)=>{
+    const open=KP.open.has(r+'\n'+p)&&!isLocked(r,p),lk=lockOf(r,p),on=KP.cur.r===r&&KP.cur.p===p;
+    out.push(`<div class="kr" style="padding-left:${d*16}px"><button class="ko" data-ks="1" ${at(r,p)}>${ic}<span class="n">${esc(name)}</span>${lk?`<span class="kb">${icon('lock')}${p?'Запаролена':'Запаролен'}</span>`:''}${on?`<span class="kb">${icon('check')}</span>`:''}</button><button class="kc${open?' op':''}" data-kx="1" ${at(r,p)} aria-label="Раскрыть">${icon('down')}</button></div>`);
+    if(open){
+      out.push(`<div class="kr kn" style="padding-left:${(d+1)*16}px"><button class="ko" data-knew="1" ${at(r,p)}>${icon('folderplus')}<span class="n">Новая папка</span></button></div>`);
+      for(const x of kpKids(r,p))row(r,x,base(x),'<span>📁</span>',d+1);
+    }
+  };
+  for(const[r,n]of[['','Облако'],...repos.filter(mineRepo).map(x=>[x.name,x.name])])row(r,'',n,icon(r?'repo':'cloud'),0);
+  $('#kpb').innerHTML=out.join('');
 }
 async function kpPick(r,p){
   try{
@@ -1258,18 +1266,26 @@ async function kpPick(r,p){
   }catch(x){say(err(x),1);return}
   const cb=KP.cb;kpClose();if(cb)cb(r,p);
 }
-$('#kpx').onclick=kpBack;
-$('#kpok').onclick=()=>kpPick(KP.r,KP.p);
+$('#kpx').onclick=kpClose;
+let kpBusy=false;
 $('#kpb').addEventListener('click',async e=>{
   const g=a=>e.target.closest('['+a+']');
-  const rb=g('data-kr'),fb=g('data-kf'),sb=g('data-ks'),nb=g('data-knew');
-  if(sb){await kpPick(sb.dataset.ks,sb.dataset.kp);return}
-  if(rb){const r=rb.dataset.kr;if(await unlock(r,'')){KP.r=r;KP.p='';kpDraw()}return}
-  if(fb){const x=fb.dataset.kf;if(await unlock(KP.r,x)){KP.p=x;kpDraw()}return}
-  if(nb){
-    const n=clean(String(await uiPrompt('Название новой папки','')||'')).trim();
-    if(n)await kpPick(KP.r,KP.p?KP.p+'/'+n:n);
-  }
+  const sb=g('data-ks'),xb=g('data-kx'),nb=g('data-knew');
+  const el=sb||xb||nb;if(!el||kpBusy)return;
+  const r=el.dataset.r,p=el.dataset.p;
+  kpBusy=true;
+  try{
+    if(sb){await kpPick(r,p)}
+    else if(xb){
+      const k=r+'\n'+p;
+      if(KP.open.has(k)&&!isLocked(r,p)){KP.open.delete(k);kpDraw()}
+      else if(await unlock(r,p)){KP.open.add(k);kpDraw()}
+    }
+    else if(nb){
+      const n=clean(String(await uiPrompt('Название новой папки','')||'')).trim();
+      if(n)await kpPick(r,p?p+'/'+n:n);
+    }
+  }finally{kpBusy=false}
 });
 
 /* ---- Расширения ----
