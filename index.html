@@ -548,6 +548,26 @@ body.pl-on .fab{bottom:calc(176px + env(safe-area-inset-bottom))}
 #admb .stc .sl{display:flex;justify-content:space-between;gap:10px;padding:6px 0 0;font-size:13px;color:var(--mute)}
 #admb .stc .sl span:first-child{min-width:0;word-break:break-word}
 #admb .stc .sl span:last-child{flex:none}
+
+/* ---- Расширение «Заметки» ---- */
+.nts{max-width:760px;margin:0 auto;padding-bottom:90px}
+.ntr b{word-break:normal;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ntr .m{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.ntr>div:nth-child(2){flex:1;min-width:0}
+.ntr.pin{box-shadow:0 0 0 1px color-mix(in srgb,var(--acc) 45%,transparent)}
+#nte{background:none;border:0;border-radius:0;outline:none;font:700 25px/1.25 Georgia,serif;padding:10px 0;margin:0}
+#ntx{display:block;width:100%;min-height:45vh;background:none;border:0;outline:none;resize:none;color:var(--ink);font:17px/1.6 Georgia,serif;padding:4px 0;overflow:hidden}
+#nte::placeholder,#ntx::placeholder,.nci input::placeholder{color:var(--mute)}
+.nci{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.nci input{flex:1;background:none;border:0;border-radius:0;outline:none;font:17px/1.4 Georgia,serif;padding:12px 0;margin:0}
+.nci.dn input{text-decoration:line-through;color:var(--mute)}
+.ncb{flex:none;width:26px;height:26px;padding:0;border-radius:50%;border:2px solid var(--acc);background:none;color:var(--accink);font:700 15px/22px system-ui}
+.nci.dn .ncb{background:var(--acc)}
+#ntcadd{margin-top:14px;background:var(--bg);color:var(--acc);border:1px solid var(--acc);border-radius:99px;padding:7px 13px;font-size:14px}
+button.ntfab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:16;width:56px;height:56px;border-radius:50%;border:2px solid var(--acc);padding:0;background:var(--bg);color:var(--acc);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.45),0 0 14px color-mix(in srgb,var(--acc) 22%,transparent)}
+.ntfab .i{width:26px;height:26px;stroke-width:2.4}
+#ntsh{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.6);display:flex;align-items:flex-end}
+#ntsh .b{background:var(--card);width:100%;border-radius:16px 16px 0 0;padding:8px 10px calc(14px + env(safe-area-inset-bottom))}
+#ntsh button{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:0;background:none;padding:14px 8px;font-size:16px;border-radius:8px;font-family:system-ui,sans-serif}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-v4-192.png" type="image/png">
@@ -1403,7 +1423,7 @@ $('#kpb').addEventListener('click',async e=>{
    Если он нажал «Да», в его шторке появляется раздел «Расширения». Записи лежат в канале (🧩): предложение, согласие, отказ. */
 const EXR='🧩 ';
 let EXT=[];
-const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>openMusic()}];
+const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>openMusic()},{id:'notes',name:'Заметки',ic:'edit',open:()=>openNotes()}];
 const extName=id=>{let n='';for(const r of EXT)if(r.x===id&&r.k==='n'&&r.n)n=r.n;return n||(EXTS.find(e=>e.id===id)||{}).name||id};
 const extState=(x,u)=>{let k='';for(const r of EXT)if(r.x===x&&r.u===u)k=r.k;return k};
 const extMine=()=>EXTS.filter(e=>isAdmin()||(S.guestUser&&extState(e.id,S.guestUser)==='a'));
@@ -1430,6 +1450,61 @@ function openExts(){
   $('#admb').innerHTML=L.length?`<div class="exl">${L.map(e=>`<div class="exr"><button class="exo" data-exm="${e.id}">${icon(e.ic)}<span>${esc(extName(e.id))}</span></button></div>`).join('')}</div>`:'<div class="empty">Пока нет расширений</div>';
 }
 $('#extb').onclick=openExts;
+/* ---- Расширение «Заметки»: открывается как папка внутри раздела «Расширения», только списком.
+   Заметки хранятся на устройстве отдельно для каждого пользователя (ключ ntx-<имя>). ---- */
+const NT={pf:false,pp:null,n:null,q:'',t:0};let NTD=[];
+const ntKey=()=>'ntx-'+(S.guestUser||'admin');
+const ntSave=()=>sv(ntKey(),NTD);
+const ntFmt=t=>{const d=new Date(t),n=new Date();return d.toDateString()===n.toDateString()?d.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString('ru',{day:'numeric',month:'short',year:d.getFullYear()===n.getFullYear()?undefined:'numeric'})};
+const ntTtl=n=>n.t.trim()||(n.k==='c'?(n.c.find(i=>i.d.trim())||{d:''}).d:n.b.trim().split('\n')[0])||'Без названия';
+const ntPrev=n=>n.k==='c'?n.c.filter(i=>i.d.trim()).slice(0,3).map(i=>(i.x?'☑ ':'☐ ')+i.d).join('  '):n.b.replace(/\s+/g,' ').trim().slice(0,90);
+const ntText=n=>(n.t.trim()?n.t.trim()+'\n\n':'')+(n.k==='c'?n.c.map(i=>(i.x?'[x] ':'[ ] ')+i.d).join('\n'):n.b);
+function ntSheet(items){const o=document.createElement('div');o.id='ntsh';o.innerHTML='<div class="b">'+items.map((x,i)=>`<button data-i="${i}" class="${x.c||''}">${icon(x.ic)}<span>${esc(x.t)}</span></button>`).join('')+'</div>';document.body.appendChild(o);o.onclick=e=>{const b=e.target.closest('button');o.remove();if(b)items[b.dataset.i].fn()}}
+function openNotes(inner){
+  if(!inner){NT.pf=fromSet;NT.pp=admParent;NT.q='';try{const a=ld(ntKey(),[]);NTD=Array.isArray(a)?a:[]}catch(e){NTD=[]}}
+  NT.n=null;fromSet=NT.pf;admParent=NT.pp;
+  openAdm(extName('notes'));
+  $('#admb').innerHTML=`<div class="nts"><input id="ntq" type="search" placeholder="Поиск по заметкам" value="${esc(NT.q)}"><div id="ntl"></div></div><button class="ntfab" id="ntadd" aria-label="Добавить">${icon('plus')}</button>`;
+  $('#ntq').oninput=e=>{NT.q=e.target.value.trim();ntPaint()};
+  $('#ntadd').onclick=()=>ntSheet([{t:'Заметка',ic:'edit',fn:()=>ntNew('t')},{t:'Чек-лист',ic:'check',fn:()=>ntNew('c')}]);
+  $('#ntl').onclick=e=>{const r=e.target.closest('[data-id]');if(r)ntOpen(r.dataset.id)};
+  ntPaint();
+}
+function ntPaint(){const s=NT.q.toLowerCase();
+  const L=NTD.filter(n=>!s||(n.t+' '+n.b+' '+n.c.map(i=>i.d).join(' ')).toLowerCase().includes(s)).sort((a,b)=>b.p-a.p||b.up-a.up);
+  $('#ntl').innerHTML=L.length?L.map(n=>`<div class="f ntr${n.p?' pin':''}" data-id="${n.id}"><div class="th fo">${icon(n.k==='c'?'check':'edit')}</div><div><b>${esc(ntTtl(n))}</b><div class="m">${n.p?'★ ':''}${ntFmt(n.up)}${ntPrev(n)?' · '+esc(ntPrev(n)):''}</div></div></div>`).join(''):`<div class="empty"><span class="big">📝</span>${NT.q?'Ничего не найдено':'Здесь пока пусто.<br>Нажмите «+», чтобы создать заметку'}</div>`}
+function ntNew(k){const t=Date.now(),n={id:t.toString(36)+Math.random().toString(36).slice(2,5),t:'',b:'',c:k==='c'?[{x:0,d:''}]:[],k,p:0,cr:t,up:t};NTD.push(n);ntOpen(n.id)}
+const ntTouch=()=>{NT.n.up=Date.now();clearTimeout(NT.t);NT.t=setTimeout(ntSave,250)};
+const ntGrow=()=>{const x=$('#ntx');x.style.height='auto';x.style.height=Math.max(x.scrollHeight,innerHeight*.45)+'px'};
+function ntPaintC(){$('#ntc').innerHTML=NT.n.c.map((x,i)=>`<div class="nci${x.x?' dn':''}"><button class="ncb" data-t="${i}" aria-label="Отметить">${x.x?'✓':''}</button><input data-i="${i}" value="${esc(x.d)}" placeholder="Пункт" autocomplete="off"><button class="ib2" data-r="${i}" aria-label="Удалить пункт">${icon('close')}</button></div>`).join('')+'<button id="ntcadd">+ Пункт</button>'}
+function ntAddC(at){NT.n.c.splice(at,0,{x:0,d:''});ntPaintC();$('#ntc').querySelector(`[data-i="${at}"]`).focus();ntTouch()}
+function ntView(){const c=NT.n.k==='c';$('#ntx').hidden=c;$('#ntc').hidden=!c;if(c)ntPaintC();else ntGrow()}
+function ntOpen(id){const n=NTD.find(x=>x.id===id);if(!n)return;NT.n=n;fromSet=true;admParent=ntEnd;openAdm('Заметка');
+  $('#admb').innerHTML=`<div class="nts"><input id="nte" placeholder="Название" maxlength="200" autocomplete="off"><textarea id="ntx" placeholder="Начните писать…"></textarea><div id="ntc"></div></div>`;
+  $('#nte').value=n.t;$('#ntx').value=n.b;
+  const m=$('#musq');m.hidden=false;m.textContent='⋯';m.onclick=ntMenu;
+  $('#nte').oninput=e=>{n.t=e.target.value;ntTouch()};
+  $('#ntx').oninput=e=>{n.b=e.target.value;ntGrow();ntTouch()};
+  const c=$('#ntc');
+  c.addEventListener('input',e=>{const i=e.target.dataset.i;if(i!=null){n.c[i].d=e.target.value;ntTouch()}});
+  c.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.i!=null){e.preventDefault();ntAddC(+e.target.dataset.i+1)}});
+  c.addEventListener('click',e=>{const t=e.target.closest('[data-t]'),r=e.target.closest('[data-r]');
+    if(t){const x=n.c[t.dataset.t];x.x=x.x?0:1;ntTouch();ntPaintC()}else if(r){n.c.splice(r.dataset.r,1);ntTouch();ntPaintC()}else if(e.target.id==='ntcadd')ntAddC(n.c.length)});
+  ntView();
+  if(!n.t&&!n.b&&!n.c.some(i=>i.d))setTimeout(()=>(n.k==='c'?$('#nte'):$('#ntx')).focus(),60)}
+function ntEnd(){const n=NT.n;if(!n)return;clearTimeout(NT.t);NT.n=null;$('#musq').textContent='?';
+  n.c=n.c.filter(i=>i.d.trim());if(!n.t.trim()&&!n.b.trim()&&!n.c.length)NTD=NTD.filter(x=>x!==n);ntSave();openNotes(1)}
+function ntMenu(){const n=NT.n;if(!n)return;ntSheet([
+  {t:n.p?'Открепить':'Закрепить',ic:'check',fn:()=>{n.p=n.p?0:1;ntSave();say(n.p?'Закреплено':'Откреплено')}},
+  {t:n.k==='c'?'Преобразовать в текст':'Преобразовать в чек-лист',ic:n.k==='c'?'edit':'check',fn:()=>{
+    if(n.k==='t'){n.c=n.b.split('\n').filter(s=>s.trim()).map(d=>({x:0,d}));if(!n.c.length)n.c=[{x:0,d:''}];n.b='';n.k='c'}
+    else{n.b=n.c.map(i=>i.d).join('\n');n.c=[];n.k='t';$('#ntx').value=n.b}
+    ntTouch();ntSave();ntView()}},
+  {t:'Копировать текст',ic:'copy',fn:()=>navigator.clipboard.writeText(ntText(n)).then(()=>say('Скопировано'),()=>say('Не удалось скопировать',1))},
+  ...(navigator.share?[{t:'Поделиться',ic:'up',fn:()=>navigator.share({title:ntTtl(n),text:ntText(n)}).catch(()=>{})}]:[]),
+  {t:'Удалить',ic:'trash',c:'del',fn:()=>{if(!confirm('Удалить заметку?'))return;NTD=NTD.filter(x=>x!==n);ntSave();NT.n=null;$('#musq').textContent='?';openNotes(1);say('Заметка удалена')}}])}
+addEventListener('pagehide',()=>{if(NT.n){clearTimeout(NT.t);ntSave()}});
+
 $('#admb').addEventListener('click',async e=>{
   const g=a=>e.target.closest('['+a+']');
   const o=g('data-exo'),p=g('data-exp'),u=g('data-exu'),m=g('data-exm'),v=g('data-exv'),w=g('data-exw');
