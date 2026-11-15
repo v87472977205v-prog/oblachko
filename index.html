@@ -576,6 +576,7 @@ button.ntfab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bo
 #ntfm button{display:flex;gap:9px;align-items:center;padding:10px 16px;border-radius:99px;background:var(--card);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.4);font-size:15px;color:var(--ink);animation:fanin .16s ease backwards}
 #ntfm button:nth-child(2){animation-delay:.05s}
 .ntfab .i{transition:transform .18s}.ntfab.open .i{transform:rotate(45deg)}
+body.shv #vrm,body.shv #vmore{display:none!important}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-v4-192.png" type="image/png">
@@ -883,7 +884,7 @@ const fabBlocked=()=>repoBlocked(R())||repoRO(R())||isLocked(R(),cur)||needKey(R
 const lockOf=(r,p)=>locks.find(l=>l.r===r&&l.p===p);
 const GU='👤';
 const UR='🙋 ',JR='📝 ',OKR='🗝 ',ORR='🔢 ',AN='📣 ',CVX='🖼 ';
-let ANN=[],CVRM=[];
+let ANN=[],CVRM=[],SHR=[];
 const repoGuest=r=>{const x=r&&repos.find(q=>q.name===r);return !!(x&&x.guest&&(!x.owner||x.owner===S.guestUser))};
 const guestRec=()=>S.viewer&&S.guestUser?users.find(x=>x.u===S.guestUser):null;
 const repoBlocked=r=>{const g=guestRec();return !!(g&&g.r&&g.r.includes(r||''))};
@@ -1073,7 +1074,7 @@ document.addEventListener('visibilitychange',()=>{
   if(HIDAT&&Date.now()-HIDAT>60000&&FUN.size){for(const k of FUN.keys())UN.delete(k);FUN.clear();try{render()}catch(e){}}
   HIDAT=0;
 });
-const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','ext+':'предложил расширение:',extok:'подключил расширение:',extno:'отказался от расширения:',extrn:'переименовал расширение:',extrv:'отозвал расширение:','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',ublock:'закрыл доступ пользователю',uunblock:'открыл доступ пользователю',rblock:'закрыл доступ к репозиторию:',runblock:'открыл доступ к репозиторию:',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение',rro:'оставил только чтение:',ncr:'запретил создавать репозитории:','ncr-':'разрешил создавать репозитории:'};
+const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','ext+':'предложил расширение:',extok:'подключил расширение:',extno:'отказался от расширения:',extrn:'переименовал расширение:',extrv:'отозвал расширение:','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',ublock:'закрыл доступ пользователю',uunblock:'открыл доступ пользователю',rblock:'закрыл доступ к репозиторию:',runblock:'открыл доступ к репозиторию:',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение','lnk+':'создал ссылку на папку:',lnk:'открыл по ссылке:','lnk-':'отозвал ссылку:',rro:'оставил только чтение:',ncr:'запретил создавать репозитории:','ncr-':'разрешил создавать репозитории:'};
 function openAdm(t){try{gymReset()}catch(e){}$('#admt').textContent=t;$('#adm').hidden=false;const q=$('#musq');if(q)q.hidden=true}
 let fromSet=false,admParent=null;
 $('#admx').onclick=()=>{if(fromSet&&admParent){admParent();return}fromSet=false;admParent=null;$('#adm').hidden=true};
@@ -1085,7 +1086,7 @@ function drawSettings(){
 function drawConsole(){
   if(!isAdmin()){drawSettings();return}
   fromSet=false;admParent=null;openAdm('Консоль администратора');
-  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="acc">${icon('lock')}<span>Доступ</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button><button data-set="ext">${icon('puzzle')}<span>Расширения</span></button><button data-set="stat">${icon('list')}<span>Статистика</span></button></div>`;
+  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="acc">${icon('lock')}<span>Доступ</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button><button data-set="ext">${icon('puzzle')}<span>Расширения</span></button><button data-set="stat">${icon('list')}<span>Статистика</span></button><button data-set="shr">${icon('copy')}<span>Временный доступ</span></button></div>`;
 }
 function openLks(){
   openAdm('Кнопка открытия репозитория');
@@ -1796,7 +1797,7 @@ $('#admb').addEventListener('click',e=>{
   else $('#'+k).click();
 });
 $('#admb').addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(!b)return;const k=b.dataset.set;
-  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,acc:openAccList,jrn:openJournal,key:makeKey,ann:openAnn,ext:openExtAdmin,stat:openStats};
+  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,acc:openAccList,jrn:openJournal,key:makeKey,ann:openAnn,ext:openExtAdmin,stat:openStats,shr:openShares};
   if(ACT[k]){ACT[k]();return}
   if(SETK[k]){fromSet=true;admParent=drawSettings;SETK[k]();return}
   if(ADMK[k]){if(!isAdmin())return;fromSet=true;admParent=drawConsole;ADMK[k]()}  /* консоль и всё из неё — только у владельца */
@@ -2362,7 +2363,7 @@ async function readFast(prog){
   return[...all.values()].sort((x,y)=>y.id-x.id);
 }
 async function refresh(){
-  const out=[],fol=[],reps=[],lks=[],usr=[],jr=[],jenc=[],ordp=[],ans=[],cvx=[],exr=[],ntp=[],seen=new Set();let off,okk=null;const oks=[];
+  const out=[],fol=[],reps=[],lks=[],usr=[],jr=[],jenc=[],ordp=[],ans=[],cvx=[],exr=[],ntp=[],shr=[],seen=new Set();let off,okk=null;const oks=[];
   const proc=m=>{
     if(seen.has(m.id))return;seen.add(m.id);
       const e=entry(m);
@@ -2374,6 +2375,7 @@ async function refresh(){
         else if(t.startsWith(CVX)){try{const j=JSON.parse(t.slice(CVX.length));if(j&&j.d)cvx.push({mid:m.id,r:j.r||'',e:j.e?1:0,d:j.d})}catch(x){}}
         else if(t.startsWith(AN)){try{const j=JSON.parse(t.slice(AN.length));if(j&&j.v&&Array.isArray(j.l))ans.push({id:m.id,v:String(j.v),d:j.d||0,l:j.l.map(String)})}catch(x){}}
         else if(t.startsWith(NTP)){try{const j=JSON.parse(t.slice(NTP.length));if(j&&j.id&&typeof j.s==='string')ntp.push({m:m.id,u:String(j.u||''),id:String(j.id),v:+j.v||0,p:+j.p||0,n:+j.n||1,s:j.s,e:j.e?1:0})}catch(x){}}
+        else if(t.startsWith('🔗 ')){try{const j=JSON.parse(t.slice(3));if(j&&j.i)shr.push({id:m.id,i:String(j.i),r:j.r||'',p:j.p||'',e:+j.e||0,m:+j.m||0,c:+j.c||0,x:j.x?1:0,t:+j.t||0,k:j.k||''})}catch(x){}}
         else if(t.startsWith(EXR)){try{const j=JSON.parse(t.slice(EXR.length));if(j&&j.k&&j.x&&j.u)exr.push({id:m.id,k:String(j.k),x:String(j.x),u:String(j.u),n:String(j.n||'')})}catch(x){}}
         else if(t.startsWith(OKR)){try{const r={id:m.id,...JSON.parse(t.slice(OKR.length))};oks.push(r);if(!okk||r.id>okk.id)okk=r}catch(x){}}
         else if(t.startsWith(LK)){try{const j=JSON.parse(t.slice(LK.length));lks.push({id:m.id,r:j.r||'',p:j.p||'',h:j.h,x:j.x||''})}catch(x){}}
@@ -2395,11 +2397,11 @@ async function refresh(){
       off=Math.min(...b.map(m=>m.id));
     }
   }
-  files=out;folders=fol;repos=reps;locks=lks;users=usrUniq(usr);JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);EXT=exr.sort((a,b)=>a.id-b.id);NTS=ntBuild(ntp);ownkey=okk;OKS=oks;CVRM=cvx;syncUN();guestBlockedCheck();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
+  files=out;folders=fol;repos=reps;locks=lks;users=usrUniq(usr);JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);EXT=exr.sort((a,b)=>a.id-b.id);NTS=ntBuild(ntp);SHR=[...new Map(shr.sort((a,b)=>a.id-b.id).map(x=>[x.i,x])).values()];ownkey=okk;OKS=oks;CVRM=cvx;syncUN();guestBlockedCheck();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
   if(R()&&!repos.some(x=>x.name===R()&&showRepo(x)))P.repo='';
   if(repoBlocked(R())){const c=[...(repoBlocked('')?[]:['']),...repos.filter(x=>showRepo(x)&&!repoBlocked(x.name)).map(x=>x.name)];if(c.length){P.repo=c[0];cur=''}}
   if(cur&&!allPaths().includes(cur))cur='';
-  try{annAuto()}catch(e){}try{extSync();extAuto()}catch(e){}
+  try{annAuto()}catch(e){}try{shAuto()}catch(e){}try{extSync();extAuto()}catch(e){}
 }
 
 
@@ -4373,6 +4375,88 @@ const makeKey=async()=>{
   try{await navigator.clipboard.writeText(key);alert('Ключ скопирован. Отправьте его другу. С этим ключом друг сможет загружать, переносить и удалять файлы так же, как вы.\n\nПеред этим второй аккаунт должен быть АДМИНИСТРАТОРОМ канала «'+TITLE+'» (права: публикация, изменение и удаление сообщений). Когда друг нажмёт «Войти», код придёт в Telegram второго аккаунта: передайте его другу не через Telegram (SMS, звонок).')}
   catch(e){prompt('Скопируйте ключ целиком и отправьте другу',key)}
 };
+
+/* ---- Временный доступ к папке по ссылке (🔗) ----
+   Создаёт только владелец (Консоль → «Временный доступ»): папка, срок в часах, число переходов. Ссылку открывают зарегистрированные в Облачке:
+   видят эту папку (с вложенными) только на просмотр и скачивание. Срок и счётчик проверяет приложение; запись правила лежит в канале (🔗).
+   Для зашифрованного репозитория ключ файлов кладётся в запись (владелец вводит пароль шифрования при создании). */
+const shUrl=id=>location.href.split('#')[0]+'#sh='+id;
+const shSt=s=>s.x?'отозвана':(s.e&&Date.now()>s.e)?'срок вышел':(s.m&&s.c>=s.m)?'переходы закончились':'действует';
+async function shPut(s){
+  const o={i:s.i,r:s.r,p:s.p,e:s.e,m:s.m,c:s.c,x:s.x?1:0,t:s.t};if(s.k)o.k=s.k;
+  const m=await withChat(()=>client.sendMessage(S.chat,'🔗 '+JSON.stringify(o)));
+  if(s.id)await withChat(()=>client.deleteMessages(S.chat,[s.id]));
+  s.id=m.id;return s;
+}
+function openShares(){
+  if(!isAdmin())return;
+  openAdm('Временный доступ');
+  const L=[...SHR].sort((a,b)=>b.t-a.t);
+  $('#admb').innerHTML='<div style="padding:10px 14px"><div class="uc"><div class="us">Ссылку открывают только те, кто уже зарегистрирован в Облачке. Они видят эту папку и могут только смотреть и скачивать.</div><div class="row"><button class="p" id="shnew">Новая ссылка</button></div></div>'+(L.length?L.map(s=>`<div class="uc"><div class="un">${esc(kpName(s.r,s.p))}</div><div class="us">${shSt(s)} · переходов: ${s.c}${s.m?' из '+s.m:''}${s.e?' · до '+new Date(s.e).toLocaleString('ru'):''}</div><div class="row"><button data-shc="${s.i}">Копировать</button>${shSt(s)==='действует'?`<button data-shx="${s.i}">Отозвать</button>`:''}<button class="del" data-shd="${s.i}">Удалить</button></div></div>`).join(''):'<div class="us" style="padding:10px 0">Ссылок пока нет</div>')+'</div>';
+}
+function shNew(){
+  kpOpen(async(r,p)=>{
+    try{
+      const a=await uiPrompt('Срок действия в часах (0 — без срока)','24');if(a==='')return;
+      const b=await uiPrompt('Сколько раз можно открыть (0 — без лимита)','5');if(b==='')return;
+      const h=+String(a).replace(',','.'),n=Math.floor(+b);
+      if(!isFinite(h)||h<0||!isFinite(n)||n<0){alert('Нужны числа не меньше нуля');return}
+      let k='';
+      if(r&&encOf(r)){
+        const pw=await askPass('Пароль шифрования «'+r+'»: он нужен, чтобы файлы открывались по ссылке');if(pw===null)return;
+        let o;try{o=await openEnc(pw,encOf(r))}catch(x){alert('Неверный пароль шифрования');return}
+        k=b64e(o.raw||await deriveRaw(pw,o.salt));
+      }
+      const s={i:Math.random().toString(36).slice(2,10),r,p,e:h?Date.now()+h*36e5:0,m:n,c:0,x:0,t:Date.now(),k};
+      await shPut(s);SHR.push(s);jlog('lnk+',kpName(r,p));
+      try{await navigator.clipboard.writeText(shUrl(s.i));say('Ссылка скопирована')}catch(e){prompt('Скопируйте ссылку',shUrl(s.i))}
+      openShares();
+    }catch(x){say(err(x),1)}
+  },{r:R(),p:cur});
+}
+$('#admb').addEventListener('click',async e=>{
+  const t=e.target.closest('#shnew,[data-shc],[data-shx],[data-shd]');if(!t||!isAdmin())return;
+  try{
+    if(t.id==='shnew'){shNew();return}
+    const s=SHR.find(x=>x.i===(t.dataset.shc||t.dataset.shx||t.dataset.shd));if(!s)return;
+    if(t.dataset.shc){try{await navigator.clipboard.writeText(shUrl(s.i));say('Ссылка скопирована')}catch(x){prompt('Скопируйте ссылку',shUrl(s.i))}}
+    else if(t.dataset.shx){if(!confirm('Отозвать ссылку?'))return;s.x=1;await shPut(s);jlog('lnk-',kpName(s.r,s.p));openShares()}
+    else if(t.dataset.shd){if(!confirm('Удалить ссылку?'))return;await withChat(()=>client.deleteMessages(S.chat,[s.id]));SHR=SHR.filter(x=>x!==s);openShares()}
+  }catch(x){say(err(x),1)}
+});
+/* получатель: ссылка запоминается, пока он входит, и открывается, когда приложение готово */
+(function(){const m=/[#&]sh=([a-z0-9]+)/.exec(location.hash);if(m){try{localStorage.setItem('tgsh',m[1]);history.replaceState(history.state,'',location.pathname+location.search)}catch(e){}}})();
+let shTry=0,SHV=null;
+function shAuto(){
+  let id='';try{id=localStorage.getItem('tgsh')||''}catch(e){}
+  if(!id)return;
+  if(booting||!ready||showSetup){if(shTry++<600)setTimeout(shAuto,500);return}
+  shTry=0;try{localStorage.removeItem('tgsh')}catch(e){}
+  shOpen(id);
+}
+async function shOpen(id){
+  const s=SHR.find(x=>x.i===id);
+  if(!s){alert('Ссылка не найдена или удалена');return}
+  const st=shSt(s);if(st!=='действует'){alert('Ссылка не действует: '+st);return}
+  try{
+    if(!isAdmin()){s.c++;await shPut(s);jlog('lnk',kpName(s.r,s.p))}
+    if(s.k&&!KEYS[s.r]){KEYS[s.r]=await keyRaw(b64d(s.k));s.own=1}
+    await decAll();
+  }catch(x){say(err(x),1);return}
+  shView(s);
+}
+function shEnd(){
+  const s=SHV;SHV=null;document.body.classList.remove('shv');
+  if(s&&s.own){delete KEYS[s.r];s.own=0}
+  fromSet=false;admParent=null;$('#adm').hidden=true;
+}
+function shView(s){
+  SHV=s;fromSet=true;admParent=shEnd;openAdm('Общая папка');
+  const L=files.filter(f=>f.repo===s.r&&(!s.p||inTree(f.path,s.p))).sort(SORTS.name);
+  $('#admb').innerHTML='<div style="padding:10px 14px"><div class="uc"><div class="un">'+esc(kpName(s.r,s.p))+'</div><div class="us">Только просмотр и скачивание.</div></div>'+(L.length?L.map((f,i)=>`<div class="uc"><div class="un">${esc(f.name)}</div><div class="us">${esc(f.path.slice(s.p.length).replace(/^\//,''))}${f.path.length>s.p.length?' · ':''}${size(f.size)}</div><div class="row"><button data-sho="${i}">Открыть</button></div></div>`).join(''):'<div class="us" style="padding:10px 0">В папке пока ничего нет</div>')+'</div>';
+  $('#admb').onclick=null;
+  $('#admb').querySelectorAll('[data-sho]').forEach(b=>b.onclick=()=>{curList=L.map(f=>f.id);document.body.classList.add('shv');showAt(+b.dataset.sho)});
+}
 $('#out').onclick=async()=>{
   if(!confirm('Выйти из аккаунта? Файлы в канале останутся.'))return;
   jlog('out','');for(let n=0;n<8&&(JQ.length||jBusy);n++){await jflush();await sleep(200)}
