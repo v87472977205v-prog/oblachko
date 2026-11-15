@@ -869,7 +869,7 @@ function askPass(title,type='password',init='',bio,scr){return new Promise(res=>
         const t0=Date.now();
         try{
           if(await bio()){if(!gone)done(BIOOK)}
-          else if(!gone)note('Отпечаток принят, но ключ на этом устройстве не найден. Введите пароль или заново включите отпечаток в меню репозитория.');
+          else if(!gone)note('Отпечаток принят, но сохранённый ключ на этом устройстве пропал. Введите пароль шифрования один раз, отпечаток восстановится сам.');
           return;
         }
         catch(e){
@@ -1749,10 +1749,11 @@ async function ensureKey(r){
   if(KEYS[r])return true;const e=encOf(r);if(!e)return true;
   if(!hasCrypto()){alert('Шифрование недоступно: при таком способе открытия файла браузер не даёт доступ к криптографии. Откройте файл через file:// или с хостинга.');return false}
   let bk=null;
-  const bioFn=bioEOn(r)?async()=>{bk=await bioELoad(r);return !!bk}:undefined;
+  const wasBio=bioEOn(r);
+  const bioFn=wasBio?async()=>{bk=await bioELoad(r);return !!bk}:undefined;
   const pw=await askPass('Пароль шифрования «'+r+'»','password','',bioFn);if(pw===null)return false;
   if(pw===BIOOK&&bk){KEYS[r]=bk;decAll().then(render);jlog('login','отпечаток: шифрование '+r);return true}
-  try{const o=await openEnc(pw,e);KEYS[r]=o.dk;decAll().then(render);return true}
+  try{const o=await openEnc(pw,e);KEYS[r]=o.dk;decAll().then(render);if(wasBio&&BIO.id)bioEPut(r).catch(()=>{});return true}
   catch(x){alert('Неверный пароль шифрования');return false}
 }
 async function setRepoEnc(r,enc){
@@ -3714,7 +3715,7 @@ $('#out').onclick=async()=>{
   jlog('out','');for(let n=0;n<8&&(JQ.length||jBusy);n++){await jflush();await sleep(200)}
   try{if(client){if(client.signOut)await client.signOut();else if(client.logOut)await client.logOut()}}catch(e){}
   try{Object.keys(localStorage).filter(k=>k.includes(PFX)||k==='tgm'||k==='tgun'||['tgmp','tglast','tgpos','tgspd'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
-  try{idbOp('f','readwrite',s=>s.clear());idbOp('a','readwrite',s=>s.clear());idbOp('m','readwrite',s=>s.clear())}catch(e){}WARM.clear();
+  try{idbOp('f','readwrite',s=>s.clear());idbOp('a','readwrite',s=>s.clear());idbOp('m','readwrite',s=>s.clear())}catch(e){}try{BIO.e={};BIO.eno={};saveBio()}catch(e){}WARM.clear();
   S={};ready=false;showSetup=true;files=[];folders=[];cur='';C.clear();
   for(const i of['#aid','#ahash','#phone','#combo'])$(i).value='';drawCs();
   pq=[];pi=-1;openId=null;try{au.pause();au.removeAttribute('src')}catch(e){}
