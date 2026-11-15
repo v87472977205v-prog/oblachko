@@ -1021,7 +1021,7 @@ document.addEventListener('visibilitychange',()=>{
   if(HIDAT&&Date.now()-HIDAT>60000&&FUN.size){for(const k of FUN.keys())UN.delete(k);FUN.clear();try{render()}catch(e){}}
   HIDAT=0;
 });
-const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','ext+':'предложил расширение:',extok:'подключил расширение:',extno:'отказался от расширения:',extrn:'переименовал расширение:','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение'};
+const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','ext+':'предложил расширение:',extok:'подключил расширение:',extno:'отказался от расширения:',extrn:'переименовал расширение:',extrv:'отозвал расширение:','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение'};
 function openAdm(t){$('#admt').textContent=t;$('#adm').hidden=false;const q=$('#musq');if(q)q.hidden=true}
 let fromSet=false,admParent=null;
 $('#admx').onclick=()=>{if(fromSet&&admParent){admParent();return}fromSet=false;admParent=null;$('#adm').hidden=true};
@@ -1305,13 +1305,14 @@ async function extSend(rec){
 function openExtAdmin(){
   if(!isAdmin())return;
   fromSet=true;admParent=drawConsole;openAdm('Расширения');
-  $('#admb').innerHTML=`<div class="exl">${EXTS.map(e=>`<div class="exr"><button class="exo" data-exo="${e.id}">${icon(e.ic)}<span>${esc(extName(e.id))}</span></button><button class="exg" data-exg="${e.id}" aria-label="Переименовать">${icon('gear')}</button><button class="exp" data-exp="${e.id}" aria-label="Предложить пользователю">+</button></div>`).join('')}</div>`;
+  $('#admb').innerHTML=`<div class="exl">${EXTS.map(e=>`<div class="exr"><button class="exo" data-exo="${e.id}">${icon(e.ic)}<span>${esc(extName(e.id))}</span></button><button class="exg" data-exg="${e.id}" aria-label="Переименовать">${icon('gear')}</button><button class="exp" data-exv="${e.id}" aria-label="Отозвать у пользователя">−</button><button class="exp" data-exp="${e.id}" aria-label="Предложить пользователю">+</button></div>`).join('')}</div>`;
 }
-function openExtUsers(x){
+function openExtUsers(x,rev){
   if(!isAdmin())return;
-  fromSet=true;admParent=openExtAdmin;openAdm('Кому предложить');
-  const st={a:'подключено',o:'ждёт ответа',d:'отказался'};
-  $('#admb').innerHTML=users.length?`<div class="exl">${users.map(u=>`<div class="exr"><button class="exo" data-exu="${esc(x)}" data-u="${esc(u.u)}"><span>${esc(u.u)}</span></button><span class="us">${st[extState(x,u.u)]||''}</span></div>`).join('')}</div>`:'<div class="empty">Пользователей пока нет</div>';
+  fromSet=true;admParent=openExtAdmin;openAdm(rev?'У кого отозвать':'Кому предложить');
+  const st={a:'подключено',o:'ждёт ответа',d:'отказался',r:'отозвано'};
+  const L=rev?users.filter(u=>{const k=extState(x,u.u);return k==='a'||k==='o'}):users;
+  $('#admb').innerHTML=L.length?`<div class="exl">${L.map(u=>`<div class="exr"><button class="exo" ${rev?'data-exw':'data-exu'}="${esc(x)}" data-u="${esc(u.u)}"><span>${esc(u.u)}</span></button><span class="us">${st[extState(x,u.u)]||''}</span></div>`).join('')}</div>`:`<div class="empty">${rev?'Это расширение пока никому не выдано':'Пользователей пока нет'}</div>`;
 }
 function openExts(){
   fromSet=false;admParent=null;openAdm('Расширения');
@@ -1321,7 +1322,7 @@ function openExts(){
 $('#extb').onclick=openExts;
 $('#admb').addEventListener('click',async e=>{
   const g=a=>e.target.closest('['+a+']');
-  const o=g('data-exo'),p=g('data-exp'),u=g('data-exu'),m=g('data-exm');
+  const o=g('data-exo'),p=g('data-exp'),u=g('data-exu'),m=g('data-exm'),v=g('data-exv'),w=g('data-exw');
   const rn=g('data-exg');
   if(rn){
     if(!isAdmin())return;
@@ -1334,6 +1335,16 @@ $('#admb').addEventListener('click',async e=>{
   if(o){const x=EXTS.find(q=>q.id===o.dataset.exo);if(x&&isAdmin()){fromSet=true;admParent=openExtAdmin;x.open()}return}
   if(m){const x=EXTS.find(q=>q.id===m.dataset.exm);if(x&&extMine().includes(x)){fromSet=true;admParent=openExts;x.open()}return}
   if(p){if(isAdmin())openExtUsers(p.dataset.exp);return}
+  if(v){if(isAdmin())openExtUsers(v.dataset.exv,true);return}
+  if(w){
+    if(!isAdmin()||w.disabled)return;
+    const id=w.dataset.exw,name=w.dataset.u;
+    if(!confirm('Отозвать расширение «'+extName(id)+'» у пользователя «'+name+'»? Оно пропадёт из его меню.'))return;
+    w.disabled=true;
+    try{await extSend({k:'r',x:id,u:name});jlog('extrv',extName(id)+' ← '+name);say('Расширение отозвано');openExtUsers(id,true)}
+    catch(err2){say('Не удалось отозвать: '+err(err2),1);w.disabled=false}
+    return;
+  }
   if(u){
     if(!isAdmin()||u.disabled)return;
     const id=u.dataset.exu,name=u.dataset.u,x=EXTS.find(q=>q.id===id);if(!x)return;
