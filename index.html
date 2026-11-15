@@ -572,6 +572,10 @@ button.ntfab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bo
 #ntpw{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
 #ntpw .b{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;width:min(380px,100%);font-family:system-ui,sans-serif}
 #ntpw .t{font-weight:600;margin-bottom:6px}#ntpw .bad{color:var(--bad);min-height:18px}
+#ntfm{position:fixed;right:18px;bottom:calc(86px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px;align-items:flex-end;z-index:16}
+#ntfm button{display:flex;gap:9px;align-items:center;padding:10px 16px;border-radius:99px;background:var(--card);border:1px solid var(--line);box-shadow:0 4px 14px rgba(0,0,0,.4);font-size:15px;color:var(--ink);animation:fanin .16s ease backwards}
+#ntfm button:nth-child(2){animation-delay:.05s}
+.ntfab .i{transition:transform .18s}.ntfab.open .i{transform:rotate(45deg)}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-v4-192.png" type="image/png">
@@ -1454,6 +1458,9 @@ function openExts(){
   $('#admb').innerHTML=L.length?`<div class="exl">${L.map(e=>`<div class="exr"><button class="exo" data-exm="${e.id}">${icon(e.ic)}<span>${esc(extName(e.id))}</span></button></div>`).join('')}</div>`:'<div class="empty">Пока нет расширений</div>';
 }
 $('#extb').onclick=openExts;
+/* при входе под пользователем ключ заметок выводится из введённого пароля и запоминается на устройстве */
+async function ntLogin(name,pw){NTK=null;NTKu=null;const k=await deriveKey(pw,te.encode('ntx:'+name));await idbOp('m','readwrite',x=>x.put({id:'ntk:'+name,key:k}))}
+document.addEventListener('click',e=>{if(e.target.closest('#ntadd,#ntfm'))return;const f=$('#ntfm');if(f&&!f.hidden){f.hidden=true;const b=$('#ntadd');if(b)b.classList.remove('open')}});
 /* ---- Расширение «Заметки»: открывается как папка в разделе «Расширения», только списком.
    Заметки лежат в канале (📓), привязаны к аккаунту пользователя и видны на любом его устройстве.
    Одна версия заметки = одно или несколько сообщений (длинные режутся на части), старые версии удаляются. ---- */
@@ -1476,7 +1483,7 @@ async function ntKeyGet(){const u=ntMe();if(NTK&&NTKu===u)return NTK;NTK=null;NT
   try{const r=await idbOp('m','readonly',s=>s.get(kid));if(r&&r.key){NTK=r.key;return NTK}}catch(e){}
   let bad='';
   for(;;){
-    const pw=await ntAskPw(S.guestUser?'Введите пароль вашей учётки. Им шифруются заметки; на этом устройстве его нужно ввести один раз.':'Введите мастер-пароль. Им шифруются заметки; на этом устройстве его нужно ввести один раз.',bad);
+    const pw=await ntAskPw(S.guestUser?'Введите пароль вашей учётки, один раз. Дальше ключ заметок создаётся автоматически при входе.':'Введите мастер-пароль. Им шифруются заметки; на этом устройстве его нужно ввести один раз.',bad);
     if(pw===null)return undefined;
     try{
       if(S.guestUser){const rec=users.find(x=>x.u===S.guestUser);if(rec&&hashPw(pw,rec.h.split(':')[0])!==rec.h)throw 0}
@@ -1534,9 +1541,9 @@ async function openNotes(inner){
     ntMigrate();ntUpgrade();ntSyncIn()}
   NT.n=null;fromSet=NT.pf;admParent=NT.pp;
   openAdm(extName('notes'));
-  $('#admb').innerHTML=`<div class="nts"><input id="ntq" type="search" placeholder="Поиск по заметкам" value="${esc(NT.q)}"><div id="ntl"></div></div><button class="ntfab" id="ntadd" aria-label="Добавить">${icon('plus')}</button>`;
+  $('#admb').innerHTML=`<div class="nts"><input id="ntq" type="search" placeholder="Поиск по заметкам" value="${esc(NT.q)}"><div id="ntl"></div></div><div id="ntfm" hidden><button id="ntfc">${icon('check')}Чек-лист</button><button id="ntfn">${icon('edit')}Заметка</button></div><button class="ntfab" id="ntadd" aria-label="Добавить">${icon('plus')}</button>`;
   $('#ntq').oninput=e=>{NT.q=e.target.value.trim();ntPaint()};
-  $('#ntadd').onclick=()=>ntSheet([{t:'Заметка',ic:'edit',fn:()=>ntNew('t')},{t:'Чек-лист',ic:'check',fn:()=>ntNew('c')}]);
+  $('#ntadd').onclick=()=>{const f=$('#ntfm');f.hidden=!f.hidden;$('#ntadd').classList.toggle('open',!f.hidden)};$('#ntfn').onclick=()=>ntNew('t');$('#ntfc').onclick=()=>ntNew('c');
   $('#ntl').onclick=e=>{const r=e.target.closest('[data-id]');if(r)ntOpen(r.dataset.id)};
   ntPaint();
 }
@@ -1894,13 +1901,13 @@ async function guestGate(){
     if(ex){
       if(!a)return 'Введите пароль';
       if(hashPw(a,ex.h.split(':')[0])!==ex.h)return 'Неверный пароль';
-      S.guestUser=ex.u;S.guestHash=ex.h;sv('tgm',S);return null;
+      try{await ntLogin(ex.u,a)}catch(e){}S.guestUser=ex.u;S.guestHash=ex.h;sv('tgm',S);return null;
     }
     if(!a)return 'Придумайте пароль';
     if(a!==b)return 'Пароли не совпали';
     const h=hashPw(a,Math.random().toString(36).slice(2,10)),e=await encPw(a),c=Date.now();
     const m=await withChat(()=>client.sendMessage(S.chat,UR+JSON.stringify({u:name,h,e,c})));
-    users.push({id:m.id,u:name,h,e,c});S.guestUser=name;S.guestHash=h;sv('tgm',S);jlog('user+',name);return null;
+    users.push({id:m.id,u:name,h,e,c});try{await ntLogin(name,a)}catch(e){}S.guestUser=name;S.guestHash=h;sv('tgm',S);jlog('user+',name);return null;
   });
   return !!ok;
 }
