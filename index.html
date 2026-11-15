@@ -569,6 +569,9 @@ button.ntfab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bo
 #ntsh .b{background:var(--card);width:100%;border-radius:16px 16px 0 0;padding:8px 10px calc(14px + env(safe-area-inset-bottom))}
 #ntsh button{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:0;background:none;padding:14px 8px;font-size:16px;border-radius:8px;font-family:system-ui,sans-serif}
 #nte{padding:10px 0 12px;margin-bottom:14px;border-bottom:1px solid var(--line)}
+#ntpw{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+#ntpw .b{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;width:min(380px,100%);font-family:system-ui,sans-serif}
+#ntpw .t{font-weight:600;margin-bottom:6px}#ntpw .bad{color:var(--bad);min-height:18px}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-v4-192.png" type="image/png">
@@ -1454,10 +1457,34 @@ $('#extb').onclick=openExts;
 /* ---- Расширение «Заметки»: открывается как папка в разделе «Расширения», только списком.
    Заметки лежат в канале (📓), привязаны к аккаунту пользователя и видны на любом его устройстве.
    Одна версия заметки = одно или несколько сообщений (длинные режутся на части), старые версии удаляются. ---- */
-const NTP='📓 ';let NTS=[];
+const NTP='📓 ';let NTS=[];const NTC=new Map();let NTK=null,NTKu=null;
 const NT={pf:false,pp:null,n:null,q:'',t:0,d:new Set(),f:0,rt:0},NTQ={};let NTD=[];
 const ntMe=()=>S.guestUser||'';
-const ntMine=()=>NTS.filter(r=>r.u===ntMe()).map(r=>({...r.note,_m:r.mids}));
+async function ntMine(){const out=[];
+  for(const r of NTS.filter(r=>r.u===ntMe())){const k=r.u+r.id+r.v;let note=NTC.get(k);
+    if(!note&&r.raw){try{note=r.e?(NTK?JSON.parse(td.decode(await aesD(NTK,b64d(r.raw)))):null):JSON.parse(r.raw)}catch(e){note=null;NT.bad=(NT.bad||0)+1}if(note)NTC.set(k,note)}
+    if(note)out.push({...note,_m:r.mids})}
+  return out}
+function ntAskPw(msg,bad){return new Promise(r=>{const o=document.createElement('div');o.id='ntpw';
+  o.innerHTML=`<div class="b"><div class="t">Пароль</div><div class="m">${esc(msg)}</div><input type="password" id="ntpi" autocomplete="current-password" enterkeyhint="done"><div class="m bad">${esc(bad||'')}</div><div class="row"><button id="ntpc">Отмена</button><button class="p" id="ntpo">Открыть</button></div></div>`;
+  document.body.appendChild(o);const i=$('#ntpi');i.focus();const done=v=>{o.remove();r(v)};
+  $('#ntpo').onclick=()=>done(i.value);$('#ntpc').onclick=()=>done(null);i.onkeydown=e=>{if(e.key==='Enter')done(i.value)}})}
+/* ключ шифрования выводится из пароля учётки (у владельца — из мастер-пароля) и запоминается на устройстве */
+async function ntKeyGet(){const u=ntMe();if(NTK&&NTKu===u)return NTK;NTK=null;NTKu=u;
+  if(!S.guestUser&&!ownkey)return null;
+  const kid='ntk:'+(u||'*');
+  try{const r=await idbOp('m','readonly',s=>s.get(kid));if(r&&r.key){NTK=r.key;return NTK}}catch(e){}
+  let bad='';
+  for(;;){
+    const pw=await ntAskPw(S.guestUser?'Введите пароль вашей учётки. Им шифруются заметки; на этом устройстве его нужно ввести один раз.':'Введите мастер-пароль. Им шифруются заметки; на этом устройстве его нужно ввести один раз.',bad);
+    if(pw===null)return undefined;
+    try{
+      if(S.guestUser){const rec=users.find(x=>x.u===S.guestUser);if(rec&&hashPw(pw,rec.h.split(':')[0])!==rec.h)throw 0}
+      else await aesD(await deriveKey(pw,b64d(ownkey.s)),b64d(ownkey.w));
+      NTK=await deriveKey(pw,te.encode('ntx:'+(u||'*')));
+      try{await idbOp('m','readwrite',s=>s.put({id:kid,key:NTK}))}catch(e){}
+      return NTK}
+    catch(e){bad='Неверный пароль'}}}
 const ntFmt=t=>{const d=new Date(t),n=new Date();return d.toDateString()===n.toDateString()?d.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString('ru',{day:'numeric',month:'short',year:d.getFullYear()===n.getFullYear()?undefined:'numeric'})};
 const ntTtl=n=>n.t.trim()||(n.k==='c'?(n.c.find(i=>i.d.trim())||{d:''}).d:n.b.trim().split('\n')[0])||'Без названия';
 const ntPrev=n=>n.k==='c'?n.c.filter(i=>i.d.trim()).slice(0,3).map(i=>(i.x?'☑ ':'☐ ')+i.d).join('  '):n.b.replace(/\s+/g,' ').trim().slice(0,90);
@@ -1469,21 +1496,22 @@ function ntBuild(P){const g={};for(const x of P)(g[x.u+'\u0000'+x.id]=g[x.u+'\u0
       const cu=a.filter(x=>x.v===v).sort((p,q)=>p.p-q.p),ps=[],seen=new Set();
       for(const x of cu)if(!seen.has(x.p)){seen.add(x.p);ps.push(x)}
       if(ps.length!==cu[0].n)continue;
-      try{out.push({u:a[0].u,id:a[0].id,v,note:JSON.parse(ps.map(x=>x.s).join('')),mids:a.map(x=>x.m)});break}catch(e){}}}
+      out.push({u:a[0].u,id:a[0].id,v,e:cu[0].e?1:0,raw:ps.map(x=>x.s).join(''),mids:a.map(x=>x.m)});break}}
   return out}
-function ntStore(n,mids){const u=ntMe(),note=JSON.parse(JSON.stringify({id:n.id,t:n.t,b:n.b,c:n.c,k:n.k,p:n.p,cr:n.cr,up:n.up})),r=NTS.find(x=>x.id===n.id&&x.u===u);
-  if(r){r.note=note;r.mids=mids}else NTS.push({u,id:n.id,v:n._v||0,note,mids})}
+function ntStore(n,mids,v,raw,e){const u=ntMe(),note=JSON.parse(JSON.stringify({id:n.id,t:n.t,b:n.b,c:n.c,k:n.k,p:n.p,cr:n.cr,up:n.up})),r=NTS.find(x=>x.id===n.id&&x.u===u);
+  NTC.set(u+n.id+v,note);if(r){r.v=v;r.mids=mids;r.raw=raw;r.e=e}else NTS.push({u,id:n.id,v,raw,e,mids})}
 function ntPush(n){
-  const u=ntMe(),v=Math.max(Date.now(),(n._v||0)+1);n._v=v;
-  const snap=JSON.stringify({id:n.id,t:n.t,b:n.b,c:n.c,k:n.k,p:n.p,cr:n.cr,up:n.up});ntStore(n,n._m||[]);
+  const u=ntMe(),v=Math.max(Date.now(),(n._v||0)+1),e=NTK?1:0,key=NTK;n._v=v;
+  const snap=JSON.stringify({id:n.id,t:n.t,b:n.b,c:n.c,k:n.k,p:n.p,cr:n.cr,up:n.up});ntStore(n,n._m||[],v,null,e);
   const run=async()=>{NT.f++;try{
-    const old=n._m||[],parts=[];for(let i=0;i<snap.length;i+=1200)parts.push(snap.slice(i,i+1200));
-    const ids=[];for(let i=0;i<parts.length;i++){const m=await withChat(()=>client.sendMessage(S.chat,NTP+JSON.stringify({u,id:n.id,v,p:i,n:parts.length,s:parts[i]})));ids.push(m.id)}
-    n._m=ids;ntStore(n,ids);
-    for(let i=0;i<old.length;i+=100){try{await withChat(()=>client.deleteMessages(S.chat,old.slice(i,i+100)))}catch(e){}}
+    const body=e?b64e(await aesE(key,te.encode(snap))):snap,old=n._m||[],parts=[];
+    for(let i=0;i<body.length;i+=1200)parts.push(body.slice(i,i+1200));
+    const ids=[];for(let i=0;i<parts.length;i++){const m=await withChat(()=>client.sendMessage(S.chat,NTP+JSON.stringify({u,id:n.id,v,p:i,n:parts.length,s:parts[i],e})));ids.push(m.id)}
+    n._m=ids;ntStore(n,ids,v,body,e);
+    for(let i=0;i<old.length;i+=100){try{await withChat(()=>client.deleteMessages(S.chat,old.slice(i,i+100)))}catch(x){}}
   }finally{NT.f--}};
   const p=(NTQ[n.id]||Promise.resolve()).then(run);NTQ[n.id]=p.catch(()=>{});
-  return p.then(()=>true,e=>{say('Заметка не сохранилась в облаке: '+err(e),1);return false})}
+  return p.then(()=>true,x=>{say('Заметка не сохранилась в облаке: '+err(x),1);return false})}
 function ntFlush(){clearTimeout(NT.t);const L=[...NT.d];NT.d.clear();for(const n of L)ntPush(n)}
 const ntTouch=()=>{NT.n.up=Date.now();NT.d.add(NT.n);clearTimeout(NT.t);NT.t=setTimeout(ntFlush,1500)};
 function ntDel(n){NTS=NTS.filter(r=>!(r.id===n.id&&r.u===ntMe()));NT.d.delete(n);
@@ -1493,12 +1521,17 @@ function ntDel(n){NTS=NTS.filter(r=>!(r.id===n.id&&r.u===ntMe()));NT.d.delete(n)
 function ntMigrate(){try{const k='ntx-'+(S.guestUser||'admin'),old=ld(k,[]);if(!Array.isArray(old)||!old.length)return;
   const have=new Set(NTD.map(x=>x.id));
   Promise.all(old.filter(o=>o&&o.id&&!have.has(o.id)).map(o=>{NTD.push(o);return ntPush(o)})).then(r=>{if(r.every(Boolean))localStorage.removeItem(k)})}catch(e){}}
+/* заметки, сохранённые без шифрования, шифруются при первом открытии с ключом */
+function ntUpgrade(){if(!NTK)return;const pl=new Set(NTS.filter(r=>r.u===ntMe()&&!r.e).map(r=>r.id));for(const n of NTD)if(pl.has(n.id))ntPush(n)}
 /* подтянуть изменения с других устройств */
 function ntSyncIn(){if(OFFLINE||Date.now()-NT.rt<60000)return;NT.rt=Date.now();
-  refresh().then(()=>{try{render()}catch(e){}if(NT.n||NT.d.size||NT.f||!$('#ntl'))return;NTD=ntMine();ntPaint()}).catch(()=>{})}
+  refresh().then(async()=>{try{render()}catch(e){}if(NT.n||NT.d.size||NT.f||!$('#ntl'))return;NTD=await ntMine();ntPaint()}).catch(()=>{})}
 function ntSheet(items){const o=document.createElement('div');o.id='ntsh';o.innerHTML='<div class="b">'+items.map((x,i)=>`<button data-i="${i}" class="${x.c||''}">${icon(x.ic)}<span>${esc(x.t)}</span></button>`).join('')+'</div>';document.body.appendChild(o);o.onclick=e=>{const b=e.target.closest('button');o.remove();if(b)items[b.dataset.i].fn()}}
-function openNotes(inner){
-  if(!inner){NT.pf=fromSet;NT.pp=admParent;NT.q='';NTD=ntMine();ntMigrate();ntSyncIn()}
+async function openNotes(inner){
+  if(!inner){const pf=fromSet,pp=admParent;const k=await ntKeyGet();if(k===undefined)return;
+    NT.pf=pf;NT.pp=pp;NT.q='';NT.bad=0;NTD=await ntMine();
+    if(NT.bad){say('Часть заметок не расшифровалась: возможно, пароль учётки менялся',1);NT.bad=0}
+    ntMigrate();ntUpgrade();ntSyncIn()}
   NT.n=null;fromSet=NT.pf;admParent=NT.pp;
   openAdm(extName('notes'));
   $('#admb').innerHTML=`<div class="nts"><input id="ntq" type="search" placeholder="Поиск по заметкам" value="${esc(NT.q)}"><div id="ntl"></div></div><button class="ntfab" id="ntadd" aria-label="Добавить">${icon('plus')}</button>`;
@@ -2106,7 +2139,7 @@ async function refresh(){
         else if(t.startsWith(ORR)){try{const j=JSON.parse(t.slice(ORR.length));ordp.push({mid:m.id,r:j.r||'',p:j.p||'',n:j.n||0,o:String(j.o||'')})}catch(x){}}
         else if(t.startsWith(CVX)){try{const j=JSON.parse(t.slice(CVX.length));if(j&&j.d)cvx.push({mid:m.id,r:j.r||'',e:j.e?1:0,d:j.d})}catch(x){}}
         else if(t.startsWith(AN)){try{const j=JSON.parse(t.slice(AN.length));if(j&&j.v&&Array.isArray(j.l))ans.push({id:m.id,v:String(j.v),d:j.d||0,l:j.l.map(String)})}catch(x){}}
-        else if(t.startsWith(NTP)){try{const j=JSON.parse(t.slice(NTP.length));if(j&&j.id&&typeof j.s==='string')ntp.push({m:m.id,u:String(j.u||''),id:String(j.id),v:+j.v||0,p:+j.p||0,n:+j.n||1,s:j.s})}catch(x){}}
+        else if(t.startsWith(NTP)){try{const j=JSON.parse(t.slice(NTP.length));if(j&&j.id&&typeof j.s==='string')ntp.push({m:m.id,u:String(j.u||''),id:String(j.id),v:+j.v||0,p:+j.p||0,n:+j.n||1,s:j.s,e:j.e?1:0})}catch(x){}}
         else if(t.startsWith(EXR)){try{const j=JSON.parse(t.slice(EXR.length));if(j&&j.k&&j.x&&j.u)exr.push({id:m.id,k:String(j.k),x:String(j.x),u:String(j.u),n:String(j.n||'')})}catch(x){}}
         else if(t.startsWith(OKR)){try{okk={id:m.id,...JSON.parse(t.slice(OKR.length))}}catch(x){}}
         else if(t.startsWith(LK)){try{const j=JSON.parse(t.slice(LK.length));lks.push({id:m.id,r:j.r||'',p:j.p||'',h:j.h})}catch(x){}}
