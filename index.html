@@ -568,6 +568,7 @@ button.ntfab{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bo
 #ntsh{position:fixed;inset:0;z-index:30;background:rgba(0,0,0,.6);display:flex;align-items:flex-end}
 #ntsh .b{background:var(--card);width:100%;border-radius:16px 16px 0 0;padding:8px 10px calc(14px + env(safe-area-inset-bottom))}
 #ntsh button{display:flex;gap:12px;align-items:center;width:100%;text-align:left;border:0;background:none;padding:14px 8px;font-size:16px;border-radius:8px;font-family:system-ui,sans-serif}
+#nte{padding:10px 0 12px;margin-bottom:14px;border-bottom:1px solid var(--line)}
 </style>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-v4-192.png" type="image/png">
@@ -1450,18 +1451,54 @@ function openExts(){
   $('#admb').innerHTML=L.length?`<div class="exl">${L.map(e=>`<div class="exr"><button class="exo" data-exm="${e.id}">${icon(e.ic)}<span>${esc(extName(e.id))}</span></button></div>`).join('')}</div>`:'<div class="empty">Пока нет расширений</div>';
 }
 $('#extb').onclick=openExts;
-/* ---- Расширение «Заметки»: открывается как папка внутри раздела «Расширения», только списком.
-   Заметки хранятся на устройстве отдельно для каждого пользователя (ключ ntx-<имя>). ---- */
-const NT={pf:false,pp:null,n:null,q:'',t:0};let NTD=[];
-const ntKey=()=>'ntx-'+(S.guestUser||'admin');
-const ntSave=()=>sv(ntKey(),NTD);
+/* ---- Расширение «Заметки»: открывается как папка в разделе «Расширения», только списком.
+   Заметки лежат в канале (📓), привязаны к аккаунту пользователя и видны на любом его устройстве.
+   Одна версия заметки = одно или несколько сообщений (длинные режутся на части), старые версии удаляются. ---- */
+const NTP='📓 ';let NTS=[];
+const NT={pf:false,pp:null,n:null,q:'',t:0,d:new Set(),f:0,rt:0},NTQ={};let NTD=[];
+const ntMe=()=>S.guestUser||'';
+const ntMine=()=>NTS.filter(r=>r.u===ntMe()).map(r=>({...r.note,_m:r.mids}));
 const ntFmt=t=>{const d=new Date(t),n=new Date();return d.toDateString()===n.toDateString()?d.toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit'}):d.toLocaleDateString('ru',{day:'numeric',month:'short',year:d.getFullYear()===n.getFullYear()?undefined:'numeric'})};
 const ntTtl=n=>n.t.trim()||(n.k==='c'?(n.c.find(i=>i.d.trim())||{d:''}).d:n.b.trim().split('\n')[0])||'Без названия';
 const ntPrev=n=>n.k==='c'?n.c.filter(i=>i.d.trim()).slice(0,3).map(i=>(i.x?'☑ ':'☐ ')+i.d).join('  '):n.b.replace(/\s+/g,' ').trim().slice(0,90);
 const ntText=n=>(n.t.trim()?n.t.trim()+'\n\n':'')+(n.k==='c'?n.c.map(i=>(i.x?'[x] ':'[ ] ')+i.d).join('\n'):n.b);
+/* сборка заметок из сообщений канала: берём последнюю полностью записанную версию */
+function ntBuild(P){const g={};for(const x of P)(g[x.u+'\u0000'+x.id]=g[x.u+'\u0000'+x.id]||[]).push(x);const out=[];
+  for(const k in g){const a=g[k];
+    for(const v of [...new Set(a.map(x=>x.v))].sort((p,q)=>q-p)){
+      const cu=a.filter(x=>x.v===v).sort((p,q)=>p.p-q.p),ps=[],seen=new Set();
+      for(const x of cu)if(!seen.has(x.p)){seen.add(x.p);ps.push(x)}
+      if(ps.length!==cu[0].n)continue;
+      try{out.push({u:a[0].u,id:a[0].id,v,note:JSON.parse(ps.map(x=>x.s).join('')),mids:a.map(x=>x.m)});break}catch(e){}}}
+  return out}
+function ntStore(n,mids){const u=ntMe(),note=JSON.parse(JSON.stringify({id:n.id,t:n.t,b:n.b,c:n.c,k:n.k,p:n.p,cr:n.cr,up:n.up})),r=NTS.find(x=>x.id===n.id&&x.u===u);
+  if(r){r.note=note;r.mids=mids}else NTS.push({u,id:n.id,v:n._v||0,note,mids})}
+function ntPush(n){
+  const u=ntMe(),v=Math.max(Date.now(),(n._v||0)+1);n._v=v;
+  const snap=JSON.stringify({id:n.id,t:n.t,b:n.b,c:n.c,k:n.k,p:n.p,cr:n.cr,up:n.up});ntStore(n,n._m||[]);
+  const run=async()=>{NT.f++;try{
+    const old=n._m||[],parts=[];for(let i=0;i<snap.length;i+=1200)parts.push(snap.slice(i,i+1200));
+    const ids=[];for(let i=0;i<parts.length;i++){const m=await withChat(()=>client.sendMessage(S.chat,NTP+JSON.stringify({u,id:n.id,v,p:i,n:parts.length,s:parts[i]})));ids.push(m.id)}
+    n._m=ids;ntStore(n,ids);
+    for(let i=0;i<old.length;i+=100){try{await withChat(()=>client.deleteMessages(S.chat,old.slice(i,i+100)))}catch(e){}}
+  }finally{NT.f--}};
+  const p=(NTQ[n.id]||Promise.resolve()).then(run);NTQ[n.id]=p.catch(()=>{});
+  return p.then(()=>true,e=>{say('Заметка не сохранилась в облаке: '+err(e),1);return false})}
+function ntFlush(){clearTimeout(NT.t);const L=[...NT.d];NT.d.clear();for(const n of L)ntPush(n)}
+const ntTouch=()=>{NT.n.up=Date.now();NT.d.add(NT.n);clearTimeout(NT.t);NT.t=setTimeout(ntFlush,1500)};
+function ntDel(n){NTS=NTS.filter(r=>!(r.id===n.id&&r.u===ntMe()));NT.d.delete(n);
+  const p=(NTQ[n.id]||Promise.resolve()).then(async()=>{const m=[...(n._m||[])];for(let i=0;i<m.length;i+=100)await withChat(()=>client.deleteMessages(S.chat,m.slice(i,i+100)))});
+  NTQ[n.id]=p.catch(()=>{});p.catch(e=>say('Не удалось удалить в облаке: '+err(e),1))}
+/* заметки, которые раньше лежали только на устройстве, переезжают в облако */
+function ntMigrate(){try{const k='ntx-'+(S.guestUser||'admin'),old=ld(k,[]);if(!Array.isArray(old)||!old.length)return;
+  const have=new Set(NTD.map(x=>x.id));
+  Promise.all(old.filter(o=>o&&o.id&&!have.has(o.id)).map(o=>{NTD.push(o);return ntPush(o)})).then(r=>{if(r.every(Boolean))localStorage.removeItem(k)})}catch(e){}}
+/* подтянуть изменения с других устройств */
+function ntSyncIn(){if(OFFLINE||Date.now()-NT.rt<60000)return;NT.rt=Date.now();
+  refresh().then(()=>{try{render()}catch(e){}if(NT.n||NT.d.size||NT.f||!$('#ntl'))return;NTD=ntMine();ntPaint()}).catch(()=>{})}
 function ntSheet(items){const o=document.createElement('div');o.id='ntsh';o.innerHTML='<div class="b">'+items.map((x,i)=>`<button data-i="${i}" class="${x.c||''}">${icon(x.ic)}<span>${esc(x.t)}</span></button>`).join('')+'</div>';document.body.appendChild(o);o.onclick=e=>{const b=e.target.closest('button');o.remove();if(b)items[b.dataset.i].fn()}}
 function openNotes(inner){
-  if(!inner){NT.pf=fromSet;NT.pp=admParent;NT.q='';try{const a=ld(ntKey(),[]);NTD=Array.isArray(a)?a:[]}catch(e){NTD=[]}}
+  if(!inner){NT.pf=fromSet;NT.pp=admParent;NT.q='';NTD=ntMine();ntMigrate();ntSyncIn()}
   NT.n=null;fromSet=NT.pf;admParent=NT.pp;
   openAdm(extName('notes'));
   $('#admb').innerHTML=`<div class="nts"><input id="ntq" type="search" placeholder="Поиск по заметкам" value="${esc(NT.q)}"><div id="ntl"></div></div><button class="ntfab" id="ntadd" aria-label="Добавить">${icon('plus')}</button>`;
@@ -1474,7 +1511,6 @@ function ntPaint(){const s=NT.q.toLowerCase();
   const L=NTD.filter(n=>!s||(n.t+' '+n.b+' '+n.c.map(i=>i.d).join(' ')).toLowerCase().includes(s)).sort((a,b)=>b.p-a.p||b.up-a.up);
   $('#ntl').innerHTML=L.length?L.map(n=>`<div class="f ntr${n.p?' pin':''}" data-id="${n.id}"><div class="th fo">${icon(n.k==='c'?'check':'edit')}</div><div><b>${esc(ntTtl(n))}</b><div class="m">${n.p?'★ ':''}${ntFmt(n.up)}${ntPrev(n)?' · '+esc(ntPrev(n)):''}</div></div></div>`).join(''):`<div class="empty"><span class="big">📝</span>${NT.q?'Ничего не найдено':'Здесь пока пусто.<br>Нажмите «+», чтобы создать заметку'}</div>`}
 function ntNew(k){const t=Date.now(),n={id:t.toString(36)+Math.random().toString(36).slice(2,5),t:'',b:'',c:k==='c'?[{x:0,d:''}]:[],k,p:0,cr:t,up:t};NTD.push(n);ntOpen(n.id)}
-const ntTouch=()=>{NT.n.up=Date.now();clearTimeout(NT.t);NT.t=setTimeout(ntSave,250)};
 const ntGrow=()=>{const x=$('#ntx');x.style.height='auto';x.style.height=Math.max(x.scrollHeight,innerHeight*.45)+'px'};
 function ntPaintC(){$('#ntc').innerHTML=NT.n.c.map((x,i)=>`<div class="nci${x.x?' dn':''}"><button class="ncb" data-t="${i}" aria-label="Отметить">${x.x?'✓':''}</button><input data-i="${i}" value="${esc(x.d)}" placeholder="Пункт" autocomplete="off"><button class="ib2" data-r="${i}" aria-label="Удалить пункт">${icon('close')}</button></div>`).join('')+'<button id="ntcadd">+ Пункт</button>'}
 function ntAddC(at){NT.n.c.splice(at,0,{x:0,d:''});ntPaintC();$('#ntc').querySelector(`[data-i="${at}"]`).focus();ntTouch()}
@@ -1492,18 +1528,54 @@ function ntOpen(id){const n=NTD.find(x=>x.id===id);if(!n)return;NT.n=n;fromSet=t
     if(t){const x=n.c[t.dataset.t];x.x=x.x?0:1;ntTouch();ntPaintC()}else if(r){n.c.splice(r.dataset.r,1);ntTouch();ntPaintC()}else if(e.target.id==='ntcadd')ntAddC(n.c.length)});
   ntView();
   if(!n.t&&!n.b&&!n.c.some(i=>i.d))setTimeout(()=>(n.k==='c'?$('#nte'):$('#ntx')).focus(),60)}
-function ntEnd(){const n=NT.n;if(!n)return;clearTimeout(NT.t);NT.n=null;$('#musq').textContent='?';
-  n.c=n.c.filter(i=>i.d.trim());if(!n.t.trim()&&!n.b.trim()&&!n.c.length)NTD=NTD.filter(x=>x!==n);ntSave();openNotes(1)}
+function ntEnd(){const n=NT.n;if(!n)return;NT.n=null;$('#musq').textContent='?';
+  const l=n.c.length;n.c=n.c.filter(i=>i.d.trim());if(n.c.length!==l)NT.d.add(n);
+  if(!n.t.trim()&&!n.b.trim()&&!n.c.length){NTD=NTD.filter(x=>x!==n);if(n._m&&n._m.length)ntDel(n);NT.d.delete(n)}
+  ntFlush();openNotes(1)}
+/* поделиться картинкой: текст заметки на фоне приложения */
+function ntWrap(c,txt,w){const out=[];for(const p of txt.split('\n')){if(!p){out.push('');continue}let line='';
+  for(const word of p.split(' ')){const t=line?line+' '+word:word;if(c.measureText(t).width<=w){line=t;continue}if(line)out.push(line);line=word;
+    while(c.measureText(line).width>w){let k=line.length;while(k>1&&c.measureText(line.slice(0,k)).width>w)k--;out.push(line.slice(0,k));line=line.slice(k)}}
+  out.push(line)}return out}
+async function ntImage(n){
+  try{const W=1080,P=72,cv=document.createElement('canvas'),c=cv.getContext('2d'),F='Georgia,"Times New Roman",serif';
+    c.font='700 58px '+F;const tl=n.t.trim()?ntWrap(c,n.t.trim(),W-2*P):[];
+    c.font='38px '+F;let bl=[];
+    if(n.k==='c')for(const i of n.c)ntWrap(c,i.d,W-2*P-60).forEach((s,j)=>bl.push({s,x:i.x,f:j===0}));
+    else bl=ntWrap(c,n.b,W-2*P).map(s=>({s}));
+    if(bl.length>200){bl=bl.slice(0,200);bl.push({s:'…'})}
+    const th=tl.length*72,H=Math.max(1350,P+th+(tl.length?60:0)+bl.length*58+P+60);
+    cv.width=W;cv.height=H;
+    const g=c.createRadialGradient(W/2,H*.08,0,W/2,H*.08,H*.8);g.addColorStop(0,'#08201d');g.addColorStop(.55,'#041211');g.addColorStop(1,'#030c0b');c.fillStyle=g;c.fillRect(0,0,W,H);
+    try{const m=/url\("([^"]+)"\)/.exec(getComputedStyle(document.documentElement).getPropertyValue('--bgfx'));
+      if(m){const im=new Image();im.src=m[1];await im.decode();const k=Math.max(W/412,H/915),w=412*k,h=915*k;c.drawImage(im,(W-w)/2,H-h,w,h)}}catch(e){}
+    let y=P;c.textBaseline='top';c.fillStyle='#e6efeb';c.font='700 58px '+F;
+    for(const s of tl){c.fillText(s,P,y);y+=72}
+    if(tl.length){y+=8;c.fillStyle='#2b3a34';c.fillRect(P,y,W-2*P,2);y+=40}
+    c.font='38px '+F;
+    for(const b of bl){
+      if(n.k==='c'){if(b.f){c.strokeStyle='#5fc3a6';c.lineWidth=3;c.beginPath();c.arc(P+16,y+22,14,0,7);if(b.x){c.fillStyle='#5fc3a6';c.fill()}c.stroke();
+        if(b.x){c.strokeStyle='#0b1713';c.beginPath();c.moveTo(P+9,y+22);c.lineTo(P+15,y+28);c.lineTo(P+24,y+16);c.stroke()}}
+        c.fillStyle=b.x?'#8fa19a':'#e6efeb';c.fillText(b.s,P+60,y)}
+      else{c.fillStyle='#e6efeb';c.fillText(b.s,P,y)}
+      y+=58}
+    c.font='28px system-ui,sans-serif';c.fillStyle='#8fa19a';c.fillText('Облачко · Заметки',P,H-P-24);
+    const blob=await new Promise(r=>cv.toBlob(r,'image/png'));if(!blob)throw 0;
+    const f=new File([blob],'zametka.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:ntTtl(n)}).catch(()=>{});
+    else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='zametka.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);say('Картинка сохранена')}
+  }catch(e){say('Не удалось сделать картинку',1)}}
 function ntMenu(){const n=NT.n;if(!n)return;ntSheet([
-  {t:n.p?'Открепить':'Закрепить',ic:'check',fn:()=>{n.p=n.p?0:1;ntSave();say(n.p?'Закреплено':'Откреплено')}},
+  {t:n.p?'Открепить':'Закрепить',ic:'check',fn:()=>{n.p=n.p?0:1;ntTouch();say(n.p?'Закреплено':'Откреплено')}},
   {t:n.k==='c'?'Преобразовать в текст':'Преобразовать в чек-лист',ic:n.k==='c'?'edit':'check',fn:()=>{
     if(n.k==='t'){n.c=n.b.split('\n').filter(s=>s.trim()).map(d=>({x:0,d}));if(!n.c.length)n.c=[{x:0,d:''}];n.b='';n.k='c'}
     else{n.b=n.c.map(i=>i.d).join('\n');n.c=[];n.k='t';$('#ntx').value=n.b}
-    ntTouch();ntSave();ntView()}},
-  {t:'Копировать текст',ic:'copy',fn:()=>navigator.clipboard.writeText(ntText(n)).then(()=>say('Скопировано'),()=>say('Не удалось скопировать',1))},
-  ...(navigator.share?[{t:'Поделиться',ic:'up',fn:()=>navigator.share({title:ntTtl(n),text:ntText(n)}).catch(()=>{})}]:[]),
-  {t:'Удалить',ic:'trash',c:'del',fn:()=>{if(!confirm('Удалить заметку?'))return;NTD=NTD.filter(x=>x!==n);ntSave();NT.n=null;$('#musq').textContent='?';openNotes(1);say('Заметка удалена')}}])}
-addEventListener('pagehide',()=>{if(NT.n){clearTimeout(NT.t);ntSave()}});
+    ntTouch();ntView()}},
+  {t:'Поделиться',ic:'up',fn:()=>ntSheet([
+    {t:'Скопировать текст',ic:'copy',fn:()=>navigator.clipboard.writeText(ntText(n)).then(()=>say('Скопировано'),()=>say('Не удалось скопировать',1))},
+    {t:'Поделиться картинкой',ic:'up',fn:()=>ntImage(n)}])},
+  {t:'Удалить',ic:'trash',c:'del',fn:()=>{if(!confirm('Удалить заметку?'))return;NTD=NTD.filter(x=>x!==n);NT.n=null;ntDel(n);$('#musq').textContent='?';openNotes(1);say('Заметка удалена')}}])}
+addEventListener('pagehide',()=>{if(NT.d.size)ntFlush()});
 
 $('#admb').addEventListener('click',async e=>{
   const g=a=>e.target.closest('['+a+']');
@@ -2023,7 +2095,7 @@ async function readFast(prog){
   return[...all.values()].sort((x,y)=>y.id-x.id);
 }
 async function refresh(){
-  const out=[],fol=[],reps=[],lks=[],usr=[],jr=[],jenc=[],ordp=[],ans=[],cvx=[],exr=[],seen=new Set();let off,okk=null;
+  const out=[],fol=[],reps=[],lks=[],usr=[],jr=[],jenc=[],ordp=[],ans=[],cvx=[],exr=[],ntp=[],seen=new Set();let off,okk=null;
   const proc=m=>{
     if(seen.has(m.id))return;seen.add(m.id);
       const e=entry(m);
@@ -2034,6 +2106,7 @@ async function refresh(){
         else if(t.startsWith(ORR)){try{const j=JSON.parse(t.slice(ORR.length));ordp.push({mid:m.id,r:j.r||'',p:j.p||'',n:j.n||0,o:String(j.o||'')})}catch(x){}}
         else if(t.startsWith(CVX)){try{const j=JSON.parse(t.slice(CVX.length));if(j&&j.d)cvx.push({mid:m.id,r:j.r||'',e:j.e?1:0,d:j.d})}catch(x){}}
         else if(t.startsWith(AN)){try{const j=JSON.parse(t.slice(AN.length));if(j&&j.v&&Array.isArray(j.l))ans.push({id:m.id,v:String(j.v),d:j.d||0,l:j.l.map(String)})}catch(x){}}
+        else if(t.startsWith(NTP)){try{const j=JSON.parse(t.slice(NTP.length));if(j&&j.id&&typeof j.s==='string')ntp.push({m:m.id,u:String(j.u||''),id:String(j.id),v:+j.v||0,p:+j.p||0,n:+j.n||1,s:j.s})}catch(x){}}
         else if(t.startsWith(EXR)){try{const j=JSON.parse(t.slice(EXR.length));if(j&&j.k&&j.x&&j.u)exr.push({id:m.id,k:String(j.k),x:String(j.x),u:String(j.u),n:String(j.n||'')})}catch(x){}}
         else if(t.startsWith(OKR)){try{okk={id:m.id,...JSON.parse(t.slice(OKR.length))}}catch(x){}}
         else if(t.startsWith(LK)){try{const j=JSON.parse(t.slice(LK.length));lks.push({id:m.id,r:j.r||'',p:j.p||'',h:j.h})}catch(x){}}
@@ -2055,7 +2128,7 @@ async function refresh(){
       off=Math.min(...b.map(m=>m.id));
     }
   }
-  files=out;folders=fol;repos=reps;locks=lks;users=usr;JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);EXT=exr.sort((a,b)=>a.id-b.id);ownkey=okk;CVRM=cvx;syncUN();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
+  files=out;folders=fol;repos=reps;locks=lks;users=usr;JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);EXT=exr.sort((a,b)=>a.id-b.id);NTS=ntBuild(ntp);ownkey=okk;CVRM=cvx;syncUN();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
   if(R()&&!repos.some(x=>x.name===R()&&showRepo(x)))P.repo='';
   if(cur&&!allPaths().includes(cur))cur='';
   try{annAuto()}catch(e){}try{extSync();extAuto()}catch(e){}
@@ -2158,16 +2231,16 @@ async function cacheReset(){
   return before;
 }
 let _si=0;
-function saveIndex(){clearTimeout(_si);_si=setTimeout(()=>{if(OFFLINE)return;idbOp('m','readwrite',s=>s.put({id:'idx',t:Date.now(),d:{files,folders,repos,locks,users,ord:ORD,chat:S.chat,ext:EXT}})).catch(()=>{})},3000)}
+function saveIndex(){clearTimeout(_si);_si=setTimeout(()=>{if(OFFLINE)return;idbOp('m','readwrite',s=>s.put({id:'idx',t:Date.now(),d:{files,folders,repos,locks,users,ord:ORD,chat:S.chat,ext:EXT,nt:NTS}})).catch(()=>{})},3000)}
 async function loadOffline(){
   try{const r=await idbOp('m','readonly',s=>s.get('idx'));if(!r||Date.now()-r.t>TTL*1.5)return false;
-  files=r.d.files||[];folders=r.d.folders||[];repos=r.d.repos||[];locks=r.d.locks||[];users=r.d.users||[];EXT=r.d.ext||[];ORD=r.d.ord||[];S.chat=r.d.chat;OFFLINE=true;document.body.classList.add('off');try{syncUN()}catch(e){}return true}catch(e){return false}
+  files=r.d.files||[];folders=r.d.folders||[];repos=r.d.repos||[];locks=r.d.locks||[];users=r.d.users||[];EXT=r.d.ext||[];NTS=r.d.nt||[];ORD=r.d.ord||[];S.chat=r.d.chat;OFFLINE=true;document.body.classList.add('off');try{syncUN()}catch(e){}return true}catch(e){return false}
 }
 async function loadCachedIdx(){
   try{
     const r=await idbOp('m','readonly',s=>s.get('idx'));
     if(!r||!r.d||Date.now()-r.t>30*864e5||(S.chat&&r.d.chat!==S.chat))return false;
-    files=r.d.files||[];folders=r.d.folders||[];repos=r.d.repos||[];locks=r.d.locks||[];users=r.d.users||[];EXT=r.d.ext||[];ORD=r.d.ord||[];if(!S.chat)S.chat=r.d.chat;
+    files=r.d.files||[];folders=r.d.folders||[];repos=r.d.repos||[];locks=r.d.locks||[];users=r.d.users||[];EXT=r.d.ext||[];NTS=r.d.nt||[];ORD=r.d.ord||[];if(!S.chat)S.chat=r.d.chat;
     try{syncUN()}catch(e){}return true;
   }catch(e){return false}
 }
