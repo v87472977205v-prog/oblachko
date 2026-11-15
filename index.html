@@ -826,7 +826,9 @@ function upPaint(){
   else if(ind)t='Отправка…';
   else{
     t=Math.floor(pct)+'% · '+size(sent)+' из '+size(U.total)+(sec>2&&sent>0?' · '+size(spd)+'/с · ещё '+fmtT((U.total-sent)/spd):'');
-    if(stall>15000)t='Нет прогресса '+Math.floor(stall/1000)+' с — не выключайте экран · '+t;
+    const sj=act.filter(j=>j.cur<.99&&now-j.lastP>15000);
+    if(sj.length)t='Нет прогресса '+Math.floor(Math.max(...sj.map(j=>now-j.lastP))/1000)+' с — не выключайте экран · '+t;
+    else if(act.length&&act.every(j=>j.cur>=.99))t='Telegram подтверждает приём · '+t;
   }
   if(U.retry)t=U.retry+' · '+t;
   $('#ups').textContent=t;
@@ -3583,9 +3585,16 @@ async function runJob(it){
       if(big)o.fileSize=f.size;
       if(pv!==undefined)o.progressId=pv;
       const sp=withChat(()=>client.sendDocument(S.chat,data,o));sp.catch(()=>{});
-      const r=await Promise.race([sp,dead]);
+      /* файл дошёл до 100%, а ответа Telegram всё нет: не ждём вслепую, а заглядываем в канал — если файл уже там, считаем его загруженным */
+      let fnd=null;const fp=new Promise(res=>{fnd=res});
+      const poll=setInterval(async()=>{
+        if(job.polling||job.cur<.99||Date.now()-job.lastP<12000)return;
+        job.polling=true;
+        try{const e=await sentAlready(it,no);if(e){ulog(`Файл ${f.name} уже в канале, ответа Telegram не жду`);fnd({__e:e})}}catch(x){}finally{job.polling=false}
+      },6000);
+      let r;try{r=await Promise.race([sp,dead,fp])}finally{clearInterval(poll)}
       data=null;done=true;
-      const en=entry(r);
+      const en=r&&r.__e?r.__e:entry(r);
       ulog(en?`✔ Загружен: ${f.name}`:`✔ Telegram принял ${f.name}, список обновлю в конце`);
       if(en){if(!en.no)en.no=no;files.push(en)}else needRef=true;
       jlog('up',(it.enc?'зашифрованный файл':f.name)+' → '+(it.repo||'Облако')+(it.path?' / '+it.path:''));
