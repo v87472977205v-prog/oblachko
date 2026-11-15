@@ -1076,30 +1076,45 @@ $('#conb').onclick=()=>{if(isAdmin())drawConsole()};
    Вход в Telegram берётся тот же, что у Облачка (api_id / api_hash / сессия), второй раз входить не нужно.
    Из чата или бота скачиваются голосовые и аудио, и сразу кладутся в выбранный репозиторий и папку Облачка. */
 /* ---- Фоновая работа ----
-   Пока идёт плейлист, тихо крутится служебный звук и в шторке уведомлений показывается «Скачивание музыки».
-   Пока вкладка «воспроизводит» звук, браузер не усыпляет страницу и не замедляет таймеры, так что загрузка идёт при свёрнутом приложении и погашенном экране. */
+   Пока идёт плейлист, тихо крутится служебный звук, а в шторке уведомлений показывается карточка Облачка:
+   значок приложения, «Скачано 3 из 10», текущий этап и шкала прогресса. Кнопка паузы в карточке останавливает загрузку.
+   Пока вкладка «воспроизводит» звук, браузер не усыпляет страницу, и загрузка идёт при свёрнутом приложении и погашенном экране. */
 const MBG={a:null,on:false};
 function bgStart(){
   if(MBG.on)return;MBG.on=true;
   try{
     if(!MBG.a){
-      const sr=8000,n=sr,buf=new ArrayBuffer(44+n*2),dv=new DataView(buf);
+      const sr=8000,n=sr*10,buf=new ArrayBuffer(44+n*2),dv=new DataView(buf);   /* дольше 5 секунд: короче Chrome не показывает карточку в шторке */
       const w=(o,t)=>{for(let i=0;i<t.length;i++)dv.setUint8(o+i,t.charCodeAt(i))};
       w(0,'RIFF');dv.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,sr,true);dv.setUint32(28,sr*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);w(36,'data');dv.setUint32(40,n*2,true);
-      for(let i=0;i<n;i++)dv.setInt16(44+i*2,Math.round(Math.sin(2*Math.PI*25*i/sr)*120),true);
+      for(let i=0;i<n;i++)dv.setInt16(44+i*2,Math.round(Math.sin(2*Math.PI*25*i/sr)*300),true);
       MBG.a=new Audio(URL.createObjectURL(new Blob([buf],{type:'audio/wav'})));MBG.a.loop=true;
     }
-    MBG.a.play().catch(()=>{});
+    const pr=MBG.a.play();if(pr&&pr.catch)pr.catch(x=>mlog('Фоновый режим не включился: '+err(x)));
+  }catch(e){mlog('Фоновый режим не включился: '+err(e))}
+  try{
+    const ms=navigator.mediaSession;
+    for(const a of['play','previoustrack','nexttrack','seekbackward','seekforward','seekto'])try{ms.setActionHandler(a,null)}catch(e){}
+    const stop=()=>{if(MUS.busy){MUS.stop=true;mstage('Останавливаю…');mlog('Остановка из шторки')}try{if(MBG.on&&MBG.a)MBG.a.play()}catch(e){}};
+    for(const a of['pause','stop'])try{ms.setActionHandler(a,stop)}catch(e){}
   }catch(e){}
   bgMeta();
 }
 function bgMeta(){
-  try{if(MBG.on&&'mediaSession' in navigator&&(typeof au==='undefined'||au.paused))navigator.mediaSession.metadata=new MediaMetadata({title:'Скачивание музыки: '+MUS.done+' из '+MUS.total,artist:MUS.stage||'Облачко'})}catch(e){}
+  if(!MBG.on||!('mediaSession' in navigator))return;
+  if(typeof au!=='undefined'&&!au.paused)return;
+  try{
+    const ms=navigator.mediaSession,ic=n=>new URL(n,location.href).href;
+    ms.metadata=new MediaMetadata({title:'Скачано '+MUS.done+' из '+MUS.total,artist:MUS.stage||'Готовлюсь…',album:'Облачко · скачивание музыки',artwork:[{src:ic('icon-v4-512.png'),sizes:'512x512',type:'image/png'},{src:ic('icon-v4-192.png'),sizes:'192x192',type:'image/png'}]});
+    ms.playbackState='playing';
+    if(MUS.total>0)ms.setPositionState({duration:MUS.total,position:Math.min(MUS.proc,MUS.total),playbackRate:0.0001});
+  }catch(e){}
 }
 function bgStop(){
   MBG.on=false;
   try{if(MBG.a)MBG.a.pause()}catch(e){}
-  try{if(typeof au==='undefined'||au.paused)navigator.mediaSession.metadata=null}catch(e){}
+  try{if(typeof au==='undefined'||au.paused){navigator.mediaSession.metadata=null;navigator.mediaSession.playbackState='none'}}catch(e){}
+  try{bindMS()}catch(e){}
 }
 const MUS_BOT='@audio_storm_bot';
 const MUS={rows:[],stop:false,busy:false,log:[],total:0,done:0,proc:0,stage:'',showLog:false};
@@ -2711,9 +2726,9 @@ function markPlaying(){
    состояние становилось «пауза» — система переставала слать кнопки наушников. Теперь: метаданные сразу,
    состояние «играет» держится на время загрузки трека, обработчики перевешиваются при каждом треке и при возврате в приложение. */
 let HOLD=false,LOADPLAY=false;
-const msState=()=>{try{navigator.mediaSession.playbackState=((loadingTrack&&LOADPLAY&&!HOLD)||!au.paused)?'playing':'paused'}catch(e){}};
+const msState=()=>{try{if(MBG.on&&au.paused){navigator.mediaSession.playbackState='playing';return}navigator.mediaSession.playbackState=((loadingTrack&&LOADPLAY&&!HOLD)||!au.paused)?'playing':'paused'}catch(e){}};
 function msMeta(f){try{if('mediaSession' in navigator){const cu=COV.get(f.id);navigator.mediaSession.metadata=new MediaMetadata({title:f.name.replace(/\.[^.]+$/,''),artist:CVA.get(f.id)||'Мой архив',album:'Облачко',artwork:cu?[{src:cu,sizes:'512x512',type:'image/jpeg'}]:[]})}}catch(e){}}
-const msPos=()=>{try{if('mediaSession' in navigator&&au.duration>0&&isFinite(au.duration))navigator.mediaSession.setPositionState({duration:au.duration,playbackRate:au.playbackRate||1,position:Math.min(Math.max(0,au.currentTime),au.duration)})}catch(e){}};
+const msPos=()=>{try{if(MBG.on&&au.paused)return;if('mediaSession' in navigator&&au.duration>0&&isFinite(au.duration))navigator.mediaSession.setPositionState({duration:au.duration,playbackRate:au.playbackRate||1,position:Math.min(Math.max(0,au.currentTime),au.duration)})}catch(e){}};
 async function msPlay(){
   if(loadingTrack){HOLD=false;LOADPLAY=true;msState();return}   /* нажали «play», пока трек грузится — начнёт играть сразу после загрузки */
   if(pi>=0&&pq[pi]&&au.src){try{await au.play()}catch(e){}return}
@@ -2721,7 +2736,7 @@ async function msPlay(){
 }
 function msPause(){HOLD=true;au.pause();msState()}
 function bindMS(){
-  if(!('mediaSession' in navigator))return;
+  if(!('mediaSession' in navigator)||MBG.on)return;
   const ms=navigator.mediaSession;
   for(const[a,h]of[['play',msPlay],['pause',msPause],['stop',msPause],['previoustrack',prevTrack],['nexttrack',nextTrack],
     ['seekbackward',d=>{au.currentTime=Math.max(0,au.currentTime-((d&&d.seekOffset)||10));msPos()}],
