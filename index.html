@@ -3502,9 +3502,18 @@ async function enqueue(fs,rrO,ppO){
   runPool();
 }
 async function runPool(){
+  /* место в очереди освобождается, как только файл целиком ушёл (100%): ответ Telegram он ждёт уже «на фоне», а следующий файл тем временем грузится */
+  const pend=new Set();
   await Promise.all(Array.from({length:CONC},async()=>{
-    while(UQ.length&&!U.cancel){const it=UQ.shift();try{await((it.enc&&it.f.size>3e7)?encMutex(()=>runJob(it)):runJob(it))}catch(x){UF.push(it)}}
+    while(UQ.length&&!U.cancel){
+      const it=UQ.shift();
+      const p=((it.enc&&it.f.size>3e7)?encMutex(()=>runJob(it)):runJob(it)).catch(()=>{UF.push(it)});
+      pend.add(p);p.finally(()=>pend.delete(p));
+      await Promise.race([p,new Promise(res=>{const iv=setInterval(()=>{if(it._job&&it._job.cur>=.99)res()},400);p.finally(()=>{clearInterval(iv);res()})})]);
+      while(pend.size>=CONC*2&&!U.cancel)await Promise.race([...pend]);
+    }
   }));
+  await Promise.all([...pend]);
   clearInterval(U.tick);keepAwake(false);
   const was=U.cancel;U.cancel=false;
   if(needRef){needRef=false;try{await refresh()}catch(x){}}
@@ -3557,7 +3566,7 @@ async function sentAlready(it,no){
 async function runJob(it){
   if(U.cancel)return;
   const f=it.f,job={name:f.name,size:f.size,cur:0,got:false,lastP:Date.now(),t0:Date.now(),ctl:null};
-  U.jobs.add(job);U.lastP=Date.now();upPaint();
+  U.jobs.add(job);it._job=job;U.lastP=Date.now();upPaint();
   const no=U.nextNo++;ulog(`▶ Начинаю: ${f.name} · ${size(f.size)}${it.enc?' · с шифрованием':''}${it.path?' · папка '+it.path:''}`);let done=false,floods=0;
   for(let a=1;a<=3&&!done&&!U.cancel;a++){
     job.cur=0;job.q=0;job.got=false;job.lastP=Date.now();job.t0=Date.now();
@@ -3590,10 +3599,10 @@ async function runJob(it){
       /* файл дошёл до 100%, а ответа Telegram всё нет: не ждём вслепую, а заглядываем в канал — если файл уже там, считаем его загруженным */
       let fnd=null;const fp=new Promise(res=>{fnd=res});
       const poll=setInterval(async()=>{
-        if(job.polling||job.cur<.99||Date.now()-job.lastP<12000)return;
-        job.polling=true;
-        try{const e=await sentAlready(it,no);if(e){ulog(`Файл ${f.name} уже в канале, ответа Telegram не жду`);fnd({__e:e})}}catch(x){}finally{job.polling=false}
-      },6000);
+        if(U.polling||job.cur<.99||Date.now()-job.lastP<5000)return;
+        U.polling=true;
+        try{const e=await sentAlready(it,no);if(e){ulog(`Файл ${f.name} уже в канале, ответа Telegram не жду`);fnd({__e:e})}}catch(x){}finally{U.polling=false}
+      },4000);
       let r;try{r=await Promise.race([sp,dead,fp])}finally{clearInterval(poll)}
       data=null;done=true;
       const en=r&&r.__e?r.__e:entry(r);
