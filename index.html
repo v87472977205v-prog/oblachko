@@ -3402,7 +3402,7 @@ async function enqueue(fs,rrO,ppO){
 }
 async function runPool(){
   await Promise.all(Array.from({length:CONC},async()=>{
-    while(UQ.length&&!U.cancel){const it=UQ.shift();try{await(it.enc?encMutex(()=>runJob(it)):runJob(it))}catch(x){UF.push(it)}}
+    while(UQ.length&&!U.cancel){const it=UQ.shift();try{await((it.enc&&it.f.size>3e7)?encMutex(()=>runJob(it)):runJob(it))}catch(x){UF.push(it)}}
   }));
   clearInterval(U.tick);keepAwake(false);
   const was=U.cancel;U.cancel=false;
@@ -3454,6 +3454,7 @@ async function sentAlready(it,no){
   return null;
 }
 async function runJob(it){
+  if(U.cancel)return;
   const f=it.f,job={name:f.name,size:f.size,cur:0,got:false,lastP:Date.now(),t0:Date.now(),ctl:null};
   U.jobs.add(job);U.lastP=Date.now();upPaint();
   const no=U.nextNo++;ulog(`▶ Начинаю: ${f.name} · ${size(f.size)}${it.enc?' · с шифрованием':''}${it.path?' · папка '+it.path:''}`);let done=false,floods=0;
@@ -3469,7 +3470,7 @@ async function runJob(it){
       const big=f.size>1.5e8&&!it.enc;
       if(it.enc&&f.size>3e8)throw new Error('Файл больше 300 МБ нельзя зашифровать');
       ulog(it.enc?'Шифрую и читаю файл…':big?'Большой файл: отправляю потоком':'Читаю файл…');
-      let data=it.enc?await encBytes(it.repo,f):big?f.stream():new Uint8Array(await f.arrayBuffer());
+      let data=it.enc?(f.size>3e7?await encBytes(it.repo,f):await encMutex(()=>encBytes(it.repo,f))):big?f.stream():new Uint8Array(await f.arrayBuffer());
       ulog('Файл подготовлен, отправляю в Telegram');
       const ctl=new AbortController();job.ctl=ctl;
       let kill;const dead=new Promise((_,rej)=>{kill=rej});dead.catch(()=>{});
