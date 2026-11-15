@@ -1607,30 +1607,48 @@ function openExts(){
 $('#extb').onclick=openExts;
 /* ---- Расширение «Случайный плеер»: выбираешь репозиторий, все его аудио (включая вложенные папки) перемешиваются
    и играют через обычный плеер (колода, без повторов, повтор «все»). Запароленные репозитории и папки в очередь не попадают. ---- */
-const shufRepos=()=>[...(repoBlocked('')?[]:[['','Облако']]),...repos.filter(x=>mineRepo(x)&&!repoBlocked(x.name)).map(x=>[x.name,x.name])];
-const shufTracks=r=>files.filter(f=>f.repo===r&&isAud(f)&&!isLocked(f.repo,f.path));
-/* запароленные папки/репозиторий этого репозитория, ещё не открытые на устройстве */
-const shufLocks=r=>locks.filter(l=>l.r===r&&!UN.has(r+'\n'+l.p)).sort((a,b)=>a.p.length-b.p.length);
+let SHF={r:'',p:''};
+/* аудио для «Случайного плеера»: MP3, любые аудио-форматы и MP4 (звук из mp4 играет в обычном аудио-плеере) */
+const shufAud=f=>isAud(f)||/\.(mp4|m4v)$/i.test(f.name||'');
+/* все треки выбранного места: репозиторий или папка вместе со всеми вложенными папками, без закрытых */
+const shufIn=(path,p)=>p===''||inTree(path||'',p);
+const shufTracks=(r,p)=>files.filter(f=>f.repo===r&&shufIn(f.path,p)&&shufAud(f)&&!isLocked(f.repo,f.path));
+const shufAllCount=(r,p)=>files.filter(f=>f.repo===r&&shufIn(f.path,p)&&shufAud(f)).length;
+/* закрытые места, которые касаются выбранного: сам репозиторий, его папки-предки и закрытые папки внутри */
+const shufAbove=(lp,p)=>lp===''||inTree(p,lp);  /* закрытое место выше выбранного (или сам репозиторий) */
+const shufLocks=(r,p)=>locks.filter(l=>l.r===r&&!UN.has(r+'\n'+l.p)&&(shufAbove(l.p,p)||shufIn(l.p,p)))
+  .sort((a,b)=>a.p.length-b.p.length);
+function shufPaint(){
+  const r=SHF.r,p=SHF.p,n=shufAllCount(r,p),lk=shufLocks(r,p).length;
+  const info=!n?'Здесь нет аудио':stPl(n,['трек','трека','треков'])+(lk?' · 🔒 закрытых мест: '+lk:'');
+  $('#admb').innerHTML=`<div class="mus shf">
+    <div class="uc"><label class="ml">Откуда</label><button class="mto" id="shfpick">${esc(lkn(r,p))}</button></div>
+    <div class="uc"><div class="us" style="padding:6px 2px">${info}</div>
+      <div class="us" style="padding:0 2px 10px">Берутся MP3, MP4 и другие аудио из выбранной папки и всех вложенных. Закрытые репозиторий и папки откроем сразу — спросим пароли заранее.</div>
+      <div class="row"><button class="p" id="shfgo" ${n?'':'disabled'}>Перемешать и играть</button></div></div>
+  </div>`;
+}
 function openShuffle(){
   fromSet=false;admParent=null;openAdm(extName('shuf'));
-  const rl=shufRepos();
-  const row=([r,t])=>{const n=files.filter(f=>f.repo===r&&isAud(f)).length,lk=shufLocks(r).length;
-    const info=!n?'нет музыки':stPl(n,['трек','трека','треков'])+(lk?' · 🔒 '+lk:'');
-    return `<div class="exr"><button class="exo" data-shr="${esc(r)}">${icon('repo')}<span>${esc(t)}</span></button><span class="us">${info}</span></div>`};
-  $('#admb').innerHTML=rl.length?`<div class="exl">${rl.map(row).join('')}</div><div class="us" style="padding:10px 4px">Запароленные репозиторий и папки откроются сразу после выбора — спросим пароли заранее, чтобы плеер не останавливался.</div>`:'<div class="empty">Нет доступных репозиториев</div>';
+  shufPaint();
 }
-async function shufStart(r){
-  /* сначала спрашиваем пароли всех закрытых мест внутри репозитория (репозиторий — первым, затем папки) */
-  for(const l of shufLocks(r)){
-    if(!await checkLock(l)&&l.p==='')return;
+async function shufStart(){
+  const r=SHF.r,p=SHF.p;
+  /* сначала пароли: ближайший закрытый репозиторий/папка вверху, затем вложенные; отказ от верхнего отменяет запуск */
+  for(const l of shufLocks(r,p)){
+    if(!await checkLock(l)&&shufAbove(l.p,p))return;
   }
-  const L=shufTracks(r);
-  if(!L.length){say('В этом репозитории нет доступной музыки',1);return}
+  const L=shufTracks(r,p);
+  if(!L.length){say('В этом месте нет доступной музыки',1);shufPaint();return}
   pq=L;SHUF=true;REPM=1;SH={o:[],p:0,len:0};drawPl4();
   $('#adm').hidden=true;fromSet=false;admParent=null;
   playAt(Math.floor(Math.random()*L.length));
 }
-$('#admb').addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-shr]');if(b)shufStart(b.dataset.shr)});
+$('#admb').addEventListener('click',e=>{
+  const t=e.target.closest&&e.target.closest('#shfpick,#shfgo');if(!t)return;
+  if(t.id==='shfpick'){kpOpen((r,p)=>{SHF={r,p};shufPaint()},{r:SHF.r,p:SHF.p});return}
+  if(t.id==='shfgo'&&!t.disabled)shufStart();
+});
 /* ---- Расширение «Журнал тренировок»: приложение gym-log целиком, внутри изолированного фрейма на весь экран.
    «Назад» переадресуется в приложение, выход — его ползунком. Данные лежат на устройстве (gym_*, IndexedDB gymlog). ---- */
 const GYM={on:false,recs:new Map(),sx:'',q:null,last:0,pend:null,pt:0,rt:0};let FLOODT=0;
