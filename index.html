@@ -1075,6 +1075,32 @@ $('#conb').onclick=()=>{if(isAdmin())drawConsole()};
 /* ---- Консоль → «Музыка из чата» ----
    Вход в Telegram берётся тот же, что у Облачка (api_id / api_hash / сессия), второй раз входить не нужно.
    Из чата или бота скачиваются голосовые и аудио, и сразу кладутся в выбранный репозиторий и папку Облачка. */
+/* ---- Фоновая работа ----
+   Пока идёт плейлист, тихо крутится служебный звук и в шторке уведомлений показывается «Скачивание музыки».
+   Пока вкладка «воспроизводит» звук, браузер не усыпляет страницу и не замедляет таймеры, так что загрузка идёт при свёрнутом приложении и погашенном экране. */
+const MBG={a:null,on:false};
+function bgStart(){
+  if(MBG.on)return;MBG.on=true;
+  try{
+    if(!MBG.a){
+      const sr=8000,n=sr,buf=new ArrayBuffer(44+n*2),dv=new DataView(buf);
+      const w=(o,t)=>{for(let i=0;i<t.length;i++)dv.setUint8(o+i,t.charCodeAt(i))};
+      w(0,'RIFF');dv.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);dv.setUint32(24,sr,true);dv.setUint32(28,sr*2,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);w(36,'data');dv.setUint32(40,n*2,true);
+      for(let i=0;i<n;i++)dv.setInt16(44+i*2,Math.round(Math.sin(2*Math.PI*25*i/sr)*120),true);
+      MBG.a=new Audio(URL.createObjectURL(new Blob([buf],{type:'audio/wav'})));MBG.a.loop=true;
+    }
+    MBG.a.play().catch(()=>{});
+  }catch(e){}
+  bgMeta();
+}
+function bgMeta(){
+  try{if(MBG.on&&'mediaSession' in navigator&&(typeof au==='undefined'||au.paused))navigator.mediaSession.metadata=new MediaMetadata({title:'Скачивание музыки: '+MUS.done+' из '+MUS.total,artist:MUS.stage||'Облачко'})}catch(e){}
+}
+function bgStop(){
+  MBG.on=false;
+  try{if(MBG.a)MBG.a.pause()}catch(e){}
+  try{if(typeof au==='undefined'||au.paused)navigator.mediaSession.metadata=null}catch(e){}
+}
 const MUS_BOT='@audio_storm_bot';
 const MUS={rows:[],stop:false,busy:false,log:[],total:0,done:0,proc:0,stage:'',showLog:false};
 function mstage(t){MUS.stage=t;musPaint()}
@@ -1171,29 +1197,34 @@ async function musPlaylist(){
   const ta=$('#musp');if(ta){MS.list=ta.value;msv()}
   const lines=String(MS.list||'').split('\n').map(x=>x.trim()).filter(Boolean);
   if(!lines.length){say('Введите хотя бы одну строку: Исполнитель - Название',1);return}
-  MUS.busy=true;MUS.stop=false;MUS.total=lines.length;MUS.done=0;MUS.proc=0;mstage('Подготовка…');
+  const sig=lines.length+':'+lines[0]+':'+lines[lines.length-1];
+  let start=0;if(MS.run&&MS.sig===sig&&MS.pos>0&&MS.pos<lines.length)start=MS.pos;
+  MS.sig=sig;MS.run=true;MS.pos=start;msv();
+  MUS.busy=true;MUS.stop=false;MUS.total=lines.length;MUS.done=0;MUS.proc=start;bgStart();mstage(start?'Продолжаю с '+(start+1)+'-й строки…':'Подготовка…');
   try{
-    const chat=await musResolve(),tg=await musTarget();let n=0;
+    const chat=await musResolve(),tg=await musTarget();let n=start;
     mlog('Плейлист: '+lines.length+' строк → '+(tg.r||'Облако')+(tg.p?' / '+tg.p:''));
-    for(const line of lines){
+    if(start)mlog('Продолжаю с '+(start+1)+'-й строки (прошлый запуск не дошёл до конца)');
+    for(const line of lines.slice(start)){
       if(MUS.stop){mlog('Остановлено');break}
       n++;mlog('['+n+'/'+lines.length+'] Запрашиваю: '+line);
       mstage('Отправляю запрос: '+line);
-      let sent;try{sent=await client.sendMessage(chat,line)}catch(x){mlog('⚠ Не удалось отправить «'+line+'»: '+err(x));MUS.proc++;musPaint();await sleep(6000+Math.random()*1000);continue}
+      let sent;try{sent=await client.sendMessage(chat,line)}catch(x){mlog('⚠ Не удалось отправить «'+line+'»: '+err(x));MUS.proc++;MS.pos=n;msv();musPaint();await sleep(6000+Math.random()*1000);continue}
       mstage('Жду ответ бота…');
       await sleep(6000+Math.random()*1000);
       const tm=await musWait(chat,sent.id,30000);
       if(!tm){mlog('⚠ Нет ответа с треком на «'+line+'», пропускаю.')}
       else{try{const it=musInfo(tm);if(await musSave(it,tg))MUS.done++}catch(x){mlog('✖ '+line+': '+err(x))}}
-      MUS.proc++;musPaint();
+      MUS.proc++;MS.pos=n;msv();musPaint();
       if(n<lines.length){mstage('Пауза перед следующим запросом…');await sleep(6000+Math.random()*1000)}
     }
     mlog('Плейлист готов: передано в загрузку '+MUS.done+' из '+lines.length);
     MUS.stage=MUS.stop?'Остановлено':'Готово. Ход загрузки в облако — в окне загрузок';
   }catch(x){mlog('✖ '+err(x));say(err(x),1);MUS.stage='Ошибка: '+err(x)}
-  finally{MUS.busy=false;musPaint()}
+  finally{MUS.busy=false;MS.run=false;MS.pos=0;msv();bgStop();musPaint()}
 }
 function musPaint(){
+  bgMeta();
   const g=$('#musg');if(!g)return;
   g.textContent=MUS.busy?'Остановить':'Начать скачивание';g.classList.toggle('del',MUS.busy);g.classList.toggle('p',!MUS.busy);
   const f=$('#mpf'),t=$('#mpt'),st=$('#mps');
@@ -1228,7 +1259,7 @@ $('#admb').addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('.mus button');if(!b||b.disabled)return;
   if(b.id==='musto'){kpOpen((r,p)=>{MS.repo=r;MS.folder=p;msv();musPaintTo()},{r:MS.repo||'',p:MS.folder||''});return}
   if(b.id==='musg'){if(MUS.busy){MUS.stop=true;mlog('Остановка запрошена…')}else musPlaylist()}
-  else if(b.id==='musk'){const ta=$('#musp');ta.value='';MS.list='';msv();ta.focus()}
+  else if(b.id==='musk'){const ta=$('#musp');ta.value='';MS.list='';MS.run=false;MS.pos=0;msv();ta.focus()}
 });
 
 /* ---- Страница выбора репозитория и папки ----
