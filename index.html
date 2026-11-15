@@ -877,7 +877,7 @@ function allPaths(r=R()){
   return[...s].sort((a,b)=>a.localeCompare(b,'ru'));
 }
 const R=()=>P.repo||'';
-const fabBlocked=()=>repoBlocked(R())||isLocked(R(),cur)||needKey(R());
+const fabBlocked=()=>repoBlocked(R())||repoRO(R())||isLocked(R(),cur)||needKey(R());
 
 /* ---- пароли (защита внутри приложения) ---- */
 const lockOf=(r,p)=>locks.find(l=>l.r===r&&l.p===p);
@@ -887,6 +887,10 @@ let ANN=[],CVRM=[];
 const repoGuest=r=>{const x=r&&repos.find(q=>q.name===r);return !!(x&&x.guest&&(!x.owner||x.owner===S.guestUser))};
 const guestRec=()=>S.viewer&&S.guestUser?users.find(x=>x.u===S.guestUser):null;
 const repoBlocked=r=>{const g=guestRec();return !!(g&&g.r&&g.r.includes(r||''))};
+/* только чтение: репозиторий виден, но загружать, менять и удалять в нём нельзя; canMake — может ли друг создавать свои репозитории */
+const repoRO=r=>{const g=guestRec();return !!(g&&g.ro&&g.ro.includes(r||''))};
+const roDeny=r=>{if(!repoRO(r))return false;say('Вы потеряли право публиковать и менять здесь свои данные',1);return true};
+const canMake=()=>{const g=guestRec();return !(g&&g.nc)};
 const visRepo=x=>!S.viewer||((!x.guest||!x.owner||x.owner===S.guestUser)&&!repoBlocked(x.name));
 const mineRepo=x=>S.viewer?(!!(x.guest&&(!x.owner||x.owner===S.guestUser))&&!repoBlocked(x.name)):!x.guest;
 const showRepo=x=>!!P.all||mineRepo(x);
@@ -1018,6 +1022,7 @@ async function checkLock(l){
 }
 async function unlock(r,p){for(;;){const l=blocker(r,p);if(!l)return true;if(!await checkLock(l))return false}}
 async function toggleLock(r,p){
+  if(roDeny(r))return;
   if(!canPw(r)){alert('Менять пароли здесь нельзя: этот репозиторий создан не вами.');return}
   const l=lockOf(r,p);
   if(l){
@@ -1068,7 +1073,7 @@ document.addEventListener('visibilitychange',()=>{
   if(HIDAT&&Date.now()-HIDAT>60000&&FUN.size){for(const k of FUN.keys())UN.delete(k);FUN.clear();try{render()}catch(e){}}
   HIDAT=0;
 });
-const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','ext+':'предложил расширение:',extok:'подключил расширение:',extno:'отказался от расширения:',extrn:'переименовал расширение:',extrv:'отозвал расширение:','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',ublock:'закрыл доступ пользователю',uunblock:'открыл доступ пользователю',rblock:'закрыл доступ к репозиторию:',runblock:'открыл доступ к репозиторию:',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение'};
+const ACT={up:'загрузил','del':'удалил',mv:'перенёс',ren:'переименовал','rep+':'создал репозиторий','ext+':'предложил расширение:',extok:'подключил расширение:',extno:'отказался от расширения:',extrn:'переименовал расширение:',extrv:'отозвал расширение:','rep-':'удалил репозиторий','fo+':'создал папку','fo-':'удалил папку',login:'вошёл',view:'открыл',play:'включил',dl:'скачал',lock:'поставил пароль:',unlock:'снял пароль:',chg:'сменил пароль:',badpw:'ввёл неверный пароль:','user+':'создал профиль','user-':'удалил профиль',ublock:'закрыл доступ пользователю',uunblock:'открыл доступ пользователю',rblock:'закрыл доступ к репозиторию:',runblock:'открыл доступ к репозиторию:',cp:'скопировал',enc:'шифрование:',ord:'изменил порядок файлов:',key:'создал ключ для друга',out:'вышел из аккаунта',jclr:'очистил журнал',own:'включил хранение паролей',ann:'опубликовал оповещение','sh+':'предложил доступ:','sh✓':'принял доступ:','sh-':'отказался от доступа:','shx':'отозвал доступ:','ann-':'удалил оповещение',rro:'оставил только чтение:',ncr:'запретил создавать репозитории:','ncr-':'разрешил создавать репозитории:'};
 function openAdm(t){try{gymReset()}catch(e){}$('#admt').textContent=t;$('#adm').hidden=false;const q=$('#musq');if(q)q.hidden=true}
 let fromSet=false,admParent=null;
 $('#admx').onclick=()=>{if(fromSet&&admParent){admParent();return}fromSet=false;admParent=null;$('#adm').hidden=true};
@@ -1080,7 +1085,7 @@ function drawSettings(){
 function drawConsole(){
   if(!isAdmin()){drawSettings();return}
   fromSet=false;admParent=null;openAdm('Консоль администратора');
-  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button><button data-set="ext">${icon('puzzle')}<span>Расширения</span></button><button data-set="stat">${icon('list')}<span>Статистика</span></button></div>`;
+  $('#admb').innerHTML=`<div class="stl"><button data-set="usr">${icon('users')}<span>Пользователи</span></button><button data-set="acc">${icon('lock')}<span>Доступ</span></button><button data-set="jrn">${icon('list')}<span>Журнал действий</span></button><button data-set="key">${icon('lock')}<span>Ключ для друга</span></button><button data-set="ann">${icon('bell')}<span>Оповещения</span></button><button data-set="ext">${icon('puzzle')}<span>Расширения</span></button><button data-set="stat">${icon('list')}<span>Статистика</span></button></div>`;
 }
 function openLks(){
   openAdm('Кнопка открытия репозитория');
@@ -1218,6 +1223,7 @@ async function musSave(it,tg){
   mstage('Скачиваю: '+it.title);
   const b=await musGet(it);if(!b.size)throw new Error('пустой файл');
   mstage('Передаю в облако: '+it.title);
+  if(roDeny(tg.r))throw new Error('Репозиторий только для чтения');
   await enqueue([new File([b],it.name,{type:it.mime})],tg.r,tg.p);
   mlog('✓ Передано в загрузку: '+it.name);return true;
 }
@@ -1779,7 +1785,7 @@ $('#admb').addEventListener('click',e=>{
   else $('#'+k).click();
 });
 $('#admb').addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(!b)return;const k=b.dataset.set;
-  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,jrn:openJournal,key:makeKey,ann:openAnn,ext:openExtAdmin,stat:openStats};
+  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,acc:openAccList,jrn:openJournal,key:makeKey,ann:openAnn,ext:openExtAdmin,stat:openStats};
   if(ACT[k]){ACT[k]();return}
   if(SETK[k]){fromSet=true;admParent=drawSettings;SETK[k]();return}
   if(ADMK[k]){if(!isAdmin())return;fromSet=true;admParent=drawConsole;ADMK[k]()}  /* консоль и всё из неё — только у владельца */
@@ -1961,14 +1967,14 @@ function drawUsers(){
         for(const l of lk)o+=pwLine('🔒 «'+nm+'» · '+(l.p?'код папки «'+esc(l.p)+'»':'пароль репозитория'),l.x);
         return o;
       }).join(''),fl=files.filter(f=>rs.some(x=>x.name===f.repo)),sz=fl.reduce((a,f)=>a+(f.size||0),0),li=lastIn(u.u);
-    h+=`<div class="uc"><div class="un">${esc(u.u)}${u.b?' · 🚫 доступ закрыт':''}</div>${(u.r&&u.r.length)?'<div class="us">Закрыт доступ к: '+u.r.map(x=>esc(x||'Облако')).join(', ')+'</div>':''}<div class="us">Репозиториев: ${rs.length} · файлов: ${fl.length} · ${size(sz)}</div><div class="us">${u.c?'Создан '+new Date(u.c).toLocaleDateString('ru'):''}${li?' · был '+new Date(li).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div><div class="us">Пароль: ${OWNPRIV&&u.e?`<code data-e="${esc(u.e)}">…</code>`:u.e?'скрыт':'не сохранён (профиль создан до включения хранения)'}</div>${rpl?'<div class="un" style="font-size:13px;margin-top:6px">Репозитории и коды</div>'+rpl:''}<div class="row"><button data-ba="${esc(u.u)}">Доступ</button><button class="del" data-du="${esc(u.u)}">Удалить профиль</button></div></div>`;
+    h+=`<div class="uc"><div class="un">${esc(u.u)}${u.b?' · 🚫 доступ закрыт':''}</div>${(u.r&&u.r.length)?'<div class="us">Закрыт доступ к: '+u.r.map(x=>esc(x||'Облако')).join(', ')+'</div>':''}${(u.ro&&u.ro.length)?'<div class="us">Только чтение: '+u.ro.map(x=>esc(x||'Облако')).join(', ')+'</div>':''}${u.nc?'<div class="us">Создавать репозитории нельзя</div>':''}<div class="us">Репозиториев: ${rs.length} · файлов: ${fl.length} · ${size(sz)}</div><div class="us">${u.c?'Создан '+new Date(u.c).toLocaleDateString('ru'):''}${li?' · был '+new Date(li).toLocaleString('ru',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div><div class="us">Пароль: ${OWNPRIV&&u.e?`<code data-e="${esc(u.e)}">…</code>`:u.e?'скрыт':'не сохранён (профиль создан до включения хранения)'}</div>${rpl?'<div class="un" style="font-size:13px;margin-top:6px">Репозитории и коды</div>'+rpl:''}<div class="row"><button data-ba="${esc(u.u)}">Доступ</button><button class="del" data-du="${esc(u.u)}">Удалить профиль</button></div></div>`;
   }
   $('#admb').innerHTML=h;
   if(OWNPRIV)document.querySelectorAll('#admb code[data-e]').forEach(async c=>{try{c.textContent=await ownDec(b64d(c.dataset.e)).then(b=>td.decode(b))}catch(e){c.textContent='не открывается этим мастер-паролем'}});
 }
 function usrUniq(a){const m=new Map();for(const x of a){const q=m.get(x.u);if(!q||q.id<x.id)m.set(x.u,x)}return[...m.values()]}
 async function saveUserRec(u){
-  const rec={u:u.u,h:u.h,e:u.e,c:u.c};if(u.b)rec.b=1;if(u.r&&u.r.length)rec.r=u.r;
+  const rec={u:u.u,h:u.h,e:u.e,c:u.c};if(u.b)rec.b=1;if(u.r&&u.r.length)rec.r=u.r;if(u.ro&&u.ro.length)rec.ro=u.ro;if(u.nc)rec.nc=1;
   const m=await withChat(()=>client.sendMessage(S.chat,UR+JSON.stringify(rec)));
   try{await withChat(()=>client.deleteMessages(S.chat,[u.id]))}catch(x){}
   u.id=m.id;
@@ -1982,6 +1988,28 @@ async function toggleBlock(name){
   try{await saveUserRec(u)}catch(x){u.b=old;throw x}
   jlog(on?'ublock':'uunblock',name);say(on?'Доступ закрыт':'Доступ открыт');
 }
+async function setRepoLevel(name,repo,lvl){
+  if(!isAdmin())return;
+  const u=users.find(x=>x.u===name);if(!u)return;
+  const lbl=repo||'Облако',oc=u.r||[],oro=u.ro||[],nowL=oc.includes(repo)?'closed':oro.includes(repo)?'ro':'full';
+  if(nowL===lvl)return;
+  const txt={full:'Дать «'+name+'» полный доступ к «'+lbl+'»: смотреть, загружать, менять и удалять?',ro:'Оставить «'+name+'» в «'+lbl+'» только чтение? Он будет видеть и открывать файлы, но не сможет загружать, менять и удалять.',closed:'Закрыть «'+name+'» доступ к «'+lbl+'»? Файлы останутся на месте, он просто перестанет их видеть.'}[lvl];
+  if(!confirm(txt))return;
+  u.r=oc.filter(x=>x!==repo);u.ro=oro.filter(x=>x!==repo);
+  if(lvl==='closed')u.r.push(repo);else if(lvl==='ro')u.ro.push(repo);
+  try{await saveUserRec(u)}catch(x){u.r=oc;u.ro=oro;throw x}
+  jlog(lvl==='closed'?'rblock':lvl==='ro'?'rro':'runblock',name+' → '+lbl);
+  say(lvl==='closed'?'Доступ к «'+lbl+'» закрыт':lvl==='ro'?'«'+lbl+'»: только чтение':'Полный доступ к «'+lbl+'» открыт');
+}
+async function toggleCreate(name){
+  if(!isAdmin())return;
+  const u=users.find(x=>x.u===name);if(!u)return;
+  const on=!u.nc;
+  if(!confirm(on?'Запретить «'+name+'» создавать новые репозитории? Уже созданные останутся.':'Разрешить «'+name+'» создавать репозитории?'))return;
+  const old=u.nc;u.nc=on?1:0;
+  try{await saveUserRec(u)}catch(x){u.nc=old;throw x}
+  jlog(on?'ncr':'ncr-',name);say(on?'Создание репозиториев запрещено':'Создание репозиториев разрешено');
+}
 async function toggleRepoBlock(name,repo){
   if(!isAdmin())return;
   const u=users.find(x=>x.u===name);if(!u)return;
@@ -1991,16 +2019,34 @@ async function toggleRepoBlock(name,repo){
   try{await saveUserRec(u)}catch(x){u.r=cur;throw x}
   jlog(on?'rblock':'runblock',name+' → '+lbl);say(on?'Доступ к «'+lbl+'» закрыт':'Доступ к «'+lbl+'» открыт');
 }
+let ACCFROM=null;
 function openAccess(name){
   if(!isAdmin())return;
   const u=users.find(x=>x.u===name);if(!u){drawUsers();return}
-  fromSet=true;admParent=openUsers;openAdm('Доступ: '+name);
-  const bl=u.r||[];
-  let h='<div class="uc"><div class="un">Полный доступ</div><div class="us">'+(u.b?'Закрыт: войти в облако пользователь не может.':'Открыт: пользователь входит как обычно.')+'</div><div class="row"><button class="chip'+(u.b?' on':'')+'" data-bu="'+esc(u.u)+'">'+(u.b?'Открыть полный доступ':'Закрыть полный доступ')+'</button></div></div>';
+  fromSet=true;admParent=ACCFROM||openUsers;openAdm('Доступ: '+name);
+  const bl=u.r||[],ro=u.ro||[],q=esc(u.u);
+  let h='<div class="uc"><div class="un">Полный доступ</div><div class="us">'+(u.b?'Закрыт: войти в облако пользователь не может.':'Открыт: пользователь входит как обычно.')+'</div><div class="row"><button class="chip'+(u.b?' on':'')+'" data-bu="'+q+'">'+(u.b?'Открыть полный доступ':'Закрыть полный доступ')+'</button></div></div>';
+  h+='<div class="uc"><div class="un">Создание репозиториев</div><div class="us">'+(u.nc?'Запрещено: свои репозитории пользователь создавать не может.':'Разрешено: пользователь может создавать свои репозитории, даже если в других ему доступ закрыт.')+'</div><div class="row"><button class="chip'+(u.nc?' on':'')+'" data-nc="'+q+'">'+(u.nc?'Разрешить создавать':'Запретить создавать')+'</button></div></div>';
   h+='<div class="us" style="margin:6px 4px 8px">Доступ к репозиториям</div>';
-  const row=(r,t,sub)=>{const c=bl.includes(r);return '<div class="uc"><div class="un">'+esc(t)+'</div>'+(sub?'<div class="us">'+esc(sub)+'</div>':'')+'<div class="row"><button class="chip'+(c?' on':'')+'" data-br="'+esc(u.u+'\n'+r)+'">'+(c?'Доступ закрыт · открыть':'Закрыть доступ')+'</button></div></div>'};
+  const row=(r,t,sub)=>{
+    const L=bl.includes(r)?'closed':ro.includes(r)?'ro':'full',v=esc(u.u+'\n'+r+'\n');
+    const b=(l,tx)=>'<button class="chip'+(L===l?' on':'')+'" data-bl="'+v+l+'">'+tx+'</button>';
+    return '<div class="uc"><div class="un">'+esc(t)+'</div>'+(sub?'<div class="us">'+esc(sub)+'</div>':'')+'<div class="us">Сейчас: '+({full:'полный доступ',ro:'только чтение',closed:'закрыт'})[L]+'</div><div class="row">'+b('full','Полный')+b('ro','Только чтение')+b('closed','Закрыт')+'</div></div>';
+  };
   h+=row('','Облако','общее для всех');
   for(const x of repos)h+=row(x.name,x.name,x.owner?'владелец: '+x.owner:'');
+  $('#admb').innerHTML=h;
+}
+/* отдельное меню консоли: у кого какой доступ */
+function openAccList(){
+  if(!isAdmin())return;
+  ACCFROM=openAccList;fromSet=true;admParent=drawConsole;openAdm('Доступ');
+  let h='<div class="us" style="margin:4px 4px 10px">Выберите пользователя: можно закрыть вход целиком, закрыть или оставить только чтение в отдельных репозиториях и запретить создавать репозитории.</div>';
+  if(!users.length)h+='<div class="empty">Друзья ещё не входили</div>';
+  for(const u of users){
+    const cl=(u.r||[]).length,ro=(u.ro||[]).length;
+    h+='<div class="uc"><div class="un">'+esc(u.u)+(u.b?' · 🚫 вход закрыт':'')+'</div><div class="us">'+(cl?'Закрыто репозиториев: '+cl+' · ':'')+(ro?'Только чтение: '+ro+' · ':'')+(u.nc?'создавать репозитории нельзя':'создавать репозитории можно')+'</div><div class="row"><button class="p" data-ba="'+esc(u.u)+'">Настроить доступ</button></div></div>';
+  }
   $('#admb').innerHTML=h;
 }
 /* если администратор закрыл доступ, пока пользователь в приложении: показываем заглушку при ближайшем обновлении */
@@ -2011,10 +2057,10 @@ function guestBlockedCheck(){
   try{if(U.on){U.cancel=true;UQ=[]}}catch(e){}
   const o=document.createElement('div');o.id='blkscr';
   o.style.cssText='position:fixed;inset:0;z-index:99999;background:#0b1f1a;color:#e8f3ef;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center;font:16px system-ui,sans-serif';
-  o.innerHTML='<div style="font-size:20px;font-weight:700">Доступ закрыт</div><div>Администратор закрыл вам доступ к облаку.</div>';
+  o.innerHTML='<div style="font-size:20px;font-weight:700">Доступ закрыт</div><div>Вы потеряли доступ к облаку.</div>';
   document.body.appendChild(o);
 }
-const openUsers=()=>{if(!isAdmin())return;openAdm('Пользователи');drawUsers()};
+const openUsers=()=>{if(!isAdmin())return;ACCFROM=openUsers;fromSet=true;admParent=drawConsole;openAdm('Пользователи');drawUsers()};
 $('#admb').onchange=e=>{if(e.target.id==='jsel')drawJournal(e.target.value)};
 $('#admb').onclick=async e=>{
   const t=e.target;
@@ -2025,6 +2071,8 @@ $('#admb').onclick=async e=>{
     else if(t.id==='jold'){t.disabled=true;t.textContent='Шифрую…';try{await jEncryptOld();say('Журнал зашифрован')}finally{drawJournal('')}}
     else if(t.dataset.ba){openAccess(t.dataset.ba)}
     else if(t.dataset.bu){await toggleBlock(t.dataset.bu);openAccess(t.dataset.bu)}
+    else if(t.dataset.bl){const[a,b,c]=t.dataset.bl.split('\n');await setRepoLevel(a,b,c);openAccess(a)}
+    else if(t.dataset.nc){await toggleCreate(t.dataset.nc);openAccess(t.dataset.nc)}
     else if(t.dataset.br){const k=t.dataset.br.indexOf('\n');await toggleRepoBlock(t.dataset.br.slice(0,k),t.dataset.br.slice(k+1));openAccess(t.dataset.br.slice(0,k))}
     else if(t.dataset.du){
       if(!confirm('Удалить профиль «'+t.dataset.du+'»? Его репозитории и файлы останутся. Друг сможет заново занять это имя.'))return;
@@ -2055,7 +2103,7 @@ function regScreen(check){return new Promise(res=>{
 })}
 async function guestGate(){
   const rec=users.find(x=>x.u===S.guestUser);
-  if(rec&&rec.b){S.guestUser='';S.guestHash='';sv('tgm',S);throw new Error('Доступ закрыт администратором')}
+  if(rec&&rec.b){S.guestUser='';S.guestHash='';sv('tgm',S);throw new Error('Вы потеряли доступ к облаку')}
   if(S.guestUser&&rec&&rec.h===S.guestHash)return true;
   S.guestUser='';S.guestHash='';
   const ok=await regScreen(async(raw,a,b)=>{
@@ -2064,7 +2112,7 @@ async function guestGate(){
     if(!/^[\p{L}\p{N}_.-]{2,24}$/u.test(name))return 'Имя: от 2 до 24 символов, буквы, цифры, _ . -';
     const ex=users.find(x=>x.u.toLowerCase()===name.toLowerCase());
     if(ex){
-      if(ex.b)return 'Доступ закрыт администратором';
+      if(ex.b)return 'Вы потеряли доступ к облаку';
       if(!a)return 'Введите пароль';
       if(hashPw(a,ex.h.split(':')[0])!==ex.h)return 'Неверный пароль';
       try{await ntLogin(ex.u,a)}catch(e){}S.guestUser=ex.u;S.guestHash=ex.h;sv('tgm',S);return null;
@@ -2078,7 +2126,7 @@ async function guestGate(){
   return !!ok;
 }
 async function firstRepo(){
-  if(S.rp||S.viewer||repos.length||files.length)return;S.rp=1;sv('tgm',S);
+  if(S.rp||S.viewer||repos.length||files.length||!canMake())return;S.rp=1;sv('tgm',S);
   const n=clean(await uiPrompt('Создайте первый репозиторий. Название (или «Отмена» — останется «Облако»):','Мой репозиторий')||'');if(!n)return;
   try{await makeRepo(n)}catch(x){say(err(x),1)}
 }
@@ -2309,7 +2357,7 @@ async function refresh(){
       const e=entry(m);
       if(e)out.push(e);
       else{const t=m.text;if(typeof t==='string'){
-        if(t.startsWith(UR)){try{const j=JSON.parse(t.slice(UR.length));if(j.u&&j.h)usr.push({id:m.id,u:j.u,h:j.h,e:j.e||'',c:j.c||0,b:j.b?1:0,r:Array.isArray(j.r)?j.r.filter(x=>typeof x==='string'):[]})}catch(x){}}
+        if(t.startsWith(UR)){try{const j=JSON.parse(t.slice(UR.length));if(j.u&&j.h)usr.push({id:m.id,u:j.u,h:j.h,e:j.e||'',c:j.c||0,b:j.b?1:0,r:Array.isArray(j.r)?j.r.filter(x=>typeof x==='string'):[],ro:Array.isArray(j.ro)?j.ro.filter(x=>typeof x==='string'):[],nc:j.nc?1:0})}catch(x){}}
         else if(t.startsWith(JR)){try{const j=JSON.parse(t.slice(JR.length));if(Array.isArray(j)){for(const e of j)jr.push({...e,mid:m.id,pl:1})}else if(j&&j.k&&j.d)jenc.push({mid:m.id,k:j.k,d:j.d})}catch(x){}}
         else if(t.startsWith(ORR)){try{const j=JSON.parse(t.slice(ORR.length));ordp.push({mid:m.id,r:j.r||'',p:j.p||'',n:j.n||0,o:String(j.o||'')})}catch(x){}}
         else if(t.startsWith(CVX)){try{const j=JSON.parse(t.slice(CVX.length));if(j&&j.d)cvx.push({mid:m.id,r:j.r||'',e:j.e?1:0,d:j.d})}catch(x){}}
@@ -2881,7 +2929,7 @@ function render(){
   ORDIDX=ordIdx(R(),cur);const cmp=(P.sort==='my'&&q)?SORTS.new:(SORTS[P.sort]||SORTS.new);
   let html='';
   drawRepos();
-  if(repoBlocked(R())){html='<div class="empty"><span class="big">🚫</span>Доступ к этому репозиторию закрыт администратором</div>'}
+  if(repoBlocked(R())){html='<div class="empty"><span class="big">🚫</span>Вы потеряли доступ к этому репозиторию</div>'}
   else if(!isLocked(R(),'')&&needKey(R())){html=''+lkScr('Репозиторий зашифрован','AES-256: LOCKED')+'<button class="lockbtn unk" aria-label="Ввести пароль шифрования"><span class="lk">'+icon('lock')+'</span><span class="lt">Потяните, чтобы открыть</span></button>'}
   else if(isLocked(R(),'')){html=''+lkScr('Репозиторий защищён паролем','ACCESS: PASSWORD')+'<button class="lockbtn unl" aria-label="Ввести пароль"><span class="lk">'+icon('lock')+'</span><span class="lt">Потяните, чтобы открыть</span></button>'}
   else if(q){
@@ -2917,6 +2965,7 @@ async function newEncSetup(n){
   return{enc:Object.assign({s:b64e(salt),c:chk,on:1},x?{x}:{}),k};
 }
 async function makeRepo(n){
+  if(!canMake()){say('Вы потеряли право создавать репозитории',1);return false}
   if(!hasCrypto()){alert('Шифрование недоступно: при таком способе открытия приложения браузер не даёт доступ к криптографии. Откройте приложение с хостинга по https.');return false}
   const ne=await newEncSetup(n);if(!ne)return false;
   const m=await withChat(()=>client.sendMessage(S.chat,RP+n+'\n'+ENC+JSON.stringify(ne.enc)+GOWN()));
@@ -2924,7 +2973,7 @@ async function makeRepo(n){
   KEYS[n]=ne.k;P.repo=n;sv('tgmp',P);jlog('rep+',n);
   return true;
 }
-$('#addrepo').onclick=async()=>{const n=clean(await uiPrompt('Название репозитория')||'');if(!n)return;if(n==='Облако'||repos.some(x=>x.name===n)){alert('Такой репозиторий уже есть');return}try{if(await makeRepo(n)){cur='';render()}}catch(x){say(err(x),1)}};
+$('#addrepo').onclick=async()=>{if(!canMake()){say('Вы потеряли право создавать репозитории',1);return}const n=clean(await uiPrompt('Название репозитория')||'');if(!n)return;if(n==='Облако'||repos.some(x=>x.name===n)){alert('Такой репозиторий уже есть');return}try{if(await makeRepo(n)){cur='';render()}}catch(x){say(err(x),1)}};
 $('#rsw').onclick=async()=>{
   if(rswBusy)return;rswBusy=true;
   try{
@@ -2948,6 +2997,7 @@ function openRepoMenu(r){
   $('#rmn').hidden=false;
 }
 async function changeLock(r,p){
+  if(roDeny(r))return;
   if(!canPw(r)){alert('Менять пароли здесь нельзя: этот репозиторий создан не вами.');return}
   const l=lockOf(r,p);if(!l)return toggleLock(r,p);
   const bioWas=BIO.k[bioKey(r,p)]===l.h;
@@ -2965,7 +3015,7 @@ function closeRepo(r){
   say('Закрыто на этом устройстве');render();
 }
 async function deleteRepo(r){
-  if(!r)return;
+  if(!r)return;if(roDeny(r))return;
   if(noDel(r)){alert('Репозитории с паролем удалять нельзя.');return}
   if(!await unlock(r,''))return;
   const fl=files.filter(f=>f.repo===r),mk=folders.filter(x=>x.repo===r),lk=locks.filter(l=>l.r===r),rp=repos.filter(x=>x.name===r);
@@ -3401,6 +3451,7 @@ $('#sortb').onclick=e=>{e.stopPropagation();$('#fltm').hidden=true;$('#sortm').h
 $('#sortm').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;P.sort=b.dataset.s;sv('tgmp',P);$('#sortm').hidden=true;render()};
 document.addEventListener('click',e=>{if(!e.target.closest('#sortm,#sortb'))$('#sortm').hidden=true});
 async function newFolder(){
+  if(roDeny(R()))return;
   const n=clean(await uiPrompt('Название новой папки')||'');
   if(!n)return;
   const p=cur?cur+'/'+n:n;
@@ -3421,7 +3472,7 @@ async function newFolder(){
   }catch(x){ulog(`✖ Папку не создал: ${err(x)}`);say('Не удалось создать папку: '+err(x),1)}
 }
 $('#delf').onclick=async()=>{
-  const r=R(),t=cur;if(!t)return;
+  const r=R(),t=cur;if(!t)return;if(roDeny(r))return;
   const fl=files.filter(f=>f.repo===r&&inTree(f.path,t)),mk=folders.filter(x=>x.repo===r&&inTree(x.path,t)),lk=locks.filter(l=>l.r===r&&l.p&&inTree(l.p,t)),od=ORD.filter(x=>x.r===r&&x.p&&inTree(x.p,t));
   for(const l of lk){if(!await unlock(r,l.p))return}
   const sub=allPaths(r).filter(x=>x!==t&&inTree(x,t)).length;
@@ -3473,6 +3524,7 @@ $('#rf').onclick=async()=>{try{if(OFFLINE){OFFLINE=false;try{await connectRetry(
    ║  ошибок, и допиши в журнал изменений ниже.                                            ║
    ║                                                                                      ║
    ║  Журнал: v81 — CONC 3→2, MAXA 3→5, переподключение при зависании, сторожевые таймеры. ║
+   ║  v85 — только текст сообщения о закрытом доступе в enqueue (логика не менялась).      ║
    ╚══════════════════════════════════════════════════════════════════════════════════════╝ */
 /* ---- загрузка: очередь, 2 файла одновременно, повторы, защита от зависаний ---- */
 const CONC=2,MAXA=5;let UQ=[],UF=[],needRef=false,rt=0,wl=null,_rc=null,_rcAt=0;
@@ -3571,7 +3623,7 @@ async function fixPicked(fs){
   return ok;
 }
 async function enqueue(fs,rrO,ppO){
-  if(repoBlocked(rrO!==undefined?rrO:R())){say('Доступ к этому репозиторию закрыт администратором',1);return}
+  if(repoBlocked(rrO!==undefined?rrO:R())){say('Вы потеряли доступ к этому репозиторию',1);return}
   fs=await fixPicked(fs);if(!fs.length)return;
   ulog(`Выбрано файлов: ${fs.length}`);
   const rr=rrO!==undefined?rrO:R(),pp=ppO!==undefined?ppO:cur,en=encOn(rr);
@@ -3724,7 +3776,7 @@ async function runJob(it){
   upPaint();
 }
 /* === КОНЕЦ ЗАЩИЩЁННОГО БЛОКА ЗАГРУЗКИ === */
-$('#fi').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;try{if(!await forceEnc(R()))return}catch(x){say(err(x),1);return}enqueue(fs)};
+$('#fi').onchange=async e=>{const fs=[...e.target.files];e.target.value='';if(!fs.length)return;if(roDeny(R()))return;try{if(!await forceEnc(R()))return}catch(x){say(err(x),1);return}enqueue(fs)};
 
 
 let curList=[],vi=0,z={s:1,x:0,y:0};
@@ -3844,7 +3896,7 @@ function dragEnd(){
   dropOrder(D.id);
 }
 function dropOrder(movedId){
-  const r=R(),p=cur;
+  const r=R(),p=cur;if(roDeny(r)){render();return}
   const shown=[...document.querySelectorAll('#list [data-o]')].map(d=>+d.dataset.o);
   let fin=shown;
   if(sel.size>1&&sel.has(movedId)){
@@ -3867,7 +3919,7 @@ for(const ev of['touchend','touchcancel','mouseup'])document.addEventListener(ev
 $('#sx').onclick=exitSel;
 $('#sall').onclick=()=>{if(curList.length&&curList.every(id=>sel.has(id)))sel.clear();else curList.forEach(id=>sel.add(id));paintSel()};
 $('#srm').onclick=async()=>{
-  const ids=[...sel];if(!ids.length)return;
+  const ids=[...sel];if(!ids.length)return;if(roDeny(R()))return;
   if(!confirm(`Удалить файлов: ${ids.length} — навсегда?`))return;
   const nm=ids.slice(0,3).map(i=>{const f=files.find(x=>x.id===i);return f?jn(f):''}).filter(Boolean).join(', ');
   const done=new Set();let e0=null;
@@ -3914,6 +3966,7 @@ function encMoveBlock(fl,nr,rr){
 }
 const encWarn=(fl,nr,rr)=>nr!==rr&&encOn(nr)&&fl.some(f=>!f.enc)&&!confirm('Репозиторий «'+nr+'» зашифрован, а эти файлы нет. Они останутся незашифрованными. Продолжить?');
 async function batchMove(np,nr){
+  if(roDeny(R())||roDeny(nr))return;
   const ids=[...sel];let i=0;
   {const fl0=ids.map(id=>files.find(x=>x.id===id)).filter(Boolean),bl=encMoveBlock(fl0,nr,R());if(bl){alert(bl);return}if(encWarn(fl0,nr,R()))return}
   try{
@@ -3927,6 +3980,7 @@ async function batchMove(np,nr){
   exitSel();
 }
 async function moveFolder(np,nr,nm){
+  if(roDeny(R())||roDeny(nr))return;
   const old=cur,rr=R(),bn=nm||base(old),nb=np?np+'/'+bn:bn;
   if(nb===old&&nr===rr)return;
   if(allPaths(nr).includes(nb)){alert('В выбранном месте уже есть папка с таким именем.');return}
@@ -3945,6 +3999,7 @@ async function moveFolder(np,nr,nm){
   }catch(x){say(err(x),1);try{await refresh()}catch(e){}render()}
 }
 async function copyFolder(np,nr){
+  if(roDeny(nr))return;
   const old=cur,rr=R(),nb=np?np+'/'+base(old):base(old);
   if(allPaths(nr).includes(nb)){alert('В выбранном месте уже есть папка с таким именем.');return}
   const mp=p=>nb+p.slice(old.length);
@@ -4221,6 +4276,7 @@ $('#vmenu').onclick=async e=>{
   if(a==='info')alert(`${f.name}\nПапка: ${f.path||'Корень'}\nРазмер: ${size(f.size)}\nДата: ${new Date(f.date).toLocaleString('ru')}`);
   if(a==='mv'){pickMode='one';openPick(f.path)}
   if(a==='rn'){
+    if(roDeny(curFile()&&curFile().repo))return;
     const n=(await uiPrompt('Новое название файла',f.name)||'').replace(/[\r\n]+/g,' ').trim();
     if(!n||n===f.name)return;
     const old=f.name,oldE=f.encName;f.name=n;
@@ -4240,6 +4296,7 @@ $('#pick').onclick=async e=>{
   if(pickMode==='fcopy'){await copyFolder(np,nr);return}
   const f=curFile(),op=f.path,or=f.repo;
   if(np===op&&nr===or)return;
+  if(roDeny(or)||roDeny(nr))return;
   {const bl=encMoveBlock([f],nr,or);if(bl){alert(bl);return}if(encWarn([f],nr,or))return}
   f.path=np;f.repo=nr;
   try{await withChat(()=>client.editMessageCaption(S.chat,f.id,{caption:caption(f.no,f.path,capName(f),f.repo)}))}
@@ -4252,7 +4309,7 @@ $('#vdl').onclick=async()=>{
   try{if(await dlStream(f)){jlog('dl',jn(f));return}const a=document.createElement('a');a.href=await urlOf(f);a.download=f.name;a.click();jlog('dl',jn(f))}catch(x){alert(err(x))}
 };
 $('#vrm').onclick=async()=>{
-  const f=curFile();if(!f)return;
+  const f=curFile();if(!f)return;if(roDeny(f.repo))return;
   if(!confirm(`Удалить «${f.name}» навсегда?`))return;
   try{await withChat(()=>client.deleteMessages(S.chat,[f.id]));files=files.filter(x=>x.id!==f.id);C.delete(f.id);jlog('del',jn(f));dropCur()}
   catch(x){alert(err(x))}
