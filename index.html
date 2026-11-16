@@ -2461,11 +2461,12 @@ async function connect(){
   });
   await findChannel();
   if(!S.main){S.main=S.chat;sv('tgm',S)}
-  try{await refresh()}catch(e){
+  try{await refresh({light:true})}catch(e){
     if(!ACC.test(err(e))||S.viewer)throw e;
     if(!confirm('Канал архива недоступен ('+err(e)+'). Создать новый канал «'+TITLE+'»? Старые файлы останутся в старом канале.'))throw e;
     await makeChannel();await refresh();
   }
+  BGS.ok=1;BGS.t=Date.now()-1e5;
 }
 const NET=/disconnect|network|connection|timeout|timed out|websocket|fetch|closed|offline/i;
 async function connectRetry(){
@@ -2643,10 +2644,12 @@ async function readFast(prog){
   if(fail)throw fail;
   return[...all.values()].sort((x,y)=>y.id-x.id);
 }
-async function refresh(){
+async function refresh(opt){
   const out=[],fol=[],reps=[],lks=[],usr=[],jr=[],jenc=[],ordp=[],ans=[],cvx=[],exr=[],ntp=[],shr=[],seen=new Set();let off,okk=null;const oks=[];
+  /* СЛУЖЕБНЫЙ АРХИВ (быстрый запуск): RK — все «сырые» записи, прочитанные из чата; maxId — самое новое сообщение */
+  const RK={out,fol,reps,lks,usr,jr,jenc,ordp,ans,cvx,exr,ntp,shr,oks};let maxId=0,snap=null,wasFull=true;
   const proc=m=>{
-    if(seen.has(m.id))return;seen.add(m.id);
+    if(seen.has(m.id))return;seen.add(m.id);if(m.id>maxId)maxId=m.id;
       const e=entry(m);
       if(e)out.push(e);
       else{const t=m.text;if(typeof t==='string'){
@@ -2667,7 +2670,33 @@ async function refresh(){
         }
       }}
   };
+  if(opt&&opt.light){
+    /* лёгкий запуск: берём сохранённый служебный архив и дочитываем только новые сообщения (плюс запас 300 номеров назад на случай правок) */
+    try{
+      snap=await rawLoad();
+      if(snap){
+        const cut=snap.maxId-300;
+        /* v102: при opt.verify старые записи архива сверяются с чатом: удалённые на другом устройстве выпадают сразу */
+        const alive=opt.verify?await aliveIds(snap,cut):null;
+        for(const k in RK)for(const e of (snap.r[k]||[]))if(e[RAWID[k]]<cut&&(!alive||alive.has(e[RAWID[k]]))){RK[k].push({...e});seen.add(e[RAWID[k]])}
+        for(const r of oks)if(!okk||r.id>okk.id)okk=r;
+        maxId=snap.maxId;let o2;
+        for(let g=0;g<60;g++){
+          const b=await withChat(()=>client.getHistory(S.chat,o2?{limit:100,offsetId:o2}:{limit:100}));
+          if(!b.length)break;
+          for(const m of b)proc(m);
+          const lo=Math.min(...b.map(m=>m.id));
+          if(lo<cut||b.length<2)break;
+          o2=lo;if(g===59)throw new Error('окно слишком большое');
+        }
+        wasFull=false;
+      }
+    }catch(x){
+      snap=null;wasFull=true;seen.clear();maxId=0;okk=null;for(const k in RK)RK[k].length=0;
+    }
+  }
   let fast=null;
+  if(wasFull){
   try{fast=await readFast(()=>{})}catch(x){fast=null}
   if(fast){for(const m of fast)proc(m)}
   else{
@@ -2678,6 +2707,8 @@ async function refresh(){
       off=Math.min(...b.map(m=>m.id));
     }
   }
+  }
+  rawSave(RK,maxId,wasFull?0:snap.fullT);
   files=out;folders=fol;repos=reps;locks=lks;users=usrUniq(usr);JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);EXT=exr.sort((a,b)=>a.id-b.id);NTS=ntBuild(ntp);SHR=[...new Map(shr.sort((a,b)=>a.id-b.id).map(x=>[x.i,x])).values()];ownkey=okk;OKS=oks;CVRM=cvx;syncUN();guestBlockedCheck();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
   if(R()&&!repos.some(x=>x.name===R()&&showRepo(x)))P.repo='';
   if(repoBlocked(R())){const c=[...(repoBlocked('')?[]:['']),...repos.filter(x=>showRepo(x)&&!repoBlocked(x.name)).map(x=>x.name)];if(c.length){P.repo=c[0];cur=''}}
@@ -2781,8 +2812,89 @@ async function cacheReset(){
   try{pfPlan()}catch(e){}
   return before;
 }
+/* ---- СЛУЖЕБНЫЙ АРХИВ: сырые записи чата в IndexedDB (без дополнительного шифрования: это те же данные, что лежат в чате;
+   расшифрованное содержимое и ключи сюда не попадают). Полное чтение чата раз в RAWTTL или после локального удаления/переноса. ---- */
+const RAWID={out:'id',fol:'id',reps:'id',lks:'id',usr:'id',jr:'mid',jenc:'mid',ordp:'mid',ans:'id',cvx:'mid',exr:'id',ntp:'m',shr:'id',oks:'id'};
+const RAWTTL=6*36e5;let RAWM=null;
+async function rawLoad(){
+  const r=await idbOp('m','readonly',s=>s.get('raw'));
+  if(!r||!r.r||r.v!==1||!r.maxId||r.chat!==S.chat||Date.now()-r.fullT>RAWTTL)return null;
+  const d=await idbOp('m','readonly',s=>s.get('rawdirty'));
+  if(d&&d.t>=r.t)return null;
+  return r;
+}
+function rawSave(RK,maxId,fullT){
+  if(OFFLINE||!S.chat||!maxId)return;
+  try{
+    const r={};for(const k in RK)r[k]=RK[k].map(e=>({...e}));
+    RAWM={f:new Map(RK.out.map(f=>[f.id,f.path+'|'+f.repo+'|'+(f.enc?'':f.name)])),fo:new Map(RK.fol.map(x=>[x.id,x.path+'|'+x.repo])),rp:new Set(RK.reps.map(x=>x.id))};
+    idbOp('m','readwrite',s=>s.put({id:'raw',v:1,t:Date.now(),chat:S.chat,maxId,fullT:fullT||Date.now(),r})).then(()=>idbOp('m','readwrite',s=>s.delete('rawdirty'))).catch(()=>{});
+  }catch(e){}
+}
+function rawDirtyCheck(){
+  if(!RAWM)return;
+  let bad=false;
+  const cf=new Map(files.map(f=>[f.id,f.path+'|'+f.repo+'|'+(f.enc?'':f.name)]));
+  for(const [id,v] of RAWM.f)if(cf.get(id)!==v){bad=true;break}
+  if(!bad){const cu=new Map(folders.map(x=>[x.id,x.path+'|'+x.repo]));for(const [id,v] of RAWM.fo)if(cu.get(id)!==v){bad=true;break}}
+  if(!bad){const rp=new Set(repos.map(x=>x.id));for(const id of RAWM.rp)if(!rp.has(id)){bad=true;break}}
+  if(bad){RAWM=null;idbOp('m','readwrite',s=>s.put({id:'rawdirty',t:Date.now()})).catch(()=>{})}
+}
+/* v102: быстрая сверка архива с чатом. Новые сообщения подтягивает лёгкое чтение, а удалённые на другом устройстве ловит getMessages
+   (пачки по 100 номеров, 3 запроса одновременно). Если getMessages не работает или ответ подозрителен, включается запасной путь: полное чтение раз в 10 минут. */
+const RAWV={bad:0};
+async function aliveIds(snap,cut){
+  const ids=[];for(const k in RAWID)for(const e of (snap.r[k]||[])){const i=e[RAWID[k]];if(i<cut)ids.push(i)}
+  const u=[...new Set(ids)];if(!u.length)return null;
+  try{
+    if(typeof client.getMessages!=='function')throw new Error('нет getMessages');
+    const alive=new Set();let k=0,fail=null;
+    const worker=async()=>{
+      while(!fail){
+        const j=k++;if(j*100>=u.length)return;
+        const part=u.slice(j*100,j*100+100);let b=null;
+        for(let t=0;t<3&&!b;t++){
+          try{b=await withChat(()=>client.getMessages(S.chat,part))}
+          catch(e){
+            const m=/FLOOD_WAIT\D{0,12}(\d+)|wait of (\d+)/i.exec(err(e)),w=m?+(m[1]||m[2]):0;
+            if(w>30||t>=2){fail=e;return}
+            await sleep(w?(w+1)*1000:1200*(t+1));
+          }
+        }
+        if(!b){fail=new Error('пустой ответ');return}
+        for(const m of b)if(m&&m.id)alive.add(m.id);
+      }
+    };
+    await Promise.all([worker(),worker(),worker()]);
+    if(fail)throw fail;
+    if(u.length>20&&alive.size<u.length*.5)throw new Error('сверка подозрительна');
+    return alive;
+  }catch(e){RAWV.bad=1;throw e}
+}
+const BGS={ok:0,run:0,t:0,hid:0};
+const bgSig=()=>[files,folders,repos,users,locks,ANN,EXT,SHR].map(a=>(a||[]).map(x=>x.id||x.m||x.mid||0).join(',')).join('#');
+async function bgSync(force){
+  if(!BGS.ok||BGS.run||OFFLINE||!S.chat||!client||document.hidden)return;
+  try{if(U&&U.on)return}catch(e){}
+  try{if(MUS&&MUS.busy)return}catch(e){}
+  const now=Date.now();if(!force&&now-BGS.t<(RAWV.bad?6e5:18e4))return;
+  if(force&&now-BGS.t<20000)return;
+  BGS.run=1;BGS.t=now;
+  try{
+    const a=bgSig();
+    if(RAWV.bad)await refresh();else await refresh({light:true,verify:true});
+    if(bgSig()!==a)try{render()}catch(e){}
+  }catch(e){}
+  BGS.run=0;
+}
+setInterval(()=>bgSync(false),30000);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){BGS.hid=Date.now();return}
+  if(BGS.hid&&Date.now()-BGS.hid>30000)bgSync(true);BGS.hid=0;
+});
+window.addEventListener('online',()=>bgSync(true));
 let _si=0;
-function saveIndex(){clearTimeout(_si);_si=setTimeout(()=>{if(OFFLINE)return;idbOp('m','readwrite',s=>s.put({id:'idx',t:Date.now(),d:{files,folders,repos,locks,users,ord:ORD,chat:S.chat,ext:EXT,nt:NTS}})).catch(()=>{})},3000)}
+function saveIndex(){clearTimeout(_si);_si=setTimeout(()=>{if(OFFLINE)return;try{rawDirtyCheck()}catch(e){}idbOp('m','readwrite',s=>s.put({id:'idx',t:Date.now(),d:{files,folders,repos,locks,users,ord:ORD,chat:S.chat,ext:EXT,nt:NTS}})).catch(()=>{})},3000)}
 async function loadOffline(){
   try{const r=await idbOp('m','readonly',s=>s.get('idx'));if(!r||Date.now()-r.t>TTL*1.5)return false;
   files=r.d.files||[];folders=r.d.folders||[];repos=r.d.repos||[];locks=r.d.locks||[];users=r.d.users||[];EXT=r.d.ext||[];NTS=r.d.nt||[];ORD=r.d.ord||[];S.chat=r.d.chat;OFFLINE=true;document.body.classList.add('off');try{syncUN()}catch(e){}return true}catch(e){return false}
