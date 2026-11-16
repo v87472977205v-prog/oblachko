@@ -1355,7 +1355,10 @@ async function musTarget(){
 async function musGet(it){
   const parts=[];const src=client.download(it.fid);
   const itr=src[Symbol.asyncIterator]?src[Symbol.asyncIterator]():src[Symbol.iterator]();
+  const t0=Date.now();
   for(;;){
+    /* один трек не может держать весь плейлист: дольше 4 минут — пропускаем, он уйдёт в «неудачные» */
+    if(Date.now()-t0>240000){try{itr.return&&itr.return()}catch(e){}throw new Error('слишком медленная загрузка, пропущено (можно повторить кнопкой)')}
     const r=await withTO(itr.next(),60000,'загрузка трека');
     if(r.done)break;
     if(MUS.stop)throw new Error('Остановлено');
