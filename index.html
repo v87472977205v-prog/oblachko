@@ -1344,7 +1344,7 @@ async function musFolderEnsure(r,p){
   folders.push({id:m.id,path:p,repo:r});jlog('fo+',(r||'Облако')+' / '+p);saveIndex();mlog('Создана папка: '+p);
 }
 async function musTarget(){
-  const r=MS.repo||'',p=clean(String(MS.folder||'').replace(/^\/+|\/+$/g,'')).replace(/\s*\/\s*/g,'/');
+  const r=MS.repo||'',p=String(MS.folder||'').split('/').map(x=>clean(x)).filter(Boolean).join('/');
   if(r&&!repos.some(x=>x.name===r&&visRepo(x)))throw new Error('Репозиторий «'+r+'» не найден');
   if(!await unlock(r,p))throw new Error('Нужен пароль папки или репозитория');
   if(!await forceEnc(r))throw new Error('Нужен код шифрования репозитория');
@@ -1405,23 +1405,29 @@ async function musWait(chat,baseId,ms){
   }
   return null;
 }
+function musResumable(){return !!(MS.job&&MS.job.pos>0&&MS.job.pos<MS.job.lines.length)}
 async function musPlaylist(){
   if(MUS.busy)return;
   const ta=$('#musp');if(ta){MS.list=ta.value;msv()}
   const lines=String(MS.list||'').split('\n').map(x=>x.trim()).filter(Boolean);
   if(!lines.length){say('Введите хотя бы одну строку: Исполнитель - Название',1);return}
+  musRun(lines,0,[]);
+}
+async function musRun(lines,start,bad){
+  if(MUS.busy||!lines.length)return;
   if(!MS.folderOk){say('Сначала выберите папку: нажмите «Куда», выберите папку и нажмите «Выбрать»',1);return}
-  const sig=lines.length+':'+lines[0]+':'+lines[lines.length-1];
-  let start=0;if(MS.run&&MS.sig===sig&&MS.pos>0&&MS.pos<lines.length)start=MS.pos;
-  MS.sig=sig;MS.run=true;MS.pos=start;msv();
-  MUS.busy=true;MUS.stop=false;MUS.total=lines.length;MUS.done=0;MUS.proc=start;bgStart();mstage(start?'Продолжаю с '+(start+1)+'-й строки…':'Подготовка…');
+  MS.job={lines,pos:start,bad:bad.slice()};msv();
+  const markBad=l=>{if(!MS.job.bad.includes(l))MS.job.bad.push(l)};
+  const markOk=l=>{MS.job.bad=MS.job.bad.filter(x=>x!==l)};
+  MUS.busy=true;MUS.stop=false;MUS.total=lines.length;MUS.done=Math.max(0,start-bad.length);MUS.proc=start;bgStart();
+  mstage(start?'Продолжаю с '+(start+1)+'-й строки…':'Подготовка…');
   /* сторожевой таймер: если ничего не происходит 2 минуты, переподключаем Telegram */
   const wd=setInterval(()=>{if(MUS.busy&&Date.now()-MUS.tick>120000){MUS.tick=Date.now();mlog('⚠ Нет движения 2 минуты, переподключаюсь к Telegram');reconnectTG('нет движения').catch(()=>{})}},15000);
-  let fails=0,finished=false;
+  let fails=0;
   try{
     const chat=await musResolve(),tg=await musTarget();let n=start;
     mlog('Плейлист: '+lines.length+' строк → '+(tg.r||'Облако')+(tg.p?' / '+tg.p:''));
-    if(start)mlog('Продолжаю с '+(start+1)+'-й строки (прошлый запуск не дошёл до конца)');
+    if(start)mlog('Продолжаю с '+(start+1)+'-й строки');
     for(const line of lines.slice(start)){
       if(MUS.stop){mlog('Остановлено');break}
       n++;mlog('['+n+'/'+lines.length+'] Запрашиваю: '+line);
@@ -1435,40 +1441,42 @@ async function musPlaylist(){
         }
       }
       if(!sent){
-        fails++;MUS.proc++;mlog('✖ Не отправилось: «'+line+'»');
+        fails++;MUS.proc++;markBad(line);mlog('✖ Не отправилось: «'+line+'»');
         if(fails>=3){
-          /* связь мертва: запоминаем, на какой строке остановились, и выходим; при следующем запуске продолжим с неё */
-          MS.pos=n-1;msv();musPaint();
-          mlog('Связь с Telegram потеряна. Нажмите «Начать скачивание», продолжу с этой строки');
+          /* связь мертва: сохраняем строку для повтора и выходим; «Продолжить» вернётся к ней */
+          MS.job.pos=n-1;msv();musPaint();
+          mlog('Связь с Telegram потеряна. Нажмите «Продолжить скачивание»');
           MUS.stage='Остановлено: нет связи с Telegram';break;
         }
-        MS.pos=n;msv();musPaint();continue;
+        MS.job.pos=n;msv();musPaint();continue;
       }
       fails=0;
       mstage('Жду ответ бота…');
       await sleep(6000+Math.random()*1000);
       const tm=await musWait(chat,sent.id,30000);
-      if(!tm){mlog('⚠ Нет ответа с треком на «'+line+'», пропускаю.')}
-      else{try{const it=musInfo(tm);if(await musSave(it,tg))MUS.done++}catch(x){mlog('✖ '+line+': '+err(x))}}
-      MUS.proc++;MS.pos=n;msv();musPaint();
+      let ok=false;
+      if(!tm){mlog('⚠ Нет ответа с треком на «'+line+'»')}
+      else{try{const it=musInfo(tm);ok=!!(await musSave(it,tg))}catch(x){mlog('✖ '+line+': '+err(x))}}
+      MUS.proc++;
+      if(ok){MUS.done++;markOk(line)}else markBad(line);
+      MS.job.pos=n;msv();musPaint();
       if(n<lines.length){mstage('Пауза перед следующим запросом…');await sleep(6000+Math.random()*1000)}
     }
-    finished=!MUS.stop&&n>=lines.length;
-    mlog('Плейлист: передано в загрузку '+MUS.done+' из '+lines.length);
-    if(finished)MUS.stage='Готово. Ход загрузки в облако — в окне загрузок';
-    else if(!MUS.stage.startsWith('Остановлено: нет связи'))MUS.stage=MUS.stop?'Остановлено':MUS.stage;
+    const finished=!MUS.stop&&MS.job.pos>=lines.length;
+    mlog('Итог: скачано '+MUS.done+' из '+lines.length+(MS.job.bad.length?', не получилось: '+MS.job.bad.length+' (можно повторить кнопкой)':''));
+    if(finished)MUS.stage=MS.job.bad.length?'Готово. Не получилось: '+MS.job.bad.length:'Готово. Все треки отправлены в загрузку';
+    else if(!MUS.stage.startsWith('Остановлено: нет связи'))MUS.stage='Остановлено. Нажмите «Продолжить скачивание»';
   }catch(x){mlog('✖ '+err(x));say(err(x),1);MUS.stage='Ошибка: '+err(x)}
-  finally{
-    clearInterval(wd);MUS.busy=false;
-    /* позицию сбрасываем только когда список реально дошёл до конца; после сбоя или остановки продолжим с места */
-    if(finished){MS.run=false;MS.pos=0}
-    msv();bgStop();musPaint();
-  }
+  finally{clearInterval(wd);MUS.busy=false;msv();bgStop();musPaint()}
 }
 function musPaint(){
   bgMeta();
   const g=$('#musg');if(!g)return;
-  g.textContent=MUS.busy?'Остановить':'Начать скачивание';g.classList.toggle('del',MUS.busy);g.classList.toggle('p',!MUS.busy);
+  const res=!MUS.busy&&musResumable(),bad=MS.job&&MS.job.bad?MS.job.bad.length:0,rtry=!MUS.busy&&!res&&bad>0;
+  g.textContent=MUS.busy?'Остановить':(res?'Продолжить скачивание':'Начать скачивание');
+  g.classList.toggle('del',MUS.busy);g.classList.toggle('p',!MUS.busy);
+  const rb=$('#musr');if(rb)rb.hidden=!res;
+  const xb=$('#musx');if(xb){xb.hidden=!rtry;xb.textContent='Повторить неудачные ('+bad+')'}
   const f=$('#mpf'),t=$('#mpt'),st=$('#mps');
   if(f)f.style.width=(MUS.total?Math.min(100,Math.round(MUS.proc/MUS.total*100)):0)+'%';
   if(t){const sk=MUS.proc-MUS.done;t.textContent='Скачано '+MUS.done+' из '+MUS.total+(sk>0?' · не получилось: '+sk:'')}
@@ -1488,10 +1496,11 @@ function openMusic(){
   $('#admb').innerHTML=`<div class="mus">
     <div class="uc"><label class="ml">Куда</label><button class="mto" id="musto"></button></div>
     <div class="uc"><textarea id="musp" placeholder="Исполнитель - Название&#10;по одному в строке">${esc(MS.list)}</textarea>
-      <div class="row"><button class="p" id="musg">Начать скачивание</button><button id="musk">Очистить</button></div></div>
+      <div class="row"><button class="p" id="musg">Начать скачивание</button><button id="musr" hidden>Начать заново</button><button id="musx" hidden>Повторить неудачные</button><button id="musk">Очистить</button></div></div>
     <div class="uc"><div class="mpt" id="mpt"></div><div class="mpb"><i id="mpf"></i></div><div class="mps" id="mps"></div></div>
     <div class="uc" id="musw" hidden><pre id="musl"></pre></div></div>`;
   const q=$('#musq');q.hidden=false;q.onclick=()=>{MUS.showLog=!MUS.showLog;musPaint()};
+  if(MS.job&&!MUS.busy){MUS.total=MS.job.lines.length;MUS.proc=MS.job.pos;MUS.done=Math.max(0,MS.job.pos-MS.job.bad.length);MUS.stage=musResumable()?'Остановлено. Нажмите «Продолжить скачивание»':''}
   musPaintTo();musPaint();
 }
 $('#admb').addEventListener('input',e=>{
@@ -1500,8 +1509,10 @@ $('#admb').addEventListener('input',e=>{
 $('#admb').addEventListener('click',e=>{
   const b=e.target.closest&&e.target.closest('.mus button');if(!b||b.disabled)return;
   if(b.id==='musto'){kpOpen((r,p)=>{MS.repo=r;MS.folder=p;MS.folderOk=true;msv();musPaintTo()},{r:MS.repo||'',p:MS.folder||''},{allowAll:true,confirm:true});return}
-  if(b.id==='musg'){if(MUS.busy){MUS.stop=true;mlog('Остановка запрошена…')}else musPlaylist()}
-  else if(b.id==='musk'){const ta=$('#musp');ta.value='';MS.list='';MS.run=false;MS.pos=0;msv();ta.focus()}
+  if(b.id==='musg'){if(MUS.busy){MUS.stop=true;mlog('Остановка запрошена…')}else if(musResumable())musRun(MS.job.lines,MS.job.pos,MS.job.bad);else musPlaylist()}
+  else if(b.id==='musr'){if(!MUS.busy){MS.job=null;msv();musPlaylist()}}
+  else if(b.id==='musx'){if(!MUS.busy&&MS.job&&MS.job.bad.length)musRun(MS.job.bad.slice(),0,[])}
+  else if(b.id==='musk'){const ta=$('#musp');ta.value='';MS.list='';MS.job=null;msv();ta.focus()}
 });
 
 /* ---- Статистика (только для владельца) ----
