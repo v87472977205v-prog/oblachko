@@ -49,6 +49,8 @@ details{margin:10px 0;font-size:14px;line-height:1.5;color:var(--mute)}
 #vname{font:600 16px system-ui,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #vsub{font:13px system-ui,sans-serif;color:#ccc}
 #flt{margin-top:-2px}
+.shb{display:none}.shm .shb{display:inline-block}.shm #pshuf{display:none}
+.shp{display:flex;align-items:center;gap:8px;padding:8px 2px;border-bottom:1px solid var(--line)}.shp .shn{flex:1;min-width:0;font-size:14px;word-break:break-word}.shp i{font-style:normal;color:var(--mute);font-size:12px}.shp button{padding:5px 11px;font-size:12px;border-radius:99px}
 .pr4{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:8px}
 .pr4 button{padding:6px 11px;font-size:12px;border-radius:99px}
 .pr4 .on{background:var(--acc);color:var(--accink);border-color:var(--acc)}
@@ -689,7 +691,7 @@ body.shv #vrm,body.shv #vmore,body.shv #smv,body.shv #srm,body.shv #gearb,body.s
   <div class="pr1"><div id="pcv"></div><div id="ptw"><div id="pt"></div><div id="partist"></div><div id="ptg"></div></div><button class="ib2" id="pclose" aria-label="Закрыть плеер" data-ic="close"></button></div>
   <div class="pr2"><span id="pcur">0:00</span><input type="range" id="pseek" min="0" max="0" step="0.1" value="0"><span id="pdur">0:00</span></div>
   <div class="pr3"><button class="ib2" id="pprev" aria-label="Предыдущий трек" data-ic="prev"></button><button class="ib2 big" id="pplay" aria-label="Играть или пауза"></button><button class="ib2" id="pnext" aria-label="Следующий трек" data-ic="next"></button></div>
-  <div class="pr4"><button id="pshuf">Перемешать</button><button id="prep">Повтор: нет</button><button id="pspd">1×</button><button id="pslp">Таймер сна</button></div>
+  <div class="pr4"><button id="pdis" class="shb">👎 Не нравится</button><button id="pre" class="shb">🔀 Ещё раз</button><button id="pshuf">Перемешать</button><button id="prep">Повтор: нет</button><button id="pspd">1×</button><button id="pslp">Таймер сна</button></div>
 </div>
 <div id="rmn" hidden><div id="rml"></div></div>
 <div id="adm" hidden><div class="ah"><button class="ib2" id="admx" aria-label="Назад" data-ic="close"></button><span id="admt"></span><button id="musq" hidden aria-label="Журнал">?</button></div><div id="admb"></div></div>
@@ -1708,49 +1710,215 @@ function openExts(){
   $('#admb').innerHTML=L.length?`<div class="exl">${L.map(e=>`<div class="exr"><button class="exo" data-exm="${e.id}">${icon(e.ic)}<span>${esc(extName(e.id))}</span></button></div>`).join('')}</div>`:'<div class="empty">Пока нет расширений</div>';
 }
 $('#extb').onclick=openExts;
-/* ---- Расширение «Случайный плеер»: выбираешь репозиторий, все его аудио (включая вложенные папки) перемешиваются
-   и играют через обычный плеер (колода, без повторов, повтор «все»). Запароленные репозитории и папки в очередь не попадают. ---- */
-let SHF={r:'',p:''};
-/* аудио для «Случайного плеера»: MP3, любые аудио-форматы и MP4 (звук из mp4 играет в обычном аудио-плеере) */
+/* ---- Расширение «Случайный плеер» («Твоя волна») ----
+   Выбираешь одно или несколько мест (репозитории и папки, в том числе чужие), все аудио из них (с вложенными папками)
+   перемешиваются так, чтобы исполнители не шли подряд и не повторялись близко. Работает только пока играет очередь
+   этого расширения (SHM.on): кнопки «Не нравится» и «Ещё раз» в плеере появляются только тогда, обычный плеер не затронут.
+   Очередь, место в треке, выбранные места и дизлайки хранятся в чате (префикс SHW) отдельно для каждого пользователя
+   и подхватываются с любого устройства. Закрытые паролем папки без пароля пропускаются. ---- */
+const SHW='🎧 ';
+let SPS=[],DIS=new Map();
+const SHF={places:[]};
+const SHM={on:false,ini:0,busy:0,chk:0,q:Promise.resolve(),lw:0,t:0,posId:0,hid:[],que:[],c:{},tm:{},skip:false,pos:null,noEdit:false};
+const SHDEV=(()=>{let d=ld('tgdev','');if(!d||typeof d!=='string'){d=Math.random().toString(36).slice(2,10);sv('tgdev',d)}return d})();
 const shufAud=f=>isAud(f)||/\.(mp4|m4v)$/i.test(f.name||'');
-/* все треки выбранного места: репозиторий или папка вместе со всеми вложенными папками, без закрытых */
 const shufIn=(path,p)=>p===''||inTree(path||'',p);
-const shufTracks=(r,p)=>files.filter(f=>f.repo===r&&shufIn(f.path,p)&&shufAud(f)&&!isLocked(f.repo,f.path));
-const shufAllCount=(r,p)=>files.filter(f=>f.repo===r&&shufIn(f.path,p)&&shufAud(f)).length;
-/* закрытые места, которые касаются выбранного: сам репозиторий, его папки-предки и закрытые папки внутри */
-const shufAbove=(lp,p)=>lp===''||inTree(p,lp);  /* закрытое место выше выбранного (или сам репозиторий) */
-const shufLocks=(r,p)=>locks.filter(l=>l.r===r&&!UN.has(r+'\n'+l.p)&&(shufAbove(l.p,p)||shufIn(l.p,p)))
-  .sort((a,b)=>a.p.length-b.p.length);
+const shufAllCount=(r,p)=>files.filter(f=>f.repo===r&&shufIn(f.path,p)&&shufAud(f)&&!DIS.has(f.id)).length;
+const shufAbove=(lp,p)=>lp===''||inTree(p,lp);
+const shufLocks=(r,p)=>locks.filter(l=>l.r===r&&!UN.has(r+'\n'+l.p)&&(shufAbove(l.p,p)||shufIn(l.p,p))).sort((a,b)=>a.p.length-b.p.length);
+const shOnAvail=()=>extMine().some(e=>e.id==='shuf');
+/* треки всех выбранных мест: без дублей, без закрытых паролем и без дизлайков */
+const shPool=()=>{const m=new Map();for(const pl of SHF.places)for(const f of files)if(f.repo===pl.r&&shufIn(f.path,pl.p)&&shufAud(f)&&!isLocked(f.repo,f.path)&&!DIS.has(f.id))m.set(f.id,f);return[...m.values()]};
+/* исполнитель: из названия «Исполнитель - Трек», иначе из тегов, иначе папка; у первого из «feat./&/,» */
+function shArt(f){
+  let a=artistOf(f);
+  if(!a){try{const t=CVA.get(f.id);if(t)a=String(t).trim().toLowerCase()}catch(e){}}
+  if(a)return a.replace(/ё/g,'е').split(/\s+(?:feat\.?|ft\.?|при уч\.?|x|×|&)\s+|\s*[,;]\s*/i)[0].trim();
+  return f.path?'д:'+base(f.path).toLowerCase():'';
+}
+/* Очередь: исполнитель не повторяется, пока не прошли ещё W других; чаще берём тех, у кого больше треков; соседние папки тоже чередуем */
+function shBuild(tr,first){
+  const gs=new Map(),keyOf=f=>shArt(f)||('#'+f.id);
+  for(const f of tr){const k=keyOf(f);if(!gs.has(k))gs.set(k,[]);gs.get(k).push(f)}
+  for(const a of gs.values())for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}
+  const out=[],rec=[],W=Math.min(8,Math.max(0,gs.size-1));let left=tr.length,last=null;
+  const dirOf=f=>f?f.repo+'\n'+f.path:null;
+  if(first){const a=gs.get(keyOf(first));const i=a?a.indexOf(first):-1;if(i>=0){a.splice(i,1);out.push(first);left--;rec.push(keyOf(first));last=dirOf(first)}}
+  while(left>0){
+    const all=[...gs.keys()].filter(k=>gs.get(k).length);
+    const mx=Math.max(...all.map(k=>gs.get(k).length)),wd=Math.max(1,Math.min(W,Math.floor(left/mx)-1)),rw=rec.slice(-wd);
+    let c=all.filter(k=>!rw.includes(k));
+    if(!c.length)c=all.filter(k=>k!==rec[rec.length-1]);
+    if(!c.length)c=all;
+    let sum=0;const w=c.map(k=>{const a=gs.get(k),x=a.length*a.length*(dirOf(a[a.length-1])===last?.35:1);sum+=x;return x});
+    let r=Math.random()*sum,pick=c[c.length-1];
+    for(let i=0;i<c.length;i++){r-=w[i];if(r<=0){pick=c[i];break}}
+    const f=gs.get(pick).pop();out.push(f);left--;last=dirOf(f);rec.push(pick);if(rec.length>W)rec.shift();
+  }
+  return out;
+}
+/* ---- хранение в чате ---- */
+const shCache=()=>sv('tgshm',{u:jwho(),pos:SHM.pos,...SHM.c});
+function shGet(k){
+  if(k==='sel')return{pl:SHF.places.map(x=>[x.r,x.p])};
+  if(k==='dis')return{l:[...DIS].map(([id,n])=>[id,n])};
+  return{q:[...pq.map(f=>f.id),...SHM.hid].map(i=>i.toString(36)).join(',')};
+}
+function shSched(k){
+  const v=Date.now(),d=shGet(k);SHM.c[k]={v,d};shCache();
+  clearTimeout(SHM.tm[k]);
+  SHM.tm[k]=setTimeout(()=>{SHM.q=SHM.q.then(()=>shPutDoc(k,v,d)).catch(()=>{})},k==='que'?1500:4000);
+}
+async function shPutDoc(k,v,d){
+  if(OFFLINE||!client||!S.chat)return;
+  const u=jwho(),s=JSON.stringify(d),parts=[];
+  for(let i=0;i<s.length;i+=2800)parts.push(s.slice(i,i+2800));if(!parts.length)parts.push('');
+  const old=SPS.filter(x=>x.u===u&&x.k===k).map(x=>x.id),add=[];
+  for(let i=0;i<parts.length;i++){
+    const rec={u,k,v,p:i,n:parts.length,s:parts[i]};
+    const m=await withChat(()=>client.sendMessage(S.chat,SHW+JSON.stringify(rec)));
+    add.push({id:m.id,...rec,d:null});
+  }
+  SPS=SPS.filter(x=>!old.includes(x.id)).concat(add);
+  if(old.length)try{await withChat(()=>client.deleteMessages(S.chat,old))}catch(e){}
+}
+function shDocs(){
+  const u=jwho(),by={},out={};
+  for(const x of SPS)if(x.u===u&&x.k!=='pos'){((by[x.k]=by[x.k]||{})[x.v]=by[x.k][x.v]||[]).push(x)}
+  for(const k in by){
+    for(const v of Object.keys(by[k]).map(Number).sort((a,b)=>b-a)){
+      const ps=by[k][v],n=ps[0].n;
+      if(new Set(ps.map(p=>p.p)).size===n&&ps.every(p=>p.p<n)){
+        ps.sort((a,b)=>a.p-b.p);
+        try{const seen=new Set(),s=ps.filter(p=>!seen.has(p.p)&&seen.add(p.p)).map(p=>p.s).join('');out[k]={v,d:JSON.parse(s)};break}catch(e){}
+      }
+    }
+  }
+  return out;
+}
+/* место в треке: одно сообщение на пользователя, правится на месте (при ошибке — новое, старое удаляется) */
+function shSavePos(force,s,a=1){
+  if(!SHM.on&&a)return;const f=pq[pi];if(!f)return;
+  const now=Date.now();if(!force&&now-SHM.lw<(SHM.noEdit?90000:30000))return;
+  SHM.lw=now;
+  const cur=typeof s==='number'?s:(isFinite(au.currentTime)?au.currentTime:0);
+  const d={a,id:f.id,s:Math.floor(cur),t:now,dv:SHDEV};
+  SHM.pos=d;SHM.t=now;shCache();
+  SHM.q=SHM.q.then(()=>shWritePos(d)).catch(()=>{});
+}
+async function shWritePos(d){
+  if(OFFLINE||!client||!S.chat||U.on||MUS.busy)return;
+  const u=jwho(),txt=SHW+JSON.stringify({u,k:'pos',d});
+  const mine=SPS.filter(x=>x.u===u&&x.k==='pos').sort((a,b)=>((b.d&&b.d.t)||0)-((a.d&&a.d.t)||0));
+  const id=(SHM.posId&&mine.some(x=>x.id===SHM.posId))?SHM.posId:(mine[0]&&mine[0].id);
+  if(id&&!SHM.noEdit){
+    try{await withChat(()=>client.editMessageText(S.chat,id,txt));const r=SPS.find(x=>x.id===id);if(r)r.d=d;SHM.posId=id;return}
+    catch(e){const m=err(e);if(/not modified/i.test(m))return;if(/not a function|undefined/i.test(m))SHM.noEdit=true}
+  }
+  const m=await withChat(()=>client.sendMessage(S.chat,txt));
+  const dead=mine.map(x=>x.id);
+  SPS=SPS.filter(x=>!dead.includes(x.id)).concat([{id:m.id,u,k:'pos',v:0,p:0,n:1,s:'',d}]);SHM.posId=m.id;
+  if(dead.length)try{await withChat(()=>client.deleteMessages(S.chat,dead))}catch(e){}
+}
+async function shFetchPos(){
+  const u=jwho(),recs=SPS.filter(x=>x.u===u&&x.k==='pos');let best=null;
+  const cand=x=>{if(x&&x.t&&x.id&&(!best||x.t>best.t))best=x};
+  for(const r of recs)cand(r.d);
+  if(recs.length&&!OFFLINE&&client&&typeof client.getMessages==='function'){
+    try{
+      const b=await withChat(()=>client.getMessages(S.chat,recs.map(r=>r.id)));
+      for(const m of b||[]){const t=m&&m.text;if(typeof t==='string'&&t.startsWith(SHW)){try{const j=JSON.parse(t.slice(SHW.length));if(j&&j.u===u&&j.k==='pos'&&j.d){cand(j.d);const r=recs.find(x=>x.id===m.id);if(r)r.d=j.d}}catch(e){}}}
+    }catch(e){}
+  }
+  const l=ld('tgshm',{});if(l.u===u)cand(l.pos);
+  return best;
+}
+function shLoad(){
+  const loc=ld('tgshm',{}),mine=loc.u===jwho()?loc:{},rem=shDocs();
+  const g=k=>{const a=rem[k],b=mine[k];return a&&(!b||a.v>=b.v)?a:b};
+  for(const k of['sel','dis','que']){const x=g(k);if(x)SHM.c[k]=x}
+  const s=SHM.c.sel,d=SHM.c.dis,q=SHM.c.que;
+  if(s&&s.d&&Array.isArray(s.d.pl))SHF.places=s.d.pl.map(x=>({r:String(x[0]||''),p:String(x[1]||'')}));
+  if(d&&d.d&&Array.isArray(d.d.l))DIS=new Map(d.d.l.map(x=>[+x[0],String(x[1]||'')]));
+  SHM.que=q&&q.d&&q.d.q?String(q.d.q).split(',').filter(Boolean).map(x=>parseInt(x,36)).filter(Boolean):[];
+}
+/* собрать очередь из сохранённого и включить с нужного места */
+function shApply(pos,auto){
+  const byId=new Map(files.map(f=>[f.id,f])),list=[],hid=[];
+  for(const id of SHM.que){
+    const f=byId.get(id);
+    if(f&&shufAud(f)&&!isLocked(f.repo,f.path)&&!DIS.has(id))list.push(f);
+    else if(f&&!DIS.has(id))hid.push(id);
+  }
+  if(!list.length)return false;
+  let i=pos?list.findIndex(f=>f.id===pos.id):-1,s=i>=0?pos.s:0;if(i<0)i=0;
+  SHM.on=true;SHM.hid=hid;pq=list;SHUF=false;REPM=1;SH={o:[],p:0,len:0};
+  if(s>3){PS[list[i].id]=s;sv('tgpos',PS)}
+  drawPl4();shmUi();SHM.skip=!!pos;if(pos)SHM.t=pos.t;
+  showPl(true);playAt(i,!!auto,true);
+  return true;
+}
+async function shInit(){
+  if(SHM.busy||!files.length)return;
+  if(!shOnAvail()){if(SHM.on)shOff();return}
+  if(SHM.ini&&Date.now()-SHM.chk<15000)return;
+  SHM.chk=Date.now();SHM.busy=1;
+  try{
+    const first=!SHM.ini;SHM.ini=1;
+    shLoad();
+    const pos=await shFetchPos();
+    if(!pos||!SHM.que.length)return;
+    if(first){if(pos.a===1&&pi<0&&!pq.length)shApply(pos,false);else SHM.t=Math.max(SHM.t,pos.t)}
+    else if(au.paused&&pos.dv!==SHDEV&&pos.t>SHM.t&&pos.a===1&&(SHM.on||pi<0))shApply(pos,false);
+  }finally{SHM.busy=0}
+}
+const shmUi=()=>document.body.classList.toggle('shm',!!SHM.on);
+function shOff(){SHM.on=false;shmUi()}
+function shClose(){if(SHM.on){try{shSavePos(true,undefined,0)}catch(e){}}shOff()}
+/* ---- экран расширения ---- */
+const shNameOf=(id,n)=>{const f=files.find(x=>x.id===id);return(f&&!f.enc&&f.name)?dispName(f.name):(n||'Трек (название скрыто)')};
 function shufPaint(){
-  const r=SHF.r,p=SHF.p,n=shufAllCount(r,p),lk=shufLocks(r,p).length;
-  const info=!n?'Здесь нет аудио':stPl(n,['трек','трека','треков'])+(lk?' · 🔒 закрытых мест: '+lk:'');
+  const pool=shPool(),n=pool.length,arts=new Set(pool.map(f=>shArt(f)||f.id)).size;
+  const pls=SHF.places.map((pl,i)=>`<div class="shp"><span class="shn">${esc(kpName(pl.r,pl.p))}</span><i>${shufAllCount(pl.r,pl.p)}</i><button data-shx="${i}" aria-label="Убрать место">✕</button></div>`).join('');
+  const sv0=SHM.c.que&&SHM.c.que.d&&SHM.c.que.d.q,pos=SHM.pos||(ld('tgshm',{}).pos),ct=sv0&&pos&&pos.id?shNameOf(pos.id,''):'';
+  const dis=[...DIS].map(([id,nm])=>`<div class="shp"><span class="shn">${esc(shNameOf(id,nm))}</span><button data-shu="${id}">Вернуть</button></div>`).join('');
   $('#admb').innerHTML=`<div class="mus shf">
-    <div class="uc"><label class="ml">Откуда</label><button class="mto" id="shfpick">${esc(lkn(r,p))}</button></div>
-    <div class="uc"><div class="us" style="padding:6px 2px">${info}</div>
-      <div class="us" style="padding:0 2px 10px">Берутся MP3, MP4 и другие аудио из выбранной папки и всех вложенных. Закрытые репозиторий и папки откроем сразу — спросим пароли заранее.</div>
-      <div class="row"><button class="p" id="shfgo" ${n?'':'disabled'}>Перемешать и играть</button></div></div>
+    <div class="uc"><label class="ml">Откуда</label>${pls||'<div class="us" style="padding:6px 2px">Места не выбраны</div>'}
+      <div class="row"><button id="shfadd">＋ Добавить место</button></div>
+      <div class="us" style="padding:8px 2px 0">${n?stPl(n,['трек','трека','треков'])+' · исполнителей: '+arts:'Нет доступной музыки'}${SHF.places.length?'':''}</div>
+      <div class="us" style="padding:4px 2px 10px">Берутся все аудио из выбранных папок и вложенных. Можно выбрать несколько мест, в том числе чужие репозитории («Выбрать всех пользователей»). Закрытые папки, пароль от которых не введён, пропускаются. Исполнители чередуются.</div>
+      <div class="row"><button class="p" id="shfgo" ${n?'':'disabled'}>Перемешать и играть</button></div>
+      ${ct?`<div class="row" style="margin-top:8px"><button id="shfcont">Продолжить: ${esc(ct)}${pos&&pos.s>3?' · '+fmt(pos.s):''}</button></div>`:''}</div>
+    <div class="uc"><label class="ml">Дизлайки: ${DIS.size}</label>${dis||'<div class="us" style="padding:6px 2px">Пока пусто. Кнопка «Не нравится» в полном плеере.</div>'}</div>
   </div>`;
 }
-function openShuffle(){
-  fromSet=false;admParent=null;openAdm(extName('shuf'));
-  shufPaint();
-}
+function openShuffle(){fromSet=false;admParent=null;openAdm(extName('shuf'));shufPaint()}
 async function shufStart(){
-  const r=SHF.r,p=SHF.p;
-  /* сначала пароли: ближайший закрытый репозиторий/папка вверху, затем вложенные; отказ от верхнего отменяет запуск */
-  for(const l of shufLocks(r,p)){
-    if(!await checkLock(l)&&shufAbove(l.p,p))return;
+  for(const pl of SHF.places){
+    const{r,p}=pl;let skip=false;
+    for(const l of shufLocks(r,p)){if(!await checkLock(l)&&shufAbove(l.p,p)){skip=true;break}}
+    if(skip){say('Пропускаю «'+kpName(r,p)+'»: пароль не введён',1);continue}
+    if(r&&encOn(r)&&!KEYS[r]&&!await ensureKey(r))say('Пропускаю «'+kpName(r,p)+'»: нет пароля шифрования',1);
   }
-  const L=shufTracks(r,p);
-  if(!L.length){say('В этом месте нет доступной музыки',1);shufPaint();return}
-  pq=L;SHUF=true;REPM=1;SH={o:[],p:0,len:0};drawPl4();
+  try{await decAll()}catch(e){}
+  const L=shPool();
+  if(!L.length){say('В выбранных местах нет доступной музыки',1);shufPaint();return}
+  shClose();
+  pq=shBuild(L).slice(0,600);SHM.on=true;SHM.hid=[];SHUF=false;REPM=1;SH={o:[],p:0,len:0};drawPl4();shmUi();
   $('#adm').hidden=true;fromSet=false;admParent=null;
-  playAt(Math.floor(Math.random()*L.length));
+  shSched('sel');shSched('que');SHM.skip=false;playAt(0);
 }
 $('#admb').addEventListener('click',e=>{
-  const t=e.target.closest&&e.target.closest('#shfpick,#shfgo');if(!t)return;
-  if(t.id==='shfpick'){kpOpen((r,p)=>{SHF={r,p};shufPaint()},{r:SHF.r,p:SHF.p});return}
-  if(t.id==='shfgo'&&!t.disabled)shufStart();
+  const t=e.target.closest&&e.target.closest('#shfadd,#shfgo,#shfcont,[data-shx],[data-shu]');if(!t)return;
+  if(t.id==='shfadd'){kpOpen((r,p)=>{
+    if(!shufAllCount(r,p)){say('Здесь нет аудио',1);return}
+    if(!SHF.places.some(x=>x.r===r&&x.p===p)){SHF.places.push({r,p});shSched('sel')}
+    shufPaint();
+  },{r:null,p:''},{allowAll:true});return}
+  if(t.id==='shfgo'&&!t.disabled){shufStart();return}
+  if(t.id==='shfcont'){const pos=SHM.pos||ld('tgshm',{}).pos;shLoad();$('#adm').hidden=true;if(!shApply(pos,true))say('Очередь не найдена, нажмите «Перемешать и играть»',1);return}
+  if(t.dataset.shx!==undefined){SHF.places.splice(+t.dataset.shx,1);shSched('sel');shufPaint();return}
+  if(t.dataset.shu!==undefined){DIS.delete(+t.dataset.shu);shSched('dis');shufPaint()}
 });
 /* ---- Расширение «Журнал тренировок»: приложение gym-log целиком, внутри изолированного фрейма на весь экран.
    «Назад» переадресуется в приложение, выход — его ползунком. Данные лежат на устройстве (gym_*, IndexedDB gymlog). ---- */
@@ -2645,9 +2813,9 @@ async function readFast(prog){
   return[...all.values()].sort((x,y)=>y.id-x.id);
 }
 async function refresh(opt){
-  const out=[],fol=[],reps=[],lks=[],usr=[],jr=[],jenc=[],ordp=[],ans=[],cvx=[],exr=[],ntp=[],shr=[],seen=new Set();let off,okk=null;const oks=[];
+  const out=[],fol=[],reps=[],lks=[],usr=[],jr=[],jenc=[],ordp=[],ans=[],cvx=[],exr=[],ntp=[],shr=[],sps=[],seen=new Set();let off,okk=null;const oks=[];
   /* СЛУЖЕБНЫЙ АРХИВ (быстрый запуск): RK — все «сырые» записи, прочитанные из чата; maxId — самое новое сообщение */
-  const RK={out,fol,reps,lks,usr,jr,jenc,ordp,ans,cvx,exr,ntp,shr,oks};let maxId=0,snap=null,wasFull=true;
+  const RK={out,fol,reps,lks,usr,jr,jenc,ordp,ans,cvx,exr,ntp,shr,sps,oks};let maxId=0,snap=null,wasFull=true,vOk=false;
   const proc=m=>{
     if(seen.has(m.id))return;seen.add(m.id);if(m.id>maxId)maxId=m.id;
       const e=entry(m);
@@ -2659,6 +2827,7 @@ async function refresh(opt){
         else if(t.startsWith(CVX)){try{const j=JSON.parse(t.slice(CVX.length));if(j&&j.d)cvx.push({mid:m.id,r:j.r||'',e:j.e?1:0,d:j.d})}catch(x){}}
         else if(t.startsWith(AN)){try{const j=JSON.parse(t.slice(AN.length));if(j&&j.v&&Array.isArray(j.l))ans.push({id:m.id,v:String(j.v),d:j.d||0,l:j.l.map(String)})}catch(x){}}
         else if(t.startsWith(NTP)){try{const j=JSON.parse(t.slice(NTP.length));if(j&&j.id&&typeof j.s==='string')ntp.push({m:m.id,u:String(j.u||''),id:String(j.id),v:+j.v||0,p:+j.p||0,n:+j.n||1,s:j.s,e:j.e?1:0})}catch(x){}}
+        else if(t.startsWith(SHW)){try{const j=JSON.parse(t.slice(SHW.length));if(j&&j.k&&typeof j.u==='string')sps.push({id:m.id,u:j.u,k:String(j.k),v:+j.v||0,p:+j.p||0,n:+j.n||1,s:typeof j.s==='string'?j.s:'',d:j.d&&typeof j.d==='object'?j.d:null})}catch(x){}}
         else if(t.startsWith('🔗 ')){try{const j=JSON.parse(t.slice(3));if(j&&j.i)shr.push({id:m.id,i:String(j.i),r:j.r||'',p:j.p||'',e:+j.e||0,m:+j.m||0,c:+j.c||0,x:j.x?1:0,t:+j.t||0,k:j.k||'',o:String(j.o||'')})}catch(x){}}
         else if(t.startsWith(EXR)){try{const j=JSON.parse(t.slice(EXR.length));if(j&&j.k&&j.x&&j.u)exr.push({id:m.id,k:String(j.k),x:String(j.x),u:String(j.u),n:String(j.n||'')})}catch(x){}}
         else if(t.startsWith(OKR)){try{const r={id:m.id,...JSON.parse(t.slice(OKR.length))};oks.push(r);if(!okk||r.id>okk.id)okk=r}catch(x){}}
@@ -2677,7 +2846,9 @@ async function refresh(opt){
       if(snap){
         const cut=snap.maxId-300;
         /* v102: при opt.verify старые записи архива сверяются с чатом: удалённые на другом устройстве выпадают сразу */
-        const alive=opt.verify?await aliveIds(snap,cut):null;
+        const stale=Date.now()-snap.fullT>RAWTTL;
+        const alive=(opt.verify||stale)?await aliveIds(snap,cut):null;
+        vOk=!!alive||!snap.r||!Object.values(snap.r).some(a=>a&&a.length);
         for(const k in RK)for(const e of (snap.r[k]||[]))if(e[RAWID[k]]<cut&&(!alive||alive.has(e[RAWID[k]]))){RK[k].push({...e});seen.add(e[RAWID[k]])}
         for(const r of oks)if(!okk||r.id>okk.id)okk=r;
         maxId=snap.maxId;let o2;
@@ -2708,12 +2879,12 @@ async function refresh(opt){
     }
   }
   }
-  rawSave(RK,maxId,wasFull?0:snap.fullT);
+  rawSave(RK,maxId,wasFull?0:(vOk?Date.now():snap.fullT));
   files=out;folders=fol;repos=reps;locks=lks;users=usrUniq(usr);JOUR=jr;JENC=jenc;ORD=ordBuild(ordp);ANN=ans.sort((a,b)=>a.id-b.id);EXT=exr.sort((a,b)=>a.id-b.id);NTS=ntBuild(ntp);SHR=[...new Map(shr.sort((a,b)=>a.id-b.id).map(x=>[x.i,x])).values()];ownkey=okk;OKS=oks;CVRM=cvx;syncUN();guestBlockedCheck();saveIndex();if(OWNPRIV)await jDecryptAll();try{cvLoadRemote()}catch(e){}
   if(R()&&!repos.some(x=>x.name===R()&&showRepo(x)))P.repo='';
   if(repoBlocked(R())){const c=[...(repoBlocked('')?[]:['']),...repos.filter(x=>showRepo(x)&&!repoBlocked(x.name)).map(x=>x.name)];if(c.length){P.repo=c[0];cur=''}}
   if(cur&&!allPaths().includes(cur))cur='';
-  try{annAuto()}catch(e){}try{shAuto()}catch(e){}try{extSync();extAuto()}catch(e){}
+  SPS=sps;try{annAuto()}catch(e){}try{shAuto()}catch(e){}try{shInit().catch(()=>{})}catch(e){}try{extSync();extAuto()}catch(e){}
 }
 
 
@@ -2814,11 +2985,11 @@ async function cacheReset(){
 }
 /* ---- СЛУЖЕБНЫЙ АРХИВ: сырые записи чата в IndexedDB (без дополнительного шифрования: это те же данные, что лежат в чате;
    расшифрованное содержимое и ключи сюда не попадают). Полное чтение чата раз в RAWTTL или после локального удаления/переноса. ---- */
-const RAWID={out:'id',fol:'id',reps:'id',lks:'id',usr:'id',jr:'mid',jenc:'mid',ordp:'mid',ans:'id',cvx:'mid',exr:'id',ntp:'m',shr:'id',oks:'id'};
-const RAWTTL=6*36e5;let RAWM=null;
+const RAWID={out:'id',fol:'id',reps:'id',lks:'id',usr:'id',jr:'mid',jenc:'mid',ordp:'mid',ans:'id',cvx:'mid',exr:'id',ntp:'m',shr:'id',sps:'id',oks:'id'};
+const RAWTTL=6*36e5,RAWMAX=30*864e5;let RAWM=null;
 async function rawLoad(){
   const r=await idbOp('m','readonly',s=>s.get('raw'));
-  if(!r||!r.r||r.v!==1||!r.maxId||r.chat!==S.chat||Date.now()-r.fullT>RAWTTL)return null;
+  if(!r||!r.r||r.v!==1||!r.maxId||r.chat!==S.chat||Date.now()-r.fullT>RAWMAX)return null;
   const d=await idbOp('m','readonly',s=>s.get('rawdirty'));
   if(d&&d.t>=r.t)return null;
   return r;
@@ -3511,7 +3682,7 @@ async function playAt(i,auto=true,resume=false,force=false){
   const ready=pq[i]&&C.get(pq[i].id);
   const tok=++playTok;loadingTrack=true;loadT0=Date.now();if(!ready)au.pause();
   pi=i;const f=pq[i];LASTID=f.id;sv('tglast',LASTID);ARTK=SHUF&&pq.length>1?pq.map(artistOf):null;if(SHUF&&pq.length>1)shSync(SH,i,pq.length);
-  HOLD=false;LOADPLAY=auto;msMeta(f);bindMS();msState();
+  HOLD=false;LOADPLAY=auto;msMeta(f);bindMS();msState();try{if(SHM.on){if(SHM.skip)SHM.skip=false;else shSavePos(true,0)}}catch(e){}
   /* листаем туда-сюда: загрузки музыки, которые уже не нужны, не должны тянуть канал */
   for(const j of DLJ.values())if(j.aud&&j.f.id!==f.id)j.pre=true;
   pfPlan();
@@ -3543,7 +3714,7 @@ function kickPlay(tok){
   const k=()=>{if(tok!==playTok||loadingTrack||HOLD||!LOADPLAY)return;if(au.paused&&au.src&&!au.ended)au.play().catch(()=>{})};
   setTimeout(k,300);setTimeout(k,1500);setTimeout(k,4000);
 }
-function startPlayer(id){{const f0=files.find(x=>x.id===id);if(f0)jonce('play',f0)}pq=audioList();SH={o:[],p:0,len:0};playAt(pq.findIndex(f=>f.id===id))}
+function startPlayer(id){try{shClose()}catch(e){}{const f0=files.find(x=>x.id===id);if(f0)jonce('play',f0)}pq=audioList();SH={o:[],p:0,len:0};playAt(pq.findIndex(f=>f.id===id))}
 let failRun=0;const RETRIED=new Map();
 /* ---- подкачка: держим наготове следующие треки ----
    Пока играет текущий, в фоне по одному докачиваются следующие AHEAD штук (на диск устройства).
@@ -3583,6 +3754,7 @@ $('#pbtn').onclick=()=>{
   restoreLast(false);
 };
 function restoreLast(auto){
+  try{shClose()}catch(e){}
   const a=audioList(),lf=lastAud();
   let q=a,i=lf?a.findIndex(f=>f.id===lf.id):-1;
   if(lf&&i<0){q=files.filter(f=>f.repo===lf.repo&&f.path===lf.path&&isAud(f)).sort((x,y)=>x.no-y.no);i=q.findIndex(f=>f.id===lf.id)}
@@ -3592,7 +3764,7 @@ function restoreLast(auto){
 }
 $('#pplay').onclick=()=>{if(loadingTrack){if(Date.now()-loadT0>4000)retryTrack();return}if(au.paused)au.play().catch(()=>{});else{HOLD=true;au.pause()}};
 $('#pprev').onclick=()=>{if(au.currentTime>3){au.currentTime=0;return}slideNav(-1)};$('#pnext').onclick=()=>slideNav(1);
-$('#pclose').onclick=()=>{au.pause();au.removeAttribute('src');au.load();pq=[];pi=-1;collapsePl();showPl(false);markPlaying()};
+$('#pclose').onclick=()=>{try{shClose()}catch(e){}au.pause();au.removeAttribute('src');au.load();pq=[];pi=-1;collapsePl();showPl(false);markPlaying()};
 $('#pseek').addEventListener('input',()=>{seeking=true;$('#pcur').textContent=fmt(+$('#pseek').value)});
 $('#pseek').addEventListener('change',()=>{au.currentTime=+$('#pseek').value;seeking=false});
 TU.push(()=>{if(seeking)return;$('#pseek').max=au.duration||0;$('#pseek').value=au.currentTime;$('#pcur').textContent=fmt(au.currentTime)});
@@ -3639,6 +3811,26 @@ au.addEventListener('error',()=>{
 });
 TU.push(()=>{if(au.duration-au.currentTime<20){const k=calcNext(),n=k>=0&&pq[k];if(n&&!C.has(n.id)&&!_pend.has(n.id)&&(WARM.has(n.id)||!OFFLINE))urlOfD(n).catch(()=>{})}});
 au.addEventListener('ended',()=>{if(pq[pi])delete PS[pq[pi].id];if(REPM===2){au.currentTime=0;au.play().catch(()=>{});return}{const k=calcNext();if(k>=0)playAt(k);else setPlBtn()}});
+/* ---- «Случайный плеер»: кнопки в плеере и сохранение места (работает только при SHM.on) ---- */
+$('#pdis').onclick=()=>{
+  if(!SHM.on)return;const f=pq[pi];if(!f)return;
+  const nk=calcNext(),nid=nk>=0&&nk!==pi&&pq[nk]?pq[nk].id:0;
+  DIS.set(f.id,f.enc?'':String(f.name||'').slice(0,70));
+  pq=pq.filter(x=>x.id!==f.id);pi=-1;SH={o:[],p:0,len:0};shSched('dis');shSched('que');say('Больше не попадётся');
+  if(!pq.length){au.pause();return}
+  const ni=nid?pq.findIndex(x=>x.id===nid):0;playAt(ni<0?0:ni);
+};
+$('#pre').onclick=()=>{
+  if(!SHM.on)return;const cur=pq[pi],L=shPool();if(!L.length)return;
+  const inL=cur&&L.find(x=>x.id===cur.id);
+  let o=shBuild(L,inL||undefined).slice(0,600);
+  if(cur&&!inL)o=[cur,...o];
+  pq=o;pi=cur?0:-1;SH={o:[],p:0,len:0};pfPlan();shSched('que');say('Перемешано заново');
+};
+TU.push(()=>{if(SHM.on&&!au.paused&&!loadingTrack)shSavePos(false)});
+au.addEventListener('pause',()=>{if(SHM.on&&!loadingTrack&&pq[pi]&&!au.ended)shSavePos(true)});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){if(SHM.on)shSavePos(true)}else shInit().catch(()=>{})});
+window.addEventListener('pagehide',()=>{if(SHM.on)shSavePos(true)});
 /* ---- плеер на весь экран + эквалайзер ---- */
 const eq=$('#eq'),ex=eq.getContext('2d'),NB=64;
 let eb=new Array(NB).fill(.04),er=new Array(NB).fill(.5),en=new Array(NB).fill(.5),eraf=0,elt=0,eCol='#5fc3a6',eBg='#121a17';
@@ -4915,7 +5107,7 @@ $('#out').onclick=async()=>{
   if(!confirm('Выйти из аккаунта? Файлы в канале останутся.'))return;
   jlog('out','');for(let n=0;n<8&&(JQ.length||jBusy);n++){await jflush();await sleep(200)}
   try{if(client){if(client.signOut)await client.signOut();else if(client.logOut)await client.logOut()}}catch(e){}
-  try{Object.keys(localStorage).filter(k=>k.includes(PFX)||k==='tgm'||k==='tgun'||['tgmp','tglast','tgpos','tgspd'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
+  try{Object.keys(localStorage).filter(k=>k.includes(PFX)||k==='tgm'||k==='tgun'||['tgmp','tglast','tgpos','tgspd','tgshm'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
   try{idbOp('f','readwrite',s=>s.clear());idbOp('a','readwrite',s=>s.clear());idbOp('m','readwrite',s=>s.clear())}catch(e){}try{BIO.e={};BIO.eno={};saveBio()}catch(e){}WARM.clear();
   S={};ready=false;showSetup=true;files=[];folders=[];cur='';C.clear();
   for(const i of['#aid','#ahash','#phone','#combo'])$(i).value='';drawCs();
