@@ -460,6 +460,10 @@ button.swr{background:transparent;border-left:0;border-right:0;border-top:0;bord
 .swchev.op .i{transform:none}
 .swbd{display:inline-flex;align-items:center;gap:4px;margin-left:8px;font-size:11.5px;font-weight:500;color:var(--acc)}
 .swbd .i{width:12px;height:12px}
+#rbar #treeb{flex:none;width:38px;height:38px;padding:0;margin-right:-6px;border-radius:50%;display:grid;place-items:center;background:transparent;border:1.5px solid color-mix(in srgb,var(--acc) 55%,transparent);color:var(--acc)}
+#rbar #treeb[hidden]{display:none}
+#rbar #treeb .i{width:19px;height:19px}
+#rbar #treeb:active{background:color-mix(in srgb,var(--acc) 18%,transparent)}
 .swtree{display:block;width:100%;height:auto;overflow:visible;-webkit-tap-highlight-color:transparent;user-select:none}
 .swtree .br{fill:none;stroke:var(--acc);stroke-opacity:.5;stroke-width:2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:swgrow .9s ease-out forwards}
 .swtree .br.tw{stroke-width:1.6;stroke-opacity:.42}
@@ -749,7 +753,7 @@ body.shv #vrm,body.shv #vmore,body.shv #smv,body.shv #srm,body.shv #gearb,body.s
 </main>
 <div id="drawer" hidden><div id="dp">
   <input id="q" type="search" placeholder="Поиск по всему архиву">
-  <div id="rbar"><button id="rsw" role="switch" aria-checked="false"><span>Все пользователи</span><span class="tg"></span></button></div>
+  <div id="rbar"><button id="rsw" role="switch" aria-checked="false"><span>Все пользователи</span><span class="tg"></span></button><button class="ib2" id="treeb" aria-label="Дерево репозиториев" title="Дерево репозиториев" data-ic="branch" hidden></button></div>
   <div class="sec secrow"><span>Репозитории</span><button id="addrepo" aria-label="Новый репозиторий" data-ic="plus"></button></div>
   <div id="repl"></div>
   <div class="dgrp" id="whoami" hidden></div>
@@ -1260,6 +1264,7 @@ async function toggleLock(r,p){
 }
 let rpAnim=false,rswBusy=false;
 function drawRepos(){
+  try{extSync()}catch(e){}
   {const cb=$('#conb');if(cb){cb.hidden=!isAdmin();cb.style.display=isAdmin()?'':'none'}}
   try{const w=$('#whoami');w.hidden=!S.guestUser;w.textContent=S.guestUser?'Вы вошли как: '+S.guestUser:''}catch(e){}
   document.body.classList.toggle('own',isAdmin());
@@ -1766,11 +1771,11 @@ $('#kpb').addEventListener('click',async e=>{
    Если он нажал «Да», в его шторке появляется раздел «Расширения». Записи лежат в канале (🧩): предложение, согласие, отказ. */
 const EXR='🧩 ';
 let EXT=[];
-const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>openMusic()},{id:'notes',name:'Заметки',ic:'edit',open:()=>openNotes()},{id:'gym',name:'Журнал тренировок',ic:'dumb',open:()=>openGym()},{id:'links',name:'Временные ссылки',ic:'copy',open:()=>openShares()},{id:'shuf',name:'Случайный плеер',ic:'repo',open:()=>openShuffle()}];
+const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>openMusic()},{id:'notes',name:'Заметки',ic:'edit',open:()=>openNotes()},{id:'gym',name:'Журнал тренировок',ic:'dumb',open:()=>openGym()},{id:'links',name:'Временные ссылки',ic:'copy',open:()=>openShares()},{id:'shuf',name:'Случайный плеер',ic:'repo',open:()=>openShuffle()},{id:'tree',name:'Дерево репозиториев',ic:'branch',open:()=>openTree()}];
 const extName=id=>{let n='';for(const r of EXT)if(r.x===id&&r.k==='n'&&r.n)n=r.n;return n||(EXTS.find(e=>e.id===id)||{}).name||id};
 const extState=(x,u)=>{let k='';for(const r of EXT)if(r.x===x&&r.u===u)k=r.k;return k};
 const extMine=()=>EXTS.filter(e=>isAdmin()||(S.guestUser&&extState(e.id,S.guestUser)==='a'));
-function extSync(){const b=$('#extb');if(b)b.hidden=isAdmin()||!extMine().length}
+function extSync(){const b=$('#extb');if(b)b.hidden=isAdmin()||!extMine().length;const tb=$('#treeb');if(tb)tb.hidden=!extMine().some(e=>e.id==='tree')}
 async function extSend(rec){
   const m=await withChat(()=>client.sendMessage(S.chat,EXR+JSON.stringify(rec)));
   EXT.push({id:m.id,...rec});EXT.sort((a,b)=>a.id-b.id);saveIndex();return m;
@@ -1999,13 +2004,13 @@ function shufPaint(){
 }
 /* выбор мест: репозитории → папки с галочками */
 /* дерево репозиториев: облако — основание, пользователи — ветви, репозитории — листья */
-function shTreeSvg(){
+function shTreeSvg(attr='data-swrepo',isOn){
   const oth=kpOthers(),mine=repos.filter(mineRepo).map(x=>x.name),G=[];
   if(mine.length)G.push({n:'Мои',i:'Я',r:mine});
   for(const o of[...new Set(oth.map(x=>x.owner||''))].sort((a,b)=>a.localeCompare(b,'ru')))
     G.push({n:o||'Без имени',i:((o||'?').trim().charAt(0)||'?').toUpperCase(),r:oth.filter(x=>(x.owner||'')===o).map(x=>x.name)});
   const W=360,CX=180,hs=G.map(g=>Math.max(84,g.r.length*38+22)),H=Math.max(440,60+hs.reduce((a,b)=>a+b,0)+120);
-  const cut=(s,n)=>s.length>n?s.slice(0,n-1)+'…':s,sel=r=>SHF.places.some(x=>x.r===r);
+  const cut=(s,n)=>s.length>n?s.slice(0,n-1)+'…':s,sel=isOn||(r=>SHF.places.some(x=>x.r===r));
   let br='',nd='',y=H-120;
   G.forEach((g,gi)=>{
     const h=hs[gi],cy=y-h/2,side=gi%2?1:-1,nx=CX+side*40;y-=h;
@@ -2016,11 +2021,11 @@ function shTreeSvg(){
     g.r.forEach((name,k)=>{
       const ly=cy+(k-(n-1)/2)*38,lx=side>0?258:6,sx=nx+side*19,ex=side>0?lx:lx+96,d2=(gi*.14+.15+k*.05).toFixed(2);
       br+=`<path class="br tw" pathLength="1" style="animation-delay:${d2}s" d="M${sx} ${cy} C${sx+side*18} ${cy} ${ex-side*18} ${ly} ${ex} ${ly}"/>`;
-      nd+=`<g class="leaf${sel(name)?' on':''}" data-swrepo="${esc(name)}" style="animation-delay:${d2}s" role="button"><title>${esc(name)}</title><rect x="${lx}" y="${ly-15}" width="96" height="30" rx="15"/><text class="lt" x="${lx+(encOn(name)?43:48)}" y="${ly}">${esc(cut(name,encOn(name)?10:12))}</text>${encOn(name)?`<path class="lk" transform="translate(${lx+79} ${ly-6.5}) scale(.54)" d="${IC.lock}"/>`:''}</g>`;
+      nd+=`<g class="leaf${sel(name)?' on':''}" ${attr}="${esc(name)}" style="animation-delay:${d2}s" role="button"><title>${esc(name)}</title><rect x="${lx}" y="${ly-15}" width="96" height="30" rx="15"/><text class="lt" x="${lx+(encOn(name)?43:48)}" y="${ly}">${esc(cut(name,encOn(name)?10:12))}</text>${encOn(name)?`<path class="lk" transform="translate(${lx+79} ${ly-6.5}) scale(.54)" d="${IC.lock}"/>`:''}</g>`;
     });
   });
   const ok=!repoBlocked(''),cy0=H-52;
-  const base=`<g class="cl"${ok?' data-swrepo="" role="button"':''}><circle class="cbg${sel('')?' on':''}" cx="${CX}" cy="${cy0}" r="31"/><path class="cic" transform="translate(${CX-13} ${cy0-13}) scale(1.08)" d="${IC.cloud}"/><text class="lb" x="${CX}" y="${H-8}">Облако</text></g>`;
+  const base=`<g class="cl"${ok?` ${attr}="" role="button"`:''}><circle class="cbg${sel('')?' on':''}" cx="${CX}" cy="${cy0}" r="31"/><path class="cic" transform="translate(${CX-13} ${cy0-13}) scale(1.08)" d="${IC.cloud}"/><text class="lb" x="${CX}" y="${H-8}">Облако</text></g>`;
   return `<svg class="swtree" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg"><path class="br trunk" pathLength="1" d="M${CX} ${H-82} L${CX} 34"/><circle class="crown" cx="${CX}" cy="30" r="5"/>${br}${nd}${base}</svg>`;
 }
 function shPickPaint(){
@@ -2128,6 +2133,24 @@ $('#admb').addEventListener('click',async e=>{
     }else await shToggle(r,p);
   }
 });
+/* ---- Расширение «Дерево репозиториев» ----
+   Кнопка с деревом в шапке меню (рядом с тумблером «Все пользователи») видна только когда расширение подключено.
+   Экран: облако — основание, пользователи — ветви, репозитории — листья; нажатие на лист открывает этот репозиторий. */
+function openTree(){
+  fromSet=false;admParent=null;openAdm(extName('tree'));
+  $('#admb').innerHTML=`<div class="sw">${shTreeSvg('data-trr',r=>r===R())}</div>`;
+}
+async function treeGo(r){
+  try{
+    if(!await unlock(r,''))return;
+    const x=repos.find(q=>q.name===r);
+    if(x&&!showRepo(x))P.all=true;
+    P.repo=r;sv('tgmp',P);cur='';selMode=false;sel.clear();$('#q').value='';
+    $('#adm').hidden=true;fromSet=false;admParent=null;closeDrawer();render();
+  }catch(x){say(err(x),1)}
+}
+$('#admb').addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-trr]');if(t)treeGo(t.getAttribute('data-trr'))});
+$('#treeb').onclick=()=>{if(!extMine().some(x=>x.id==='tree'))return;closeDrawer();openTree()};
 /* ---- Расширение «Журнал тренировок»: приложение gym-log целиком, внутри изолированного фрейма на весь экран.
    «Назад» переадресуется в приложение, выход — его ползунком. Данные лежат на устройстве (gym_*, IndexedDB gymlog). ---- */
 const GYM={on:false,recs:new Map(),sx:'',q:null,last:0,pend:null,pt:0,rt:0};let FLOODT=0;
