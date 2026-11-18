@@ -460,6 +460,15 @@ button.swr{background:transparent;border-left:0;border-right:0;border-top:0;bord
 .swchev.op .i{transform:none}
 .swbd{display:inline-flex;align-items:center;gap:4px;margin-left:8px;font-size:11.5px;font-weight:500;color:var(--acc)}
 .swbd .i{width:12px;height:12px}
+body.treemode #rbar,body.treemode #repl{display:none!important}
+.swtog{display:flex;align-items:center;gap:14px}
+.swsw{flex:none;position:relative;width:54px;height:32px;padding:0;border-radius:99px;border:1.5px solid color-mix(in srgb,var(--acc) 50%,transparent);background:color-mix(in srgb,var(--ink) 10%,transparent);transition:background .2s}
+.swsw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--ink);transition:transform .2s,background .2s}
+.swsw[aria-checked="true"]{background:var(--acc);border-color:var(--acc)}
+.swsw[aria-checked="true"]::after{transform:translateX(22px);background:var(--accink)}
+.swtreew{padding-top:26px}
+.swtree .gh{opacity:.55}
+.swtree .lb2{font-size:10px;fill-opacity:.7}
 .swtree{display:block;width:100%;height:auto;overflow:visible;-webkit-tap-highlight-color:transparent;user-select:none}
 .swtree .br{fill:none;stroke:var(--acc);stroke-opacity:.55;stroke-width:3.2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:swgrow .9s ease-out forwards}
 .swtree .br.tw{stroke-width:1.7;stroke-opacity:.42}
@@ -491,7 +500,8 @@ button.swr{background:transparent;border-left:0;border-right:0;border-top:0;bord
 @keyframes swfade{from{opacity:0}to{opacity:1}}
 @keyframes swtw{0%,100%{opacity:0}50%{opacity:.75}}
 @media (prefers-reduced-motion:reduce){.swtree .br{animation:none;stroke-dashoffset:0}.swtree .swnode,.swtree .leaf,.swtree .trunk{animation:none}.swtree .sp{animation:none;opacity:.4}}
-#dp #treebw{display:flex;justify-content:center;margin:26px 0 30px;padding:0}
+#dp #treebw{position:fixed;left:calc(min(300px,85vw)/2);bottom:max(26px,calc(env(safe-area-inset-bottom) + 18px));transform:translateX(-50%);display:flex;justify-content:center;margin:0;padding:0;z-index:2}
+body.treemode #dp{padding-bottom:150px}
 #dp #treebw[hidden]{display:none}
 #dp #treeb{width:84px;height:84px;min-width:84px;padding:0;margin:0 auto;border-radius:50%;display:grid;place-items:center;gap:0;color:var(--acc);background:radial-gradient(circle at 50% 38%,color-mix(in srgb,var(--acc) 22%,transparent),color-mix(in srgb,var(--acc) 4%,transparent) 70%);border:2px solid color-mix(in srgb,var(--acc) 70%,transparent);box-shadow:0 0 0 7px color-mix(in srgb,var(--acc) 7%,transparent),0 8px 26px color-mix(in srgb,var(--acc) 28%,transparent);transition:transform .15s,box-shadow .2s}
 #dp #treeb .i{width:46px;height:46px;margin:0;stroke-width:1.5}
@@ -1786,7 +1796,7 @@ const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>op
 const extName=id=>{let n='';for(const r of EXT)if(r.x===id&&r.k==='n'&&r.n)n=r.n;return n||(EXTS.find(e=>e.id===id)||{}).name||id};
 const extState=(x,u)=>{let k='';for(const r of EXT)if(r.x===x&&r.u===u)k=r.k;return k};
 const extMine=()=>EXTS.filter(e=>isAdmin()||(S.guestUser&&extState(e.id,S.guestUser)==='a'));
-function extSync(){const b=$('#extb');if(b)b.hidden=isAdmin()||!extMine().length;const tb=$('#treebw');if(tb)tb.hidden=!extMine().some(e=>e.id==='tree')}
+function extSync(){const b=$('#extb');if(b)b.hidden=isAdmin()||!extMine().length;try{treeSync()}catch(e){}}
 async function extSend(rec){
   const m=await withChat(()=>client.sendMessage(S.chat,EXR+JSON.stringify(rec)));
   EXT.push({id:m.id,...rec});EXT.sort((a,b)=>a.id-b.id);saveIndex();return m;
@@ -2015,25 +2025,31 @@ function shufPaint(){
 }
 /* выбор мест: репозитории → папки с галочками */
 /* дерево репозиториев: облако — основание, пользователи — ветви, репозитории — листья */
-/* все видимые пользователю репозитории по группам: «Мои», «Владелец», затем остальные пользователи */
+/* все пользователи и видимые репозитории по группам: «Мои», «Владелец», затем остальные; у пользователя без доступных репозиториев ветка пустая */
 function shTreeGroups(){
-  const vis=repos.filter(visRepo),G=[],mine=vis.filter(mineRepo).map(x=>x.name);
-  if(mine.length)G.push({n:'Мои',i:'Я',r:mine});
-  const lab=x=>!x.guest?'Владелец':(x.owner||'Гость'),oth=vis.filter(x=>!mineRepo(x));
-  const names=[...new Set(oth.map(lab))].sort((a,b)=>(b==='Владелец')-(a==='Владелец')||a.localeCompare(b,'ru'));
-  for(const nm of names)G.push({n:nm,i:(nm.trim().charAt(0)||'?').toUpperCase(),r:oth.filter(x=>lab(x)===nm).map(x=>x.name)});
+  const vis=repos.filter(visRepo),mine=vis.filter(mineRepo).map(x=>x.name);
+  const G=[{n:'Мои',i:'Я',r:mine}];
+  const lab=x=>!x.guest?'Владелец':(x.owner||'Гость'),oth=vis.filter(x=>!mineRepo(x)),map=new Map();
+  const add=n=>{if(!map.has(n))map.set(n,[])};
+  if(S.viewer)add('Владелец');
+  for(const u of users)if(!(S.viewer&&u.u===S.guestUser))add(u.u);
+  for(const x of oth){add(lab(x));map.get(lab(x)).push(x.name)}
+  const names=[...map.keys()].sort((a,b)=>(b==='Владелец')-(a==='Владелец')||a.localeCompare(b,'ru'));
+  for(const nm of names)G.push({n:nm,i:(nm.trim().charAt(0)||'?').toUpperCase(),r:map.get(nm)});
   return G;
 }
 function shTreeSvg(attr='data-swrepo',isOn){
   const G=shTreeGroups();
-  const W=360,CX=180,hs=G.map(g=>Math.max(88,g.r.length*40+22)),sum=hs.reduce((a,b)=>a+b,0),H=Math.max(400,84+sum+130);
+  const W=360,CX=180;let hs=G.map(g=>g.r.length?Math.max(88,g.r.length*40+22):80),sum=hs.reduce((a,b)=>a+b,0);
+  const avail=520-84-130;if(sum<avail){const ex=(avail-sum)/G.length;hs=hs.map(v=>v+ex);sum=avail}
+  const H=84+sum+130;
   const baseY=H-92,topY=H-130-sum-26,cut=(s,n)=>s.length>n?s.slice(0,n-1)+'…':s,sel=isOn||(r=>SHF.places.some(x=>x.r===r));
   let br='',nd='',y=H-130;
   G.forEach((g,gi)=>{
     const h=hs[gi],cy=y-h/2,side=gi%2?1:-1,nx=CX+side*36;y-=h;
     const dl=(gi*.14).toFixed(2),n=g.r.length;
-    br+=`<path class="br bb" pathLength="1" style="animation-delay:${dl}s" d="M${CX} ${cy+30} C${CX} ${cy+6} ${CX+side*10} ${cy} ${nx-side*20} ${cy}"/>`;
-    nd+=`<g class="swnode" style="animation-delay:${dl}s"><circle class="nd0" cx="${nx}" cy="${cy}" r="25"/><circle class="nd" cx="${nx}" cy="${cy}" r="20"/><text class="ni" x="${nx}" y="${cy}">${esc(g.i)}</text><text class="lb" x="${nx}" y="${cy+36}">${esc(cut(g.n,10))}</text></g>`;
+    br+=`<path class="br bb${n?'':' gh'}" pathLength="1" style="animation-delay:${dl}s" d="M${CX} ${cy+30} C${CX} ${cy+6} ${CX+side*10} ${cy} ${nx-side*20} ${cy}"/>`;
+    nd+=`<g class="swnode${n?'':' gh'}" style="animation-delay:${dl}s"><circle class="nd0" cx="${nx}" cy="${cy}" r="25"/><circle class="nd" cx="${nx}" cy="${cy}" r="20"/><text class="ni" x="${nx}" y="${cy}">${esc(g.i)}</text><text class="lb" x="${nx}" y="${cy+36}">${esc(cut(g.n,10))}</text>${n?'':`<text class="lb lb2" x="${nx}" y="${cy+49}">нет репозиториев</text>`}</g>`;
     g.r.forEach((name,k)=>{
       const ly=cy+(k-(n-1)/2)*40,lx=side>0?260:4,sx=nx+side*20,ex=side>0?lx:lx+96,dx=Math.max(6,Math.abs(ex-sx)*.5),d2=(gi*.14+.18+k*.06).toFixed(2),en=encOn(name);
       br+=`<path class="br tw" pathLength="1" style="animation-delay:${d2}s" d="M${sx} ${cy} C${sx+side*dx} ${cy} ${ex-side*dx} ${ly} ${ex} ${ly}"/>`;
@@ -2157,10 +2173,17 @@ $('#admb').addEventListener('click',async e=>{
 /* ---- Расширение «Дерево репозиториев» ----
    Кнопка с деревом в шапке меню (рядом с тумблером «Все пользователи») видна только когда расширение подключено.
    Экран: облако — основание, пользователи — ветви, репозитории — листья; нажатие на лист открывает этот репозиторий. */
+const treeOn=()=>extMine().some(e=>e.id==='tree')&&ld('tgtree',1)!==0;
+/* режим дерева: вместо плашки «Все пользователи» и списка репозиториев в меню остаётся круглая кнопка с деревом */
+function treeSync(){
+  const on=treeOn(),w=$('#treebw');
+  if(w)w.hidden=!on;
+  document.body.classList.toggle('treemode',on);
+}
 function openTree(){
   fromSet=false;admParent=null;openAdm(extName('tree'));
-  const G=shTreeGroups(),nr=G.reduce((a,g)=>a+g.r.length,0),own=G.filter(g=>g.n!=='Мои').length;
-  $('#admb').innerHTML=`<div class="sw"><div class="swcap"><b>Нажмите на репозиторий</b>, чтобы открыть его<span>${stPl(nr,['репозиторий','репозитория','репозиториев'])} · ${own?stPl(own,['пользователь','пользователя','пользователей'])+' рядом':'только ваши'}</span></div>${shTreeSvg('data-trr',r=>r===R())}</div>`;
+  const G=shTreeGroups(),nr=G.reduce((a,g)=>a+g.r.length,0),own=G.length-1,on=ld('tgtree',1)!==0;
+  $('#admb').innerHTML=`<div class="sw"><div class="swc swtog"><div class="swt"><span class="swn1">Дерево вместо списка</span><span class="swn2">Когда включено, в меню нет плашки «Все пользователи» и списка репозиториев, остаётся круглая кнопка с деревом.</span></div><button class="swsw" id="treesw" role="switch" aria-checked="${on}" aria-label="Дерево вместо списка"></button></div><div class="swcap"><b>Нажмите на репозиторий</b>, чтобы открыть его<span>${stPl(nr,['репозиторий','репозитория','репозиториев'])} · ${stPl(own,['пользователь','пользователя','пользователей'])}</span></div><div class="swtreew">${shTreeSvg('data-trr',r=>r===R())}</div></div>`;
 }
 async function treeGo(r){
   try{
@@ -2171,8 +2194,12 @@ async function treeGo(r){
     $('#adm').hidden=true;fromSet=false;admParent=null;closeDrawer();render();
   }catch(x){say(err(x),1)}
 }
-$('#admb').addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('[data-trr]');if(t)treeGo(t.getAttribute('data-trr'))});
-$('#treeb').onclick=()=>{if(!extMine().some(x=>x.id==='tree'))return;closeDrawer();openTree()};
+$('#admb').addEventListener('click',e=>{
+  const sw=e.target.closest&&e.target.closest('#treesw');
+  if(sw){const on=sw.getAttribute('aria-checked')!=='true';sv('tgtree',on?1:0);sw.setAttribute('aria-checked',on);treeSync();say(on?'Дерево включено':'Дерево выключено');return}
+  const t=e.target.closest&&e.target.closest('[data-trr]');if(t)treeGo(t.getAttribute('data-trr'));
+});
+$('#treeb').onclick=()=>{if(!treeOn())return;closeDrawer();openTree()};
 /* ---- Расширение «Журнал тренировок»: приложение gym-log целиком, внутри изолированного фрейма на весь экран.
    «Назад» переадресуется в приложение, выход — его ползунком. Данные лежат на устройстве (gym_*, IndexedDB gymlog). ---- */
 const GYM={on:false,recs:new Map(),sx:'',q:null,last:0,pend:null,pt:0,rt:0};let FLOODT=0;
@@ -5366,7 +5393,7 @@ $('#out').onclick=async()=>{
   if(!confirm('Выйти из аккаунта? Файлы в канале останутся.'))return;
   jlog('out','');for(let n=0;n<8&&(JQ.length||jBusy);n++){await jflush();await sleep(200)}
   try{if(client){if(client.signOut)await client.signOut();else if(client.logOut)await client.logOut()}}catch(e){}
-  try{Object.keys(localStorage).filter(k=>k.includes(PFX)||k==='tgm'||k==='tgun'||['tgmp','tglast','tgpos','tgspd','tgshm'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
+  try{Object.keys(localStorage).filter(k=>k.includes(PFX)||k==='tgm'||k==='tgun'||['tgmp','tglast','tgpos','tgspd','tgshm','tgtree'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
   try{idbOp('f','readwrite',s=>s.clear());idbOp('a','readwrite',s=>s.clear());idbOp('m','readwrite',s=>s.clear())}catch(e){}try{BIO.e={};BIO.eno={};saveBio()}catch(e){}WARM.clear();
   S={};ready=false;showSetup=true;files=[];folders=[];cur='';C.clear();
   for(const i of['#aid','#ahash','#phone','#combo'])$(i).value='';drawCs();
