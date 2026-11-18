@@ -2025,11 +2025,11 @@ function shufPaint(){
 }
 /* выбор мест: репозитории → папки с галочками */
 /* дерево репозиториев: облако — основание, пользователи — ветви, репозитории — листья */
-/* все пользователи и видимые репозитории по группам: «Мои», «Владелец», затем остальные; у пользователя без доступных репозиториев ветка пустая */
+/* все пользователи и их репозитории по группам (то же правило, что у списка меню при «Все пользователи»: скрыто только закрытое лично для вас в консоли): «Мои», «Владелец», затем остальные; у пользователя без доступных репозиториев ветка пустая */
 function shTreeGroups(){
-  const vis=repos.filter(visRepo),mine=vis.filter(mineRepo).map(x=>x.name);
+  const vis=repos.filter(x=>!repoBlocked(x.name)),mine=vis.filter(mineRepo).map(x=>x.name);
   const G=[{n:'Мои',i:'Я',r:mine}];
-  const lab=x=>!x.guest?'Владелец':(x.owner||'Гость'),oth=vis.filter(x=>!mineRepo(x)),map=new Map();
+  const lab=x=>(x.owner&&x.owner!==S.guestUser)?x.owner:(!x.guest?'Владелец':'Гость'),oth=vis.filter(x=>!mineRepo(x)),map=new Map();
   const add=n=>{if(!map.has(n))map.set(n,[])};
   if(S.viewer)add('Владелец');
   for(const u of users)if(!(S.viewer&&u.u===S.guestUser))add(u.u);
