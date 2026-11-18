@@ -1792,7 +1792,7 @@ $('#kpb').addEventListener('click',async e=>{
    Если он нажал «Да», в его шторке появляется раздел «Расширения». Записи лежат в канале (🧩): предложение, согласие, отказ. */
 const EXR='🧩 ';
 let EXT=[];
-const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>openMusic()},{id:'notes',name:'Заметки',ic:'edit',open:()=>openNotes()},{id:'gym',name:'Журнал тренировок',ic:'dumb',open:()=>openGym()},{id:'links',name:'Временные ссылки',ic:'copy',open:()=>openShares()},{id:'shuf',name:'Случайный плеер',ic:'repo',open:()=>openShuffle()},{id:'tree',name:'Дерево репозиториев',ic:'tree',open:()=>openTree()}];
+const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>openMusic()},{id:'notes',name:'Заметки',ic:'edit',open:()=>openNotes()},{id:'gym',name:'Журнал тренировок',ic:'dumb',open:()=>openGym()},{id:'links',name:'Временные ссылки',ic:'copy',open:()=>openShares()},{id:'shuf',name:'Случайный плеер',ic:'repo',open:()=>openShuffle()},{id:'tree',name:'Дерево репозиториев',ic:'tree',set:1,open:()=>openTree()}];
 const extName=id=>{let n='';for(const r of EXT)if(r.x===id&&r.k==='n'&&r.n)n=r.n;return n||(EXTS.find(e=>e.id===id)||{}).name||id};
 const extState=(x,u)=>{let k='';for(const r of EXT)if(r.x===x&&r.u===u)k=r.k;return k};
 const extMine=()=>EXTS.filter(e=>isAdmin()||(S.guestUser&&extState(e.id,S.guestUser)==='a'));
@@ -1804,7 +1804,7 @@ async function extSend(rec){
 function openExtAdmin(){
   if(!isAdmin())return;
   fromSet=true;admParent=drawConsole;openAdm('Расширения');
-  $('#admb').innerHTML=`<div class="exl">${EXTS.map(e=>`<div class="exr"><button class="exo" data-exo="${e.id}">${icon(e.ic)}<span>${esc(extName(e.id))}</span></button><button class="exg" data-exg="${e.id}" aria-label="Переименовать">${icon('gear')}</button><button class="exp" data-exv="${e.id}" aria-label="Отозвать у пользователя">−</button><button class="exp" data-exp="${e.id}" aria-label="Предложить пользователю">+</button></div>`).join('')}</div>`;
+  $('#admb').innerHTML=`<div class="exl">${EXTS.map(e=>`<div class="exr"><button class="exo" data-exo="${e.id}">${icon(e.ic)}<span>${esc(extName(e.id))}</span></button><button class="exg" data-exg="${e.id}" aria-label="Настройки расширения">${icon('gear')}</button><button class="exp" data-exv="${e.id}" aria-label="Отозвать у пользователя">−</button><button class="exp" data-exp="${e.id}" aria-label="Предложить пользователю">+</button></div>`).join('')}</div>`;
 }
 function openExtUsers(x,rev){
   if(!isAdmin())return;
@@ -1816,7 +1816,7 @@ function openExtUsers(x,rev){
 function openExts(){
   fromSet=false;admParent=null;openAdm('Расширения');
   const L=extMine();
-  $('#admb').innerHTML=L.length?`<div class="exl">${L.map(e=>`<div class="exr"><button class="exo" data-exm="${e.id}">${icon(e.ic)}<span>${esc(extName(e.id))}</span></button></div>`).join('')}</div>`:'<div class="empty">Пока нет расширений</div>';
+  $('#admb').innerHTML=L.length?`<div class="exl">${L.map(e=>`<div class="exr"><button class="exo" data-exm="${e.id}">${icon(e.ic)}<span>${esc(extName(e.id))}</span></button>${e.set?`<button class="exg" data-exs="${e.id}" aria-label="Настройки расширения">${icon('gear')}</button>`:''}</div>`).join('')}</div>`:'<div class="empty">Пока нет расширений</div>';
 }
 $('#extb').onclick=openExts;
 /* ---- Расширение «Случайный плеер» («Твоя волна») ----
@@ -2049,7 +2049,7 @@ function shTreeSvg(attr='data-swrepo',isOn){
     const h=hs[gi],cy=y-h/2,side=gi%2?1:-1,nx=CX+side*36;y-=h;
     const dl=(gi*.14).toFixed(2),n=g.r.length;
     br+=`<path class="br bb${n?'':' gh'}" pathLength="1" style="animation-delay:${dl}s" d="M${CX} ${cy+30} C${CX} ${cy+6} ${CX+side*10} ${cy} ${nx-side*20} ${cy}"/>`;
-    nd+=`<g class="swnode${n?'':' gh'}" style="animation-delay:${dl}s"><circle class="nd0" cx="${nx}" cy="${cy}" r="25"/><circle class="nd" cx="${nx}" cy="${cy}" r="20"/><text class="ni" x="${nx}" y="${cy}">${esc(g.i)}</text><text class="lb" x="${nx}" y="${cy+36}">${esc(cut(g.n,10))}</text>${n?'':`<text class="lb lb2" x="${nx}" y="${cy+49}">нет репозиториев</text>`}</g>`;
+    nd+=`<g class="swnode${n?'':' gh'}" style="animation-delay:${dl}s"><circle class="nd0" cx="${nx}" cy="${cy}" r="25"/><circle class="nd" cx="${nx}" cy="${cy}" r="20"/><text class="ni" x="${nx}" y="${cy}">${esc(g.i)}</text><text class="lb" x="${nx}" y="${cy+36}">${esc(cut(g.n,10))}</text>${n?'':`<text class="lb lb2" x="${nx}" y="${cy+49}">пусто</text>`}</g>`;
     g.r.forEach((name,k)=>{
       const ly=cy+(k-(n-1)/2)*40,lx=side>0?260:4,sx=nx+side*20,ex=side>0?lx:lx+96,dx=Math.max(6,Math.abs(ex-sx)*.5),d2=(gi*.14+.18+k*.06).toFixed(2),en=encOn(name);
       br+=`<path class="br tw" pathLength="1" style="animation-delay:${d2}s" d="M${sx} ${cy} C${sx+side*dx} ${cy} ${ex-side*dx} ${ly} ${ex} ${ly}"/>`;
@@ -2181,9 +2181,27 @@ function treeSync(){
   document.body.classList.toggle('treemode',on);
 }
 function openTree(){
-  fromSet=false;admParent=null;openAdm(extName('tree'));
-  const G=shTreeGroups(),nr=G.reduce((a,g)=>a+g.r.length,0),own=G.length-1,on=ld('tgtree',1)!==0;
-  $('#admb').innerHTML=`<div class="sw"><div class="swc swtog"><div class="swt"><span class="swn1">Дерево вместо списка</span><span class="swn2">Когда включено, в меню нет плашки «Все пользователи» и списка репозиториев, остаётся круглая кнопка с деревом.</span></div><button class="swsw" id="treesw" role="switch" aria-checked="${on}" aria-label="Дерево вместо списка"></button></div><div class="swcap"><b>Нажмите на репозиторий</b>, чтобы открыть его<span>${stPl(nr,['репозиторий','репозитория','репозиториев'])} · ${stPl(own,['пользователь','пользователя','пользователей'])}</span></div><div class="swtreew">${shTreeSvg('data-trr',r=>r===R())}</div></div>`;
+  openAdm(extName('tree'));
+  $('#admb').innerHTML=`<div class="sw"><div class="swtreew">${shTreeSvg('data-trr',r=>r===R())}</div></div>`;
+}
+/* настройки расширения (шестерёнка в списке расширений): название (у администратора) и особые параметры */
+function openExtSet(id){
+  const x=EXTS.find(q=>q.id===id);if(!x)return;
+  fromSet=true;admParent=isAdmin()?openExtAdmin:openExts;openAdm(extName(id));
+  let h='<div class="sw">';
+  if(isAdmin())h+=`<div class="swc swtog"><div class="swt"><span class="swn1">Название</span><span class="swn2">${esc(extName(id))}</span></div><button class="swundo" data-exg2="${esc(id)}">Изменить</button></div>`;
+  if(id==='tree'){
+    const on=ld('tgtree',1)!==0;
+    h+=`<div class="swc swtog"><div class="swt"><span class="swn1">Дерево вместо списка</span><span class="swn2">Когда включено, в меню нет плашки «Все пользователи» и списка репозиториев, остаётся круглая кнопка с деревом.</span></div><button class="swsw" id="treesw" role="switch" aria-checked="${on}" aria-label="Дерево вместо списка"></button></div>`;
+  }
+  $('#admb').innerHTML=h+'</div>';
+}
+async function extRename(id){
+  if(!isAdmin())return;
+  const cur=extName(id),v=clean(String(await uiPrompt('Название расширения',cur)||'')).slice(0,40);
+  if(!v||v===cur)return;
+  try{await extSend({k:'n',x:id,u:'*',n:v});jlog('extrn',cur+' → '+v);say('Переименовано');openExtSet(id)}
+  catch(err2){say('Не удалось переименовать: '+err(err2),1)}
 }
 async function treeGo(r){
   try{
@@ -2197,9 +2215,10 @@ async function treeGo(r){
 $('#admb').addEventListener('click',e=>{
   const sw=e.target.closest&&e.target.closest('#treesw');
   if(sw){const on=sw.getAttribute('aria-checked')!=='true';sv('tgtree',on?1:0);sw.setAttribute('aria-checked',on);treeSync();say(on?'Дерево включено':'Дерево выключено');return}
+  const rn=e.target.closest&&e.target.closest('[data-exg2]');if(rn){extRename(rn.dataset.exg2);return}
   const t=e.target.closest&&e.target.closest('[data-trr]');if(t)treeGo(t.getAttribute('data-trr'));
 });
-$('#treeb').onclick=()=>{if(!treeOn())return;closeDrawer();openTree()};
+$('#treeb').onclick=()=>{if(!treeOn())return;closeDrawer();fromSet=false;admParent=null;openTree()};
 /* ---- Расширение «Журнал тренировок»: приложение gym-log целиком, внутри изолированного фрейма на весь экран.
    «Назад» переадресуется в приложение, выход — его ползунком. Данные лежат на устройстве (gym_*, IndexedDB gymlog). ---- */
 const GYM={on:false,recs:new Map(),sx:'',q:null,last:0,pend:null,pt:0,rt:0};let FLOODT=0;
@@ -2448,15 +2467,9 @@ addEventListener('pagehide',()=>{if(NT.d.size)ntFlush()});
 $('#admb').addEventListener('click',async e=>{
   const g=a=>e.target.closest('['+a+']');
   const o=g('data-exo'),p=g('data-exp'),u=g('data-exu'),m=g('data-exm'),v=g('data-exv'),w=g('data-exw');
-  const rn=g('data-exg');
-  if(rn){
-    if(!isAdmin())return;
-    const id=rn.dataset.exg,cur=extName(id),v=clean(String(await uiPrompt('Название расширения',cur)||'')).slice(0,40);
-    if(!v||v===cur)return;
-    try{await extSend({k:'n',x:id,u:'*',n:v});jlog('extrn',cur+' → '+v);say('Переименовано');openExtAdmin()}
-    catch(err2){say('Не удалось переименовать: '+err(err2),1)}
-    return;
-  }
+  const rn=g('data-exg'),es=g('data-exs');
+  if(rn){if(isAdmin())openExtSet(rn.dataset.exg);return}
+  if(es){openExtSet(es.dataset.exs);return}
   if(o){const x=EXTS.find(q=>q.id===o.dataset.exo);if(x&&isAdmin()){fromSet=true;admParent=openExtAdmin;x.open()}return}
   if(m){const x=EXTS.find(q=>q.id===m.dataset.exm);if(x&&extMine().includes(x)){fromSet=true;admParent=openExts;x.open()}return}
   if(p){if(isAdmin())openExtUsers(p.dataset.exp);return}
