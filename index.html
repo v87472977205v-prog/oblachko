@@ -469,6 +469,18 @@ body.treemode #rbar,body.treemode #repl{display:none!important}
 .swtreew{padding-top:26px}
 .swtree .gh{opacity:.55}
 .swtree .lb2{font-size:10px;fill-opacity:.7}
+.gls{display:flex;flex-direction:column;gap:14px;padding:14px}
+.gl{background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 9%,transparent),color-mix(in srgb,var(--ink) 3%,transparent));border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-radius:22px;padding:18px;-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);box-shadow:0 8px 28px rgba(0,0,0,.25),inset 0 1px 0 color-mix(in srgb,var(--ink) 10%,transparent)}
+.gll{font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--mute);margin-bottom:10px}
+.glbig{font-size:36px;font-weight:700;letter-spacing:-.6px;line-height:1.1}
+.glsub{font-size:13.5px;color:var(--mute);margin-top:7px;line-height:1.45}
+.glbar{height:6px;border-radius:99px;background:color-mix(in srgb,var(--ink) 10%,transparent);margin-top:14px;overflow:hidden}
+.glbar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--acc),color-mix(in srgb,var(--acc) 55%,#fff));transition:width .6s ease}
+.glseg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.glseg button{padding:14px 10px;border-radius:15px;font-size:15px;font-weight:600;color:var(--ink);background:color-mix(in srgb,var(--ink) 6%,transparent);border:1px solid color-mix(in srgb,var(--ink) 13%,transparent);transition:background .18s,border-color .18s,box-shadow .18s,color .18s}
+.glseg button.on{background:color-mix(in srgb,var(--acc) 22%,transparent);border-color:var(--acc);color:var(--acc);box-shadow:0 0 20px color-mix(in srgb,var(--acc) 22%,transparent)}
+.gldel{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:14px;border-radius:15px;font-size:15px;font-weight:600;color:#ff8f86;background:rgba(255,90,80,.10);border:1px solid rgba(255,110,100,.38)}
+.gldel .i{width:19px;height:19px}.gldel:disabled{opacity:.5}
 .swtree{display:block;width:100%;height:auto;overflow:visible;-webkit-tap-highlight-color:transparent;user-select:none}
 .swtree .br{fill:none;stroke:var(--acc);stroke-opacity:.55;stroke-width:3.2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:swgrow .9s ease-out forwards}
 .swtree .br.tw{stroke-width:1.7;stroke-opacity:.42}
@@ -1327,7 +1339,7 @@ let fromSet=false,admParent=null;
 $('#admx').onclick=()=>{if(fromSet&&admParent){admParent();return}fromSet=false;admParent=null;$('#adm').hidden=true};
 function drawSettings(){
   fromSet=false;admParent=null;openAdm('Настройки');
-  $('#admb').innerHTML=`<div class="stl"><button data-set="cov">${icon('music')}<span>Обложки музыки</span></button><button data-set="lks">${icon('repo')}<span>Кнопка открытия репозитория</span></button><button data-set="cch">${icon('cloud')}<span>Кэш файлов и музыки</span></button><button data-set="upd">${icon('refresh')}<span>Обновить приложение</span></button><button data-set="ulg">${icon('list')}<span>Журнал загрузки</span></button></div>`;
+  $('#admb').innerHTML=`<div class="stl"><button data-set="cov">${icon('music')}<span>Обложки музыки</span></button><button data-set="lks">${icon('repo')}<span>Кнопка открытия репозитория</span></button><button data-set="cch">${icon('cloud')}<span>Кэш файлов и музыки</span></button><button data-set="raw">${icon('refresh')}<span>Служебный архив (быстрый запуск)</span></button><button data-set="upd">${icon('refresh')}<span>Обновить приложение</span></button><button data-set="ulg">${icon('list')}<span>Журнал загрузки</span></button></div>`;
 }
 /* консоль — только у администратора (у остальных не открывается ни кнопкой, ни напрямую) */
 function drawConsole(){
@@ -1342,8 +1354,62 @@ function openLks(){
 }
 function openCache(){
   openAdm('Кэш файлов и музыки');
-  $('#admb').innerHTML=`<div style="padding:10px 14px"><div class="uc"><div class="un">Кэш файлов и музыки</div><div class="us" id="cachei">Считаю…</div><div class="us">Размер не ограничен. Хранится неделю после последнего прослушивания. Файлы в канале не затрагиваются.</div><div class="row"><button class="del" id="cachex">Сбросить кэш</button></div></div></div>`;
-  Promise.all([cacheInfo(),cacheQuota()]).then(([i,q])=>{const el=$('#cachei');if(el)el.textContent=(i.n?`Занимает ${size(i.size)} · файлов: ${i.n}`:'Пока пусто — 0 МБ')+(q?` · всего приложение использует ${size(q.used)} из ${size(q.quota)} доступных браузером`:'')});
+  $('#admb').innerHTML=`<div class="gls">
+    <section class="gl"><div class="gll">Занято на устройстве</div><div class="glbig" id="cachebig">…</div><div class="glsub" id="cachei">Считаю…</div><div class="glbar"><i id="cachebar"></i></div></section>
+    <section class="gl"><div class="gll">Сколько хранить</div><div class="glseg" id="cttl">${CTTLS.map(([h,n])=>`<button data-cttl="${h}">${n}</button>`).join('')}</div><div class="glsub" id="cttld"></div></section>
+    <section class="gl"><div class="gll">Очистка</div><div class="glsub" style="margin:0 0 14px">Удаляет сохранённые на устройстве файлы и музыку. Файлы в канале, вход, пароли и позиции в треках не затрагиваются.</div><button class="gldel" id="cachex">${icon('trash')}Сбросить кэш</button></section>
+  </div>`;
+  paintCttl();paintCache();
+}
+function paintCttl(){
+  const h=+ld('tgcttl',168);
+  document.querySelectorAll('[data-cttl]').forEach(x=>x.classList.toggle('on',+x.dataset.cttl===h));
+  const d=$('#cttld');if(!d)return;
+  const w={6:'через 6 часов',24:'через сутки',168:'через неделю'}[h];
+  d.textContent=h<0?'Файлы сами не удаляются, пока браузеру хватает места. Удалить можно вручную кнопкой «Сбросить кэш» ниже.':'Файлы и музыка удаляются с устройства '+w+' после последнего прослушивания или открытия.';
+}
+async function paintCache(){
+  try{
+    const[i,q]=await Promise.all([cacheInfo(),cacheQuota()]);
+    const big=$('#cachebig'),sub=$('#cachei'),bar=$('#cachebar');if(!big)return;
+    big.textContent=i.n?size(i.size):'0 МБ';
+    sub.textContent=(i.n?`Файлов: ${i.n}`:'Пока пусто')+(q?` · приложение использует ${size(q.used)} из ${size(q.quota)} доступных браузером`:'');
+    if(bar)bar.style.width=(q&&q.quota?Math.max(i.n?2:0,Math.min(100,i.size/q.quota*100)):0)+'%';
+  }catch(e){}
+}
+function openRaw(){
+  openAdm('Служебный архив');
+  $('#admb').innerHTML=`<div class="gls">
+    <section class="gl"><div class="gll">Состояние</div><div class="glbig" id="rawbig">…</div><div class="glsub" id="rawi">Считаю…</div><div class="glsub" id="rawwhy"></div></section>
+    <section class="gl"><div class="gll">Сколько хранить</div><div class="glseg">${RAWKEEP.map(([h,n])=>`<button data-rkeep="${h}">${n}</button>`).join('')}</div><div class="glsub" id="rawd"></div></section>
+    <section class="gl"><div class="gll">Очистка</div><div class="glsub" style="margin:0 0 14px">Удаляет копию записей чата на устройстве. Файлы и данные в Telegram не затрагиваются. При следующем запуске чат будет прочитан целиком, это дольше.</div><button class="gldel" id="rawx">${icon('trash')}Удалить архив</button></section>
+  </div>`;
+  paintRawKeep();paintRaw();
+}
+function paintRawKeep(){
+  const h=+ld('tgrawkeep',168);
+  document.querySelectorAll('[data-rkeep]').forEach(x=>x.classList.toggle('on',+x.dataset.rkeep===h));
+  const d=$('#rawd');if(!d)return;
+  const w={6:'6 часов',24:'суток',168:'недели'}[h];
+  d.textContent=h<0?'Архив не удаляется по сроку, приложение запускается быстро всегда. Удалить его можно вручную кнопкой «Удалить архив» ниже. Удалённые в чате файлы всё равно сверяются и пропадают.':'Архив удаляется, если больше '+w+' его не обновляли и не сверяли с чатом. Тогда следующий запуск медленнее.';
+}
+async function paintRaw(){
+  try{
+    const r=await idbOp('m','readonly',s=>s.get('raw')),big=$('#rawbig'),inf=$('#rawi'),why=$('#rawwhy');if(!big)return;
+    if(!r||!r.r){big.textContent='Архива нет';inf.textContent='Появится после ближайшего полного чтения чата.'}
+    else{
+      const n=Object.values(r.r).reduce((a,v)=>a+(v?v.length:0),0),kb=Math.round(JSON.stringify(r.r).length/1024);
+      big.textContent=n.toLocaleString('ru')+' записей';
+      inf.textContent='Обновлён '+ago(r.fullT)+' · около '+(kb>=1024?(kb/1024).toFixed(1)+' МБ':kb+' КБ');
+    }
+    const w=ld('tgrawwhy',null);
+    why.textContent=w&&w.w?'Последний раз архив не использован: '+w.w+' ('+ago(w.t)+').':'';
+  }catch(e){}
+}
+const ago=t=>{const m=Math.max(0,Math.round((Date.now()-t)/6e4));if(m<1)return 'только что';if(m<60)return m+' мин назад';const h=Math.round(m/60);if(h<24)return h+' ч назад';return Math.round(h/24)+' дн назад'};
+async function rawReset(){
+  RAWM=null;
+  await idbOp('m','readwrite',s=>s.delete('raw'));await idbOp('m','readwrite',s=>s.delete('rawdirty'));await idbOp('m','readwrite',s=>s.delete('idx'));
 }
 async function appUpdate(){
   if(!confirm('Обновить приложение? Вход и файлы не затрагиваются.'))return;
@@ -1355,9 +1421,12 @@ $('#admb').addEventListener('click',async e=>{
   {const ce=e.target.closest('[data-cveq]');if(ce){const v=ce.dataset.cveq;sv('cveq',v);applyEq();document.querySelectorAll('[data-cveq]').forEach(x=>x.classList.toggle('on',x.dataset.cveq===v));return}}
   {const cw=e.target.closest('[data-cvw]');if(cw){const v=cw.dataset.cvw;sv('cvweb',v);cvWebChanged();document.querySelectorAll('[data-cvw]').forEach(x=>x.classList.toggle('on',x.dataset.cvw===v));return}}
   if(e.target.closest('#cvx')){if(confirm('Удалить сохранённые обложки и подобрать заново?'))cvReset();return}
+  {const rk=e.target.closest('[data-rkeep]');if(rk){sv('tgrawkeep',+rk.dataset.rkeep);paintRawKeep();return}}
+  {const rx=e.target.closest('#rawx');if(rx){if(rx.disabled)return;if(!confirm('Удалить служебный архив? Следующий запуск будет дольше.'))return;rx.disabled=true;try{await rawReset();say('Архив удалён');paintRaw()}catch(x){say('Не удалось удалить архив: '+err(x),1)}finally{rx.disabled=false}return}}
+  {const ct=e.target.closest('[data-cttl]');if(ct){sv('tgcttl',+ct.dataset.cttl);paintCttl();cPurge().then(paintCache);return}}
   const b=e.target.closest('#cachex');if(!b||b.disabled)return;
   b.disabled=true;
-  try{const was=await cacheReset();const el=$('#cachei');if(el)el.textContent='Пока пусто';say(was.n?'Кэш сброшен: освобождено '+size(was.size):'Кэш и так пуст')}
+  try{const was=await cacheReset();paintCache();say(was.n?'Кэш сброшен: освобождено '+size(was.size):'Кэш и так пуст')}
   catch(x){say('Не удалось сбросить кэш: '+err(x),1)}
   finally{b.disabled=false}
 });
@@ -2173,7 +2242,7 @@ $('#admb').addEventListener('click',async e=>{
 /* ---- Расширение «Дерево репозиториев» ----
    Кнопка с деревом в шапке меню (рядом с тумблером «Все пользователи») видна только когда расширение подключено.
    Экран: облако — основание, пользователи — ветви, репозитории — листья; нажатие на лист открывает этот репозиторий. */
-const treeOn=()=>extMine().some(e=>e.id==='tree')&&ld('tgtree',1)!==0;
+const treeOn=()=>extMine().some(e=>e.id==='tree')&&ld('tgtree','on')!=='off';
 /* режим дерева: вместо плашки «Все пользователи» и списка репозиториев в меню остаётся круглая кнопка с деревом */
 function treeSync(){
   const on=treeOn(),w=$('#treebw');
@@ -2191,7 +2260,7 @@ function openExtSet(id){
   let h='<div class="sw">';
   if(isAdmin())h+=`<div class="swc swtog"><div class="swt"><span class="swn1">Название</span><span class="swn2">${esc(extName(id))}</span></div><button class="swundo" data-exg2="${esc(id)}">Изменить</button></div>`;
   if(id==='tree'){
-    const on=ld('tgtree',1)!==0;
+    const on=ld('tgtree','on')!=='off';
     h+=`<div class="swc swtog"><div class="swt"><span class="swn1">Дерево вместо списка</span><span class="swn2">Когда включено, в меню нет плашки «Все пользователи» и списка репозиториев, остаётся круглая кнопка с деревом.</span></div><button class="swsw" id="treesw" role="switch" aria-checked="${on}" aria-label="Дерево вместо списка"></button></div>`;
   }
   $('#admb').innerHTML=h+'</div>';
@@ -2214,7 +2283,7 @@ async function treeGo(r){
 }
 $('#admb').addEventListener('click',e=>{
   const sw=e.target.closest&&e.target.closest('#treesw');
-  if(sw){const on=sw.getAttribute('aria-checked')!=='true';sv('tgtree',on?1:0);sw.setAttribute('aria-checked',on);treeSync();say(on?'Дерево включено':'Дерево выключено');return}
+  if(sw){const on=sw.getAttribute('aria-checked')!=='true';sv('tgtree',on?'on':'off');sw.setAttribute('aria-checked',on);treeSync();say(on?'Дерево включено':'Дерево выключено');return}
   const rn=e.target.closest&&e.target.closest('[data-exg2]');if(rn){extRename(rn.dataset.exg2);return}
   const t=e.target.closest&&e.target.closest('[data-trr]');if(t)treeGo(t.getAttribute('data-trr'));
 });
@@ -2539,7 +2608,7 @@ $('#admb').addEventListener('click',e=>{
   else $('#'+k).click();
 });
 $('#admb').addEventListener('click',e=>{const b=e.target.closest('[data-set]');if(!b)return;const k=b.dataset.set;
-  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache},ADMK={usr:openUsers,acc:openAccList,jrn:openJournal,key:makeKey,ann:openAnn,ext:openExtAdmin,stat:openStats};
+  const ACT={upd:appUpdate,ulg:ulShow},SETK={cov:openCov,lks:openLks,cch:openCache,raw:openRaw},ADMK={usr:openUsers,acc:openAccList,jrn:openJournal,key:makeKey,ann:openAnn,ext:openExtAdmin,stat:openStats};
   if(ACT[k]){ACT[k]();return}
   if(SETK[k]){fromSet=true;admParent=drawSettings;SETK[k]();return}
   if(ADMK[k]){if(!isAdmin())return;fromSet=true;admParent=drawConsole;ADMK[k]()}  /* консоль и всё из неё — только у владельца */
@@ -3198,7 +3267,10 @@ function evictC(){
 /* ---- кэш на диске (IndexedDB) ----
    'f' — сами файлы, 'a' — лёгкая «карточка» (когда, сколько) — по ней считаем срок, размер и чистим, не трогая сами файлы;
    'm' — индекс архива для быстрого старта. Срок хранения файлов — неделя с последнего прослушивания/открытия. */
-const DAY=864e5,TTL=7*DAY;let _db=null;   /* ограничений по размеру нет: ни общего, ни на файл */
+const DAY=864e5,TTL0=7*DAY;let _db=null;
+/* срок хранения файлов и музыки на устройстве: настройка «Кэш файлов и музыки» (часы; 0 — не удалять по сроку), по умолчанию неделя */
+const CTTLS=[[6,'6 часов'],[24,'День'],[168,'Неделя'],[-1,'Не удалять']];
+const ttl=()=>{const h=+ld('tgcttl',168);return h>0?h*36e5:(h<0?Infinity:TTL0)};   /* ограничений по размеру нет: ни общего, ни на файл */
 const WARM=new Set();   /* id файлов, про которые точно знаем: они лежат на диске */
 const cacheable=f=>!!f&&f.size>0;
 function idb(){
@@ -3224,15 +3296,15 @@ function idb(){
 }
 const idbOp=(st,mode,fn)=>idb().then(d=>new Promise((ok,no)=>{const t=d.transaction(st,mode),r=fn(t.objectStore(st));t.oncomplete=()=>ok(r&&r.result);t.onerror=()=>no(t.error);t.onabort=()=>no(t.error)}));
 const idbTx=(stores,mode,fn)=>idb().then(d=>new Promise((ok,no)=>{const t=d.transaction(stores,mode);fn(t);t.oncomplete=()=>ok();t.onerror=()=>no(t.error);t.onabort=()=>no(t.error)}));
-async function cHas(id){try{const m=await idbOp('a','readonly',s=>s.get(id));return !!m&&Date.now()-m.t<TTL}catch(e){return false}}
+async function cHas(id){try{const m=await idbOp('a','readonly',s=>s.get(id));return !!m&&Date.now()-m.t<ttl()}catch(e){return false}}
 async function cGet(id){
   try{
     const m=await idbOp('a','readonly',s=>s.get(id));
-    if(!m||Date.now()-m.t>=TTL)return null;
+    if(!m||Date.now()-m.t>=ttl())return null;
     const r=await idbOp('f','readonly',s=>s.get(id));
     if(!r||!r.blob)return null;
     /* продлеваем срок: раз файл слушают, он живёт дальше (пишем только карточку, не сам файл) */
-    if(Date.now()-m.t>12*36e5)idbOp('a','readwrite',s=>s.put({id,t:Date.now(),size:m.size})).catch(()=>{});
+    if(Date.now()-m.t>Math.min(12*36e5,ttl()/4))idbOp('a','readwrite',s=>s.put({id,t:Date.now(),size:m.size})).catch(()=>{});
     return r.blob;
   }catch(e){}
   return null;
@@ -3251,7 +3323,7 @@ async function cPurge(cap=Infinity){
   try{
     const all=(await idbOp('a','readonly',s=>s.getAll()))||[],live=new Set(all.map(r=>r.id));
     let tot=0;const del=[],now=Date.now();
-    for(const r of all.sort((a,b)=>b.t-a.t)){if(now-r.t>=TTL||tot+(r.size||0)>cap)del.push(r.id);else tot+=r.size||0}
+    for(const r of all.sort((a,b)=>b.t-a.t)){if(now-r.t>=ttl()||tot+(r.size||0)>cap)del.push(r.id);else tot+=r.size||0}
     const keys=(await idbOp('f','readonly',s=>s.getAllKeys()))||[];
     for(const k of keys)if(!live.has(k))del.push(k);
     if(del.length){await idbTx(['f','a'],'readwrite',tx=>{for(const i of del){tx.objectStore('f').delete(i);tx.objectStore('a').delete(i)}});del.forEach(i=>WARM.delete(i))}
@@ -3259,7 +3331,7 @@ async function cPurge(cap=Infinity){
 }
 async function cacheQuota(){try{const e=await navigator.storage.estimate();return e&&e.quota?{used:e.usage||0,quota:e.quota}:null}catch(x){return null}}
 async function cacheInfo(){
-  try{const all=((await idbOp('a','readonly',s=>s.getAll()))||[]).filter(r=>Date.now()-r.t<TTL);return{n:all.length,size:all.reduce((a,r)=>a+(r.size||0),0)}}
+  try{const all=((await idbOp('a','readonly',s=>s.getAll()))||[]).filter(r=>Date.now()-r.t<ttl());return{n:all.length,size:all.reduce((a,r)=>a+(r.size||0),0)}}
   catch(e){return{n:0,size:0}}
 }
 /* «Сбросить кэш» в настройках (одинаково у владельца и у гостя): стирает сохранённые файлы и музыку на устройстве.
@@ -3279,12 +3351,20 @@ async function cacheReset(){
 /* ---- СЛУЖЕБНЫЙ АРХИВ: сырые записи чата в IndexedDB (без дополнительного шифрования: это те же данные, что лежат в чате;
    расшифрованное содержимое и ключи сюда не попадают). Полное чтение чата раз в RAWTTL или после локального удаления/переноса. ---- */
 const RAWID={out:'id',fol:'id',reps:'id',lks:'id',usr:'id',jr:'mid',jenc:'mid',ordp:'mid',ans:'id',cvx:'mid',exr:'id',ntp:'m',shr:'id',sps:'id',oks:'id'};
-const RAWTTL=6*36e5,RAWMAX=30*864e5;let RAWM=null;
+const RAWTTL=6*36e5;let RAWM=null;
+/* срок хранения служебного архива (настройки → «Служебный архив»): часы, -1 = не удалять по сроку; по умолчанию неделя.
+   Срок считается от последнего чтения или успешной сверки с чатом (fullT). Помнит последнюю причину сброса (tgrawwhy) для экрана. */
+const RAWKEEP=[[6,'6 часов'],[24,'День'],[168,'Неделя'],[-1,'Не удалять']];
+const rawMax=()=>{const h=+ld('tgrawkeep',168);return h>0?h*36e5:(h<0?Infinity:168*36e5)};
+const rawWhy=w=>{try{sv('tgrawwhy',{t:Date.now(),w})}catch(e){}};
 async function rawLoad(){
   const r=await idbOp('m','readonly',s=>s.get('raw'));
-  if(!r||!r.r||r.v!==1||!r.maxId||r.chat!==S.chat||Date.now()-r.fullT>RAWMAX)return null;
+  if(!r)return null;
+  if(!r.r||r.v!==1||!r.maxId){rawWhy('формат архива не подошёл');return null}
+  if(r.chat!==S.chat){rawWhy('другой чат');return null}
+  if(Date.now()-r.fullT>rawMax()){rawWhy('истёк срок хранения');return null}
   const d=await idbOp('m','readonly',s=>s.get('rawdirty'));
-  if(d&&d.t>=r.t)return null;
+  if(d&&d.t>=r.t){rawWhy('файлы переименовали, перенесли или удалили на этом устройстве');return null}
   return r;
 }
 function rawSave(RK,maxId,fullT){
@@ -3333,7 +3413,7 @@ async function aliveIds(snap,cut){
     if(fail)throw fail;
     if(u.length>20&&alive.size<u.length*.5)throw new Error('сверка подозрительна');
     return alive;
-  }catch(e){RAWV.bad=1;throw e}
+  }catch(e){RAWV.bad=1;rawWhy('сверка с чатом не удалась: '+String(err(e)).slice(0,90));throw e}
 }
 const BGS={ok:0,run:0,t:0,hid:0};
 const bgSig=()=>[files,folders,repos,users,locks,ANN,EXT,SHR].map(a=>(a||[]).map(x=>x.id||x.m||x.mid||0).join(',')).join('#');
@@ -3360,13 +3440,13 @@ window.addEventListener('online',()=>bgSync(true));
 let _si=0;
 function saveIndex(){clearTimeout(_si);_si=setTimeout(()=>{if(OFFLINE)return;try{rawDirtyCheck()}catch(e){}idbOp('m','readwrite',s=>s.put({id:'idx',t:Date.now(),d:{files,folders,repos,locks,users,ord:ORD,chat:S.chat,ext:EXT,nt:NTS}})).catch(()=>{})},3000)}
 async function loadOffline(){
-  try{const r=await idbOp('m','readonly',s=>s.get('idx'));if(!r||Date.now()-r.t>TTL*1.5)return false;
+  try{const r=await idbOp('m','readonly',s=>s.get('idx'));if(!r||Date.now()-r.t>Math.max(TTL0*1.5,rawMax()))return false;
   files=r.d.files||[];folders=r.d.folders||[];repos=r.d.repos||[];locks=r.d.locks||[];users=r.d.users||[];EXT=r.d.ext||[];NTS=r.d.nt||[];ORD=r.d.ord||[];S.chat=r.d.chat;OFFLINE=true;document.body.classList.add('off');try{syncUN()}catch(e){}return true}catch(e){return false}
 }
 async function loadCachedIdx(){
   try{
     const r=await idbOp('m','readonly',s=>s.get('idx'));
-    if(!r||!r.d||Date.now()-r.t>30*864e5||(S.chat&&r.d.chat!==S.chat))return false;
+    if(!r||!r.d||Date.now()-r.t>rawMax()||(S.chat&&r.d.chat!==S.chat))return false;
     files=r.d.files||[];folders=r.d.folders||[];repos=r.d.repos||[];locks=r.d.locks||[];users=r.d.users||[];EXT=r.d.ext||[];NTS=r.d.nt||[];ORD=r.d.ord||[];if(!S.chat)S.chat=r.d.chat;
     try{syncUN()}catch(e){}return true;
   }catch(e){return false}
@@ -5406,7 +5486,7 @@ $('#out').onclick=async()=>{
   if(!confirm('Выйти из аккаунта? Файлы в канале останутся.'))return;
   jlog('out','');for(let n=0;n<8&&(JQ.length||jBusy);n++){await jflush();await sleep(200)}
   try{if(client){if(client.signOut)await client.signOut();else if(client.logOut)await client.logOut()}}catch(e){}
-  try{Object.keys(localStorage).filter(k=>k.includes(PFX)||k==='tgm'||k==='tgun'||['tgmp','tglast','tgpos','tgspd','tgshm','tgtree'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
+  try{Object.keys(localStorage).filter(k=>k.includes(PFX)||k==='tgm'||k==='tgun'||['tgmp','tglast','tgpos','tgspd','tgshm','tgtree','tgcttl','tgrawkeep','tgrawwhy'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
   try{idbOp('f','readwrite',s=>s.clear());idbOp('a','readwrite',s=>s.clear());idbOp('m','readwrite',s=>s.clear())}catch(e){}try{BIO.e={};BIO.eno={};saveBio()}catch(e){}WARM.clear();
   S={};ready=false;showSetup=true;files=[];folders=[];cur='';C.clear();
   for(const i of['#aid','#ahash','#phone','#combo'])$(i).value='';drawCs();
