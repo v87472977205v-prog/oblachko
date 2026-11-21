@@ -486,20 +486,47 @@ body.treemode #rbar,body.treemode #repl{display:none!important}
 .gldel .i{width:19px;height:19px}.gldel:disabled{opacity:.5}
 #qks{position:fixed;inset:0;z-index:70;background:rgba(2,10,9,.52);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);opacity:0;transition:opacity .22s}
 #qks.on{opacity:1}
-#qks .qkp{margin:0 10px;padding:calc(env(safe-area-inset-top) + 14px) 14px 12px;border-radius:0 0 30px 30px;background:linear-gradient(170deg,color-mix(in srgb,var(--ink) 11%,transparent),color-mix(in srgb,var(--ink) 4%,transparent)),color-mix(in srgb,var(--bg) 80%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-top:0;-webkit-backdrop-filter:blur(26px) saturate(1.3);backdrop-filter:blur(26px) saturate(1.3);box-shadow:0 18px 50px rgba(0,0,0,.45);transform:translateY(-105%);transition:transform .34s cubic-bezier(.2,.9,.25,1)}
+#qks .qkp{margin:0 10px;max-height:92vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:calc(env(safe-area-inset-top) + 14px) 16px 12px;border-radius:0 0 32px 32px;background:linear-gradient(170deg,color-mix(in srgb,var(--ink) 11%,transparent),color-mix(in srgb,var(--ink) 4%,transparent)),color-mix(in srgb,var(--bg) 82%,transparent);border:1px solid color-mix(in srgb,var(--ink) 14%,transparent);border-top:0;-webkit-backdrop-filter:blur(26px) saturate(1.3);backdrop-filter:blur(26px) saturate(1.3);box-shadow:0 18px 50px rgba(0,0,0,.45);transform:translateY(-105%);transition:transform .34s cubic-bezier(.2,.9,.25,1)}
 #qks.on .qkp{transform:none}
-#qks .qkh{display:flex;align-items:center;justify-content:space-between;padding:4px 4px 12px}
-#qks .qkh b{font-size:17px;font-weight:700;color:var(--ink)}
-#qks .qkh button{width:38px;height:38px;border-radius:50%;padding:0;display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);color:var(--ink)}
+#qks .qkh{display:flex;align-items:flex-start;justify-content:space-between;padding:2px 2px 14px}
+#qks .qkclk{font:200 78px/1 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:-3px;font-variant-numeric:tabular-nums;color:var(--ink);text-shadow:0 0 28px color-mix(in srgb,var(--acc) 35%,transparent)}
+#qks .qkdt{margin-top:6px;font-size:17px;font-weight:500;color:var(--acc);letter-spacing:.2px}
+#qks .qkh>button{flex:none;width:40px;height:40px;border-radius:50%;padding:0;display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);color:var(--ink)}
 #qks .qkh .i{width:19px;height:19px}
+#qks .qkc{margin:12px 0 0;padding:12px 12px 10px;border-radius:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 9%,transparent),color-mix(in srgb,var(--ink) 3%,transparent));border:1px solid color-mix(in srgb,var(--ink) 12%,transparent)}
+#qks .qkch{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+#qks .qkch button{border:0;background:transparent;color:var(--ink);padding:6px 10px;border-radius:12px;font-size:16px;font-weight:700}
+#qks .qkch button .i{width:18px;height:18px}
+#qks .qkch .qkr .i{transform:rotate(180deg)}
+#qks .qkw,#qks .qkdg{display:grid;grid-template-columns:repeat(7,1fr);text-align:center}
+#qks .qkw span{font-size:11.5px;color:var(--mute);padding:4px 0}
+#qks .qkw .we{color:color-mix(in srgb,var(--acc) 70%,var(--mute))}
+#qks .qkd{display:grid;place-items:center;height:36px;font-size:15px;font-variant-numeric:tabular-nums;color:var(--ink)}
+#qks .qkd.o{opacity:.3}
+#qks .qkd.we{color:color-mix(in srgb,var(--acc) 75%,var(--ink))}
+#qks .qkd.td{position:relative;z-index:0;color:var(--accink);font-weight:700}
+#qks .qkd.td::before{content:"";position:absolute;z-index:-1;width:34px;height:34px;border-radius:50%;background:var(--acc);box-shadow:0 0 18px color-mix(in srgb,var(--acc) 55%,transparent)}
+#qks .qkpin{margin-top:12px;padding:14px 16px;border-radius:22px;cursor:pointer;background:linear-gradient(160deg,color-mix(in srgb,var(--acc) 14%,transparent),color-mix(in srgb,var(--ink) 3%,transparent));border:1px solid color-mix(in srgb,var(--acc) 38%,transparent)}
+#qks .qkpl{display:flex;align-items:center;gap:6px;font-size:11.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--acc);margin-bottom:6px}
+#qks .qkpl .i{width:14px;height:14px}
+#qks .qkpt{font-size:17px;font-weight:700;color:var(--ink);margin-bottom:6px;word-break:break-word}
+#qks .qkbd{font-size:14.5px;line-height:1.45;color:var(--ink);white-space:pre-line;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+#qks .qkci{display:flex;align-items:center;gap:10px;font-size:14.5px;padding:4px 0;color:var(--ink);word-break:break-word}
+#qks .qkci span{flex:none;width:20px;height:20px;border-radius:7px;border:1.8px solid color-mix(in srgb,var(--acc) 70%,transparent);display:grid;place-items:center;font-size:12px;color:var(--accink)}
+#qks .qkci.dn{opacity:.5;text-decoration:line-through}
+#qks .qkci.dn span{background:var(--acc);border-color:var(--acc)}
+#qks .qkmore{font-size:13px;color:var(--mute);padding-top:2px}
 #qks .qkg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-#qks .qkt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:108px;padding:14px 8px;border-radius:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 10%,transparent),color-mix(in srgb,var(--ink) 3%,transparent));border:1px solid color-mix(in srgb,var(--ink) 13%,transparent);color:var(--ink);font-size:12.5px;font-weight:600;line-height:1.2;text-align:center;opacity:0;transform:translateY(-10px) scale(.92);animation:qkin .4s ease-out forwards}
+#qks .qkt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:108px;padding:14px 8px;border-radius:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 10%,transparent),color-mix(in srgb,var(--ink) 3%,transparent));border:1px solid color-mix(in srgb,var(--ink) 13%,transparent);color:var(--ink);font-size:12.5px;font-weight:600;line-height:1.2;text-align:center;opacity:0;transform:translateY(-10px) scale(.92);animation:qkin .4s ease-out forwards;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 #qks .qkt:active{filter:brightness(1.25)}
+#qks .qkt.qkph{opacity:.28!important;transform:scale(.94)!important}
+#qks .qkt.qkghost{position:fixed;z-index:100;margin:0;pointer-events:none;animation:none;opacity:1;transform:scale(1.07);transition:none;box-shadow:0 20px 44px rgba(0,0,0,.55),0 0 0 1.5px var(--acc),0 0 26px color-mix(in srgb,var(--acc) 35%,transparent);background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 18%,var(--bg)),color-mix(in srgb,var(--ink) 8%,var(--bg)))}
 #qks .qki{width:46px;height:46px;border-radius:15px;display:grid;place-items:center;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc);box-shadow:0 0 18px color-mix(in srgb,var(--acc) 18%,transparent)}
 #qks .qki .i{width:24px;height:24px}
 #qks .qkn{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#qks .qkhint{margin-top:10px;text-align:center;font-size:12px;color:var(--mute);opacity:.8}
 #qks .qke{padding:22px 6px;text-align:center;color:var(--mute);font-size:14px}
-#qks .qkbar{width:44px;height:5px;border-radius:99px;background:color-mix(in srgb,var(--ink) 25%,transparent);margin:16px auto 2px}
+#qks .qkbar{width:44px;height:5px;border-radius:99px;background:color-mix(in srgb,var(--ink) 25%,transparent);margin:14px auto 2px}
 @keyframes qkin{to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){#qks .qkp{transition:none}#qks .qkt{animation:none;opacity:1;transform:none}}
 #instp{z-index:95;align-items:stretch;opacity:0;transition:opacity .35s}
@@ -2341,7 +2368,7 @@ function openExtSet(id,top){
   }
   if(id==='quick'){
     const on=ld('tgquick','on')!=='off';
-    h+=`<div class="swc swtog"><div class="swt"><span class="swn1">Быстрый доступ</span><span class="swn2">Включено: кнопка «Расширения» убирается из меню, а по свайпу вниз от верха главного экрана открываются плитки расширений.</span></div><button class="swsw" id="quicksw" role="switch" aria-checked="${on}" aria-label="Быстрый доступ к расширениям"></button></div>`;
+    h+=`<div class="swc swtog"><div class="swt"><span class="swn1">Быстрый доступ</span><span class="swn2">Включено: кнопка «Расширения» убирается из меню, а по свайпу вниз из любого места главного экрана открывается шторка с часами, календарём и плитками расширений.</span></div><button class="swsw" id="quicksw" role="switch" aria-checked="${on}" aria-label="Быстрый доступ к расширениям"></button></div>`;
   }
   $('#admb').innerHTML=h+'</div>';
 }
@@ -2381,16 +2408,74 @@ function quickSync(){
   if(!on)quickClose(true);
 }
 const quickIdle=()=>!$('#app').hidden&&$('#drawer').hidden&&$('#adm').hidden&&$('#vw').hidden&&$('#pick').hidden&&$('#kpick').hidden&&$('#up').hidden&&$('#pw').hidden&&!selMode&&!$('#pl').classList.contains('full')&&!$('#qks');
+const QK={trk:false,x:0,y:0,sy:0,thr:64,up:false,iv:0,mo:0,noClick:0,drag:false};
+const QK_MON=['январь','февраль','март','апрель','май','июнь','июль','август','сентябрь','октябрь','ноябрь','декабрь'];
+const qkCap=s=>s.charAt(0).toUpperCase()+s.slice(1);
+const qkOrder=()=>{const o=ld('tgqord',[]);return Array.isArray(o)?o:[]};
+/* закреплённая на шторке заметка или чек-лист (одна): снимок содержимого хранится на устройстве, чтобы шторка не просила пароль заметок */
+const qkMe=()=>S.guestUser||'';
+const qkPin=()=>{const p=ld('tgnpin',null);return p&&p.u===qkMe()&&p.id&&p.s&&extMine().some(e=>e.id==='notes')?p:null};
+const qkSnap=n=>({k:n.k,t:String(n.t||'').slice(0,120),b:String(n.b||'').slice(0,400),c:(n.c||[]).slice(0,12).map(i=>({x:i.x?1:0,d:String(i.d||'').slice(0,100)}))});
+const qkPinSet=n=>sv('tgnpin',{u:qkMe(),id:n.id,s:qkSnap(n)});
+const qkPinUpd=n=>{try{const p=ld('tgnpin',null);if(p&&p.id===n.id)sv('tgnpin',{...p,s:qkSnap(n)})}catch(e){}};
+const qkPinDel=()=>{try{localStorage.removeItem('tgnpin')}catch(e){}};
+const qkPinDelId=id=>{try{const p=ld('tgnpin',null);if(p&&p.id===id)qkPinDel()}catch(e){}};
+/* пункт в меню заметки «⋯»: только когда включён быстрый доступ */
+function qkMenuItem(n){
+  if(!quickOn())return[];
+  const p=ld('tgnpin',null),on=!!(p&&p.id===n.id&&p.u===qkMe());
+  return[{t:on?'Убрать со шторки':'Вывести на шторку',ic:'grid',fn:()=>{if(on){qkPinDel();say('Убрано со шторки')}else{qkPinSet(n);say('Выведено на шторку')}}}];
+}
+function qkCanUp(el){
+  for(let n=el;n&&n!==document.documentElement;n=n.parentElement){
+    const s=getComputedStyle(n);
+    if(/(auto|scroll)/.test(s.overflowY)&&n.scrollHeight>n.clientHeight+1&&n.scrollTop>0)return true;
+  }
+  const se=document.scrollingElement;return !!(se&&se.scrollTop>0);
+}
+function qkTick(){
+  const c=$('#qkclk');if(!c)return;
+  const n=new Date();
+  c.textContent=n.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  const dt=$('#qkdate'),s=qkCap(n.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'}));
+  if(dt&&dt.textContent!==s){dt.textContent=s;if(QK.mo===0)qkCalPaint()}
+}
+function qkCalPaint(){
+  const box=$('#qkcal');if(!box)return;
+  const now=new Date(),d=new Date(now.getFullYear(),now.getMonth()+QK.mo,1),y=d.getFullYear(),m=d.getMonth();
+  const first=(d.getDay()+6)%7,days=new Date(y,m+1,0).getDate(),prev=new Date(y,m,0).getDate(),rows=Math.ceil((first+days)/7);
+  let cells='';
+  for(let i=0;i<rows*7;i++){
+    const n=i-first+1;let dd=n,cls='';
+    if(n<1){dd=prev+n;cls=' o'}else if(n>days){dd=n-days;cls=' o'}
+    else if(QK.mo===0&&n===now.getDate())cls=' td';
+    if(i%7>=5&&!cls.includes('td'))cls+=' we';
+    cells+=`<span class="qkd${cls}">${dd}</span>`;
+  }
+  box.innerHTML=`<div class="qkch"><button data-qkm="-1" aria-label="Предыдущий месяц">${icon('back')}</button><button class="qkcm" data-qkm="0">${qkCap(QK_MON[m])} ${y}</button><button data-qkm="1" aria-label="Следующий месяц" class="qkr">${icon('back')}</button></div><div class="qkw"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span class="we">Сб</span><span class="we">Вс</span></div><div class="qkdg">${cells}</div>`;
+}
+function qkPinHtml(p){
+  const s=p.s;let body;
+  if(s.k==='c'){
+    const rows=s.c.slice(0,6).map(i=>`<div class="qkci${i.x?' dn':''}"><span>${i.x?'✓':''}</span>${esc(i.d)}</div>`).join('');
+    body=(rows||'<div class="qkmore">Пусто</div>')+(s.c.length>6?`<div class="qkmore">и ещё ${s.c.length-6}</div>`:'');
+  }else body=`<div class="qkbd">${s.b.trim()?esc(s.b):'<span class="qkmore">Пусто</span>'}</div>`;
+  return `<div class="qkpin" role="button" tabindex="0" data-qkpin><div class="qkpl">${icon(s.k==='c'?'check':'edit')}На шторке</div><div class="qkpt">${esc(s.t||'Без названия')}</div>${body}</div>`;
+}
 function quickOpen(){
   if($('#qks'))return;
-  const L=extMine().filter(e=>e.id!=='quick');
+  const ord=qkOrder(),L=extMine().filter(e=>e.id!=='quick').map((e,i)=>({e,k:ord.indexOf(e.id)>=0?ord.indexOf(e.id):1e3+i})).sort((a,b)=>a.k-b.k).map(x=>x.e);
+  const pin=qkPin();QK.mo=0;
   const el=document.createElement('div');el.id='qks';
-  el.innerHTML=`<div class="qkp"><div class="qkh"><b>Расширения</b><button data-qkset aria-label="Настройки быстрого доступа">${icon('gear')}</button></div>${L.length?`<div class="qkg">${L.map((e,i)=>`<button class="qkt" data-qk="${e.id}" style="animation-delay:${(.06+i*.05).toFixed(2)}s"><span class="qki">${icon(e.ic)}</span><span class="qkn">${esc(extName(e.id))}</span></button>`).join('')}</div>`:'<div class="qke">Пока нет подключённых расширений</div>'}<div class="qkbar"></div></div>`;
+  el.innerHTML=`<div class="qkp"><div class="qkh"><div><div class="qkclk" id="qkclk"></div><div class="qkdt" id="qkdate"></div></div><button data-qkset aria-label="Настройки быстрого доступа">${icon('gear')}</button></div>${L.length?`<div class="qkg">${L.map((e,i)=>`<button class="qkt" data-qk="${e.id}" style="animation-delay:${(.1+i*.05).toFixed(2)}s"><span class="qki">${icon(e.ic)}</span><span class="qkn">${esc(extName(e.id))}</span></button>`).join('')}</div><div class="qkhint">Удерживайте плитку, чтобы переставить</div>`:'<div class="qke">Пока нет подключённых расширений</div>'}${pin?qkPinHtml(pin):''}<div class="qkc" id="qkcal"></div><div class="qkbar"></div></div>`;
   document.body.appendChild(el);
+  qkTick();qkCalPaint();clearInterval(QK.iv);QK.iv=setInterval(qkTick,1000);
+  qkBindDrag(el.querySelector('.qkg'));
   void el.offsetHeight;el.classList.add('on');
   try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}
 }
 function quickClose(now){
+  clearInterval(QK.iv);QK.drag=false;
   const el=$('#qks');if(!el)return;
   if(now){el.remove();return}
   el.classList.remove('on');setTimeout(()=>{if(el.parentNode&&!el.classList.contains('on'))el.remove()},320);
@@ -2399,32 +2484,82 @@ function quickGo(id){
   const x=EXTS.find(q=>q.id===id);if(!x||!extMine().includes(x))return;
   quickClose(true);fromSet=false;admParent=null;x.open();
 }
+async function qkOpenPin(){
+  const p=qkPin();if(!p)return;
+  const x=EXTS.find(q=>q.id==='notes');if(!x)return;
+  quickClose(true);fromSet=false;admParent=null;
+  try{await x.open()}catch(e){return}
+  if(NTD.some(n=>n.id===p.id))ntOpen(p.id);else{qkPinDel();say('Эта заметка уже удалена',1)}
+}
+/* перестановка плиток: удержать плитку и перетащить; порядок запоминается */
+function qkBindDrag(grid){
+  if(!grid)return;
+  let tm=0,st=null,ghost=null,ph=null,ox=0,oy=0,lastSw=0;
+  const tiles=()=>[...grid.querySelectorAll('.qkt')],clear=()=>{clearTimeout(tm);tm=0};
+  const begin=(tile,x,y)=>{
+    const r=tile.getBoundingClientRect();ph=tile;ox=x-r.left;oy=y-r.top;
+    ghost=tile.cloneNode(true);ghost.className='qkt qkghost';ghost.removeAttribute('data-qk');
+    Object.assign(ghost.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:r.height+'px'});
+    $('#qks').appendChild(ghost);tile.classList.add('qkph');QK.drag=true;
+    try{navigator.vibrate&&navigator.vibrate(14)}catch(e){}
+  };
+  const move=(x,y)=>{
+    if(!ghost)return;
+    ghost.style.left=(x-ox)+'px';ghost.style.top=(y-oy)+'px';
+    const now=Date.now();if(now-lastSw<140)return;
+    const all=tiles(),tg=all.find(t=>{if(t===ph)return false;const r=t.getBoundingClientRect();return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom});
+    if(!tg)return;
+    const before=new Map(all.map(t=>[t,t.getBoundingClientRect()])),pi=all.indexOf(ph),ti=all.indexOf(tg);
+    grid.insertBefore(ph,pi<ti?tg.nextSibling:tg);lastSw=now;
+    for(const t of all){if(t===ph)continue;const a=before.get(t),b=t.getBoundingClientRect(),dx=a.left-b.left,dy=a.top-b.top;if(dx||dy)t.animate([{transform:`translate(${dx}px,${dy}px)`},{transform:'none'}],{duration:180,easing:'ease'})}
+  };
+  const end=()=>{
+    clear();if(!QK.drag)return;
+    QK.drag=false;QK.noClick=Date.now();
+    if(ghost){ghost.remove();ghost=null}
+    if(ph){ph.classList.remove('qkph');ph=null}
+    sv('tgqord',tiles().map(t=>t.dataset.qk));
+  };
+  grid.addEventListener('touchstart',e=>{const tile=e.target.closest('.qkt');if(!tile||e.touches.length!==1)return;const t=e.touches[0];st={x:t.clientX,y:t.clientY};clear();tm=setTimeout(()=>begin(tile,st.x,st.y),380)},{passive:true});
+  grid.addEventListener('touchmove',e=>{const t=e.touches[0];if(!QK.drag){if(tm&&st&&(Math.abs(t.clientX-st.x)>9||Math.abs(t.clientY-st.y)>9))clear();return}if(e.cancelable)e.preventDefault();move(t.clientX,t.clientY)},{passive:false});
+  grid.addEventListener('touchend',end);grid.addEventListener('touchcancel',end);
+  const mm=e=>{if(QK.drag)move(e.clientX,e.clientY);else if(tm&&st&&(Math.abs(e.clientX-st.x)>9||Math.abs(e.clientY-st.y)>9))clear()};
+  const mu=()=>{window.removeEventListener('mousemove',mm);window.removeEventListener('mouseup',mu);end()};
+  grid.addEventListener('mousedown',e=>{const tile=e.target.closest('.qkt');if(!tile||e.button!==0)return;st={x:e.clientX,y:e.clientY};clear();tm=setTimeout(()=>begin(tile,st.x,st.y),380);window.addEventListener('mousemove',mm);window.addEventListener('mouseup',mu)});
+}
 document.addEventListener('click',e=>{
   const el=$('#qks');if(!el)return;
-  const b=e.target.closest('[data-qk]');if(b){quickGo(b.dataset.qk);return}
+  const mo=e.target.closest('[data-qkm]');if(mo){const v=+mo.dataset.qkm;QK.mo=v===0?0:QK.mo+v;qkCalPaint();return}
+  if(e.target.closest('[data-qkpin]')){qkOpenPin();return}
+  const b=e.target.closest('[data-qk]');if(b){if(Date.now()-QK.noClick<500)return;quickGo(b.dataset.qk);return}
   if(e.target.closest('[data-qkset]')){quickClose(true);openExtSet('quick',true);return}
   if(!e.target.closest('.qkp'))quickClose();
 });
 document.addEventListener('keydown',e=>{if(e.key==='Escape')quickClose()});
-const QK={trk:false,x:0,y:0};
+/* свайп вниз: из любого места главного экрана, если под пальцем нечего прокручивать вверх (у верхнего края сработает раньше) */
 document.addEventListener('touchstart',e=>{
-  QK.trk=false;
-  const el=$('#qks');
-  if(el){QK.sx=e.touches[0].clientY;QK.up=!!e.target.closest('#qks');return}
+  QK.trk=false;QK.up=false;
+  const root=$('#qks');
+  if(root){
+    const tg=e.target,p=root.querySelector('.qkp');
+    QK.sy=e.touches[0].clientY;
+    QK.up=!tg.closest('.qkp')||!!tg.closest('.qkbar')||!!(p&&p.scrollHeight<=p.clientHeight+1&&!tg.closest('.qkg'));
+    return;
+  }
   if(e.touches.length!==1||!quickOn()||!quickIdle())return;
   const t=e.touches[0];
-  if(t.clientY>150||t.clientX<32)return;
+  if(t.clientX<32)return;
   if(e.target.closest('input,select,textarea,#pl,#sortm,#fltm,#fabm'))return;
-  QK.x=t.clientX;QK.y=t.clientY;QK.trk=true;
+  if(qkCanUp(e.target))return;
+  QK.x=t.clientX;QK.y=t.clientY;QK.thr=t.clientY<150?64:90;QK.trk=true;
 },{passive:true});
 document.addEventListener('touchmove',e=>{
-  const el=$('#qks');
-  if(el&&QK.up&&e.touches[0].clientY-QK.sx<-60){QK.up=false;quickClose();return}
+  if($('#qks')){if(QK.up&&!QK.drag&&e.touches[0].clientY-QK.sy<-60){QK.up=false;quickClose()}return}
   if(!QK.trk)return;
   const t=e.touches[0],dx=t.clientX-QK.x,dy=t.clientY-QK.y;
-  if(Math.abs(dx)>Math.abs(dy)*.8&&Math.abs(dx)>14){QK.trk=false;return}
+  if(Math.abs(dx)>Math.abs(dy)*.6&&Math.abs(dx)>14){QK.trk=false;return}
   if(dy>12&&e.cancelable)e.preventDefault();
-  if(dy>=64){QK.trk=false;quickOpen()}
+  if(dy>=QK.thr){QK.trk=false;quickOpen()}
 },{passive:false});
 document.addEventListener('touchend',()=>{QK.trk=false;QK.up=false});
 document.addEventListener('touchcancel',()=>{QK.trk=false;QK.up=false});
@@ -2456,7 +2591,7 @@ function instClose(){
 }
 const instBody=(ev,ios)=>{
   const shareI='<svg class="i" viewBox="0 0 24 24"><path d="M12 15V3M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>';
-  if(ev)return{main:`<button class="ibtn" data-inst="go">Установить</button>`,hint:'Установится как приложение, а не как ярлык.'};
+  if(ev)return{main:`<button class="ibtn" data-inst="go">Установить</button>`,hint:''};
   if(ios)return{main:`<ol class="ist"><li><b>1</b><span>Нажмите «Поделиться» ${shareI} внизу экрана Safari</span></li><li><b>2</b><span>Выберите «На экран “Домой”»</span></li><li><b>3</b><span>Нажмите «Добавить»</span></li></ol>`,hint:'Открывайте сайт именно в Safari. Значок появится на главном экране и запустится как приложение.'};
   return{main:`<ol class="ist"><li><b>1</b><span>Откройте меню браузера (три точки)</span></li><li><b>2</b><span>Выберите «Установить приложение» или «Добавить на главный экран»</span></li></ol>`,hint:'Лучше всего это работает в Chrome. Если такого пункта нет, возможно, приложение уже установлено.'};
 };
@@ -2466,7 +2601,7 @@ function installOpen(manual){
   if(instStandalone()){if(manual)say('Приложение уже установлено');return}
   const ev=INST.ev,b=instBody(ev,instIOS());
   const el=document.createElement('div');el.id='inst';
-  el.innerHTML=`<div class="ip"><img class="iic" src="icon-v4-192.png" alt=""><div class="it">Установить «Облачко»</div><div class="id">Работает как отдельное приложение: свой значок, полный экран и быстрый запуск.</div>${b.main}<div class="ihint">${b.hint}</div><button class="ibtn2" data-inst="no">Не сейчас</button></div>`;
+  el.innerHTML=`<div class="ip"><img class="iic" src="icon-v4-192.png" alt=""><div class="it">Установить «Облачко»</div><div class="id">Ваши данные всегда под рукой.</div>${b.main}${b.hint?`<div class="ihint">${b.hint}</div>`:''}<button class="ibtn2" data-inst="no">Не сейчас</button></div>`;
   document.body.appendChild(el);void el.offsetHeight;el.classList.add('on');
 }
 /* полноэкранная страница установки в стиле приложения */
@@ -2474,9 +2609,9 @@ function instPage(manual){
   if($('#instp'))return;
   if(instStandalone()){if(manual)say('Приложение уже установлено');return}
   const ev=INST.ev,b=instBody(ev,instIOS());
-  const row=(ic,h,d)=>`<div class="ipr"><span class="ipi">${icon(ic)}</span><div><b>${h}</b><span>${d}</span></div></div>`;
+  const row=(ic,h,d)=>`<div class="ipr"><span class="ipi">${icon(ic)}</span><div><b>${h}</b>${d?`<span>${d}</span>`:''}</div></div>`;
   const el=document.createElement('div');el.id='instp';el.className='pg ipg';
-  el.innerHTML=`<div class="pgin"><svg class="rglogo ipl" viewBox="0 0 40 28" aria-hidden="true"><path d="M10 23a6.5 6.5 0 0 1-1-12.9A9 9 0 0 1 26 8.5 7 7 0 0 1 28 23z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="15" cy="15.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M17.2 15.5h6m-2 0v2.2m-2.4-2.2v1.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><h1 class="pgt">Облачко</h1><p class="pgs">Установите приложение</p><div class="pgc ipc">${row('expand','Полный экран','Без адресной строки и лишних кнопок браузера')}${row('bolt','Быстрый запуск','Открывается сразу, как обычное приложение')}${row('wifioff','Работает без интернета','Ваши данные и музыка под рукой даже офлайн')}</div>${b.main.replace('class="ibtn"','class="ibtn ipb"')}<p class="ipk">${b.hint}</p><button class="ipn" data-inst="no">${ev?'Продолжить в браузере':'Закрыть'}</button></div>`;
+  el.innerHTML=`<div class="pgin"><svg class="rglogo ipl" viewBox="0 0 40 28" aria-hidden="true"><path d="M10 23a6.5 6.5 0 0 1-1-12.9A9 9 0 0 1 26 8.5 7 7 0 0 1 28 23z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><circle cx="15" cy="15.5" r="2.2" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M17.2 15.5h6m-2 0v2.2m-2.4-2.2v1.6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><h1 class="pgt">Облачко</h1><p class="pgs">Установите приложение</p><div class="pgc ipc">${row('cloud','Ваши данные всегда под рукой','')}</div>${b.main.replace('class="ibtn"','class="ibtn ipb"')}${b.hint?`<p class="ipk">${b.hint}</p>`:''}<button class="ipn" data-inst="no">${ev?'Продолжить в браузере':'Закрыть'}</button></div>`;
   document.body.appendChild(el);void el.offsetHeight;el.classList.add('on');
 }
 document.addEventListener('click',async e=>{
@@ -2636,8 +2771,8 @@ function ntPush(n){
   const p=(NTQ[n.id]||Promise.resolve()).then(run);NTQ[n.id]=p.catch(()=>{});
   return p.then(()=>true,x=>{const f=/FLOOD_WAIT_(\d+)/.exec(String(err(x))+' '+String(x&&x.message||x));if(f){FLOODT=Date.now()+(+f[1]+1)*1000;say('Лимит Telegram: досохраню автоматически через '+f[1]+' с',1)}else say('Заметка не сохранилась в облаке: '+err(x),1);return false})}
 function ntFlush(){clearTimeout(NT.t);const L=[...NT.d];NT.d.clear();for(const n of L)ntPush(n)}
-const ntTouch=()=>{NT.n.up=Date.now();NT.d.add(NT.n);clearTimeout(NT.t);NT.t=setTimeout(ntFlush,1500)};
-function ntDel(n){NTS=NTS.filter(r=>!(r.id===n.id&&r.u===ntMe()));NT.d.delete(n);
+const ntTouch=()=>{NT.n.up=Date.now();NT.d.add(NT.n);clearTimeout(NT.t);NT.t=setTimeout(ntFlush,1500);try{qkPinUpd(NT.n)}catch(e){}};
+function ntDel(n){try{qkPinDelId(n.id)}catch(e){}NTS=NTS.filter(r=>!(r.id===n.id&&r.u===ntMe()));NT.d.delete(n);
   const p=(NTQ[n.id]||Promise.resolve()).then(async()=>{const m=[...(n._m||[])];for(let i=0;i<m.length;i+=100)await withChat(()=>client.deleteMessages(S.chat,m.slice(i,i+100)))});
   NTQ[n.id]=p.catch(()=>{});p.catch(e=>say('Не удалось удалить в облаке: '+err(e),1))}
 /* заметки, которые раньше лежали только на устройстве, переезжают в облако */
@@ -2721,7 +2856,7 @@ async function ntImage(n){
     if(navigator.canShare&&navigator.canShare({files:[f]}))await navigator.share({files:[f],title:ntTtl(n)}).catch(()=>{});
     else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='zametka.png';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),5000);say('Картинка сохранена')}
   }catch(e){say('Не удалось сделать картинку',1)}}
-function ntMenu(){const n=NT.n;if(!n)return;ntSheet([
+function ntMenu(){const n=NT.n;if(!n)return;ntSheet([...qkMenuItem(n),
   {t:n.p?'Открепить':'Закрепить',ic:'check',fn:()=>{n.p=n.p?0:1;ntTouch();say(n.p?'Закреплено':'Откреплено')}},
   {t:n.k==='c'?'Преобразовать в текст':'Преобразовать в чек-лист',ic:n.k==='c'?'edit':'check',fn:()=>{
     if(n.k==='t'){n.c=n.b.split('\n').filter(s=>s.trim()).map(d=>({x:0,d}));if(!n.c.length)n.c=[{x:0,d:''}];n.b='';n.k='c'}
@@ -5688,7 +5823,7 @@ $('#out').onclick=async()=>{
   if(!confirm('Выйти из аккаунта? Файлы в канале останутся.'))return;
   jlog('out','');for(let n=0;n<8&&(JQ.length||jBusy);n++){await jflush();await sleep(200)}
   try{if(client){if(client.signOut)await client.signOut();else if(client.logOut)await client.logOut()}}catch(e){}
-  try{Object.keys(localStorage).filter(k=>k.includes(PFX)||k==='tgm'||k==='tgun'||['tgmp','tglast','tgpos','tgspd','tgshm','tgtree','tgcttl','tgrawkeep','tgrawwhy','tgmode','tgquick'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
+  try{Object.keys(localStorage).filter(k=>k.includes(PFX)||k==='tgm'||k==='tgun'||['tgmp','tglast','tgpos','tgspd','tgshm','tgtree','tgcttl','tgrawkeep','tgrawwhy','tgmode','tgquick','tgnpin','tgqord'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
   try{idbOp('f','readwrite',s=>s.clear());idbOp('a','readwrite',s=>s.clear());idbOp('m','readwrite',s=>s.clear())}catch(e){}try{BIO.e={};BIO.eno={};saveBio()}catch(e){}WARM.clear();
   S={};ready=false;showSetup=true;files=[];folders=[];cur='';C.clear();
   for(const i of['#aid','#ahash','#phone','#combo'])$(i).value='';drawCs();
