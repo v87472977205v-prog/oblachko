@@ -490,10 +490,13 @@ body.treemode #rbar,body.treemode #repl{display:none!important}
 #qks.on .qkp{transform:none}
 #qks .qkh{display:flex;align-items:flex-start;justify-content:space-between;padding:2px 2px 14px}
 #qks .qkclk{font:200 78px/1 system-ui,-apple-system,'Segoe UI',sans-serif;letter-spacing:-3px;font-variant-numeric:tabular-nums;color:var(--ink);text-shadow:0 0 28px color-mix(in srgb,var(--acc) 35%,transparent)}
-#qks .qkdt{margin-top:6px;font-size:17px;font-weight:500;color:var(--acc);letter-spacing:.2px}
+#qks .qkdt{display:inline-flex;align-items:center;gap:6px;margin-top:6px;padding:4px 0;background:none;border:0;border-radius:8px;font:500 17px system-ui,-apple-system,sans-serif;color:var(--acc);letter-spacing:.2px}
+#qks .qkdt .i{width:16px;height:16px;transition:transform .25s}
+#qks .qkdt.open .i{transform:rotate(180deg)}
 #qks .qkh>button{flex:none;width:40px;height:40px;border-radius:50%;padding:0;display:grid;place-items:center;background:color-mix(in srgb,var(--ink) 7%,transparent);border:1px solid color-mix(in srgb,var(--ink) 12%,transparent);color:var(--ink)}
 #qks .qkh .i{width:19px;height:19px}
-#qks .qkc{margin:12px 0 0;padding:12px 12px 10px;border-radius:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 9%,transparent),color-mix(in srgb,var(--ink) 3%,transparent));border:1px solid color-mix(in srgb,var(--ink) 12%,transparent)}
+#qks .qkc{max-height:0;opacity:0;margin:0;padding:0 12px;border-width:0;overflow:hidden;transition:max-height .38s ease,opacity .25s,margin .25s,padding .25s;border-radius:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 9%,transparent),color-mix(in srgb,var(--ink) 3%,transparent));border:0 solid color-mix(in srgb,var(--ink) 12%,transparent)}
+#qks .qkc.open{max-height:460px;opacity:1;margin:0 0 12px;padding:12px 12px 10px;border-width:1px}
 #qks .qkch{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
 #qks .qkch button{border:0;background:transparent;color:var(--ink);padding:6px 10px;border-radius:12px;font-size:16px;font-weight:700}
 #qks .qkch button .i{width:18px;height:18px}
@@ -516,6 +519,28 @@ body.treemode #rbar,body.treemode #repl{display:none!important}
 #qks .qkci.dn{opacity:.5;text-decoration:line-through}
 #qks .qkci.dn span{background:var(--acc);border-color:var(--acc)}
 #qks .qkmore{font-size:13px;color:var(--mute);padding-top:2px}
+#qks .qkm{margin-bottom:12px;padding:14px 14px 12px;border-radius:24px;background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 10%,transparent),color-mix(in srgb,var(--ink) 3%,transparent));border:1px solid color-mix(in srgb,var(--ink) 13%,transparent)}
+#qks .qkmh{display:flex;align-items:center;gap:12px}
+#qks .qkcv,#qks .qkmi{flex:none;width:58px;height:58px;border-radius:16px;overflow:hidden;padding:0;display:grid;place-items:center;background:color-mix(in srgb,var(--acc) 16%,transparent);border:0;color:var(--acc);box-shadow:0 0 18px color-mix(in srgb,var(--acc) 20%,transparent)}
+#qks .qkcv img{width:100%;height:100%;object-fit:cover}
+#qks .qkcv .i,#qks .qkmi .i{width:26px;height:26px}
+#qks .qkmt{flex:1;min-width:0}
+#qks .qkmt b{display:block;font-size:16px;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#qks .qkmt span{display:block;margin-top:3px;font-size:13px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#qks .qkmp{margin-top:12px}
+#qks .qkpr{height:18px;display:flex;align-items:center;cursor:pointer;position:relative}
+#qks .qkpr::before{content:"";position:absolute;left:0;right:0;height:5px;border-radius:99px;background:color-mix(in srgb,var(--ink) 14%,transparent)}
+#qks .qkpr i{position:relative;display:block;height:5px;width:0;border-radius:99px;background:linear-gradient(90deg,var(--acc),color-mix(in srgb,var(--acc) 60%,#fff));box-shadow:0 0 10px color-mix(in srgb,var(--acc) 50%,transparent)}
+#qks .qkmtm{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mute);font-variant-numeric:tabular-nums;margin-top:1px}
+#qks .qkmb{display:flex;align-items:center;justify-content:center;gap:26px;margin-top:6px}
+#qks .qkmb button{width:46px;height:46px;border-radius:50%;padding:0;display:grid;place-items:center;background:transparent;border:0;color:var(--ink)}
+#qks .qkmb button .i{width:26px;height:26px}
+#qks .qkmb .qkbig{width:58px;height:58px;background:var(--acc);color:var(--accink);box-shadow:0 6px 20px color-mix(in srgb,var(--acc) 38%,transparent)}
+#qks .qkmb .qkbig svg{width:26px;height:26px;fill:currentColor}
+#qks .qkme{display:flex;align-items:center;gap:12px}
+#qks .qkgo{flex:none;width:48px;height:48px;border-radius:50%;padding:0;display:grid;place-items:center;background:var(--acc);color:var(--accink);border:0;box-shadow:0 6px 20px color-mix(in srgb,var(--acc) 38%,transparent)}
+#qks .qkgo svg{width:22px;height:22px;fill:currentColor}
+body.qkmusic #pl:not(.full){display:none!important}
 #qks .qkg{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 #qks .qkt{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:108px;padding:14px 8px;border-radius:22px;background:linear-gradient(160deg,color-mix(in srgb,var(--ink) 10%,transparent),color-mix(in srgb,var(--ink) 3%,transparent));border:1px solid color-mix(in srgb,var(--ink) 13%,transparent);color:var(--ink);font-size:12.5px;font-weight:600;line-height:1.2;text-align:center;opacity:0;transform:translateY(-10px) scale(.92);animation:qkin .4s ease-out forwards;-webkit-touch-callout:none;user-select:none;-webkit-user-select:none}
 #qks .qkt:active{filter:brightness(1.25)}
@@ -2369,6 +2394,8 @@ function openExtSet(id,top){
   if(id==='quick'){
     const on=ld('tgquick','on')!=='off';
     h+=`<div class="swc swtog"><div class="swt"><span class="swn1">Быстрый доступ</span><span class="swn2">Включено: кнопка «Расширения» убирается из меню, а по свайпу вниз из любого места главного экрана открывается шторка с часами, календарём и плитками расширений.</span></div><button class="swsw" id="quicksw" role="switch" aria-checked="${on}" aria-label="Быстрый доступ к расширениям"></button></div>`;
+    const mus=ld('tgqmus','off')==='on';
+    h+=`<div class="swc swtog"><div class="swt"><span class="swn1">Музыка на шторке</span><span class="swn2">Плеер показывается в шторке под временем и над плитками. Нижняя панель плеера при этом скрывается.</span></div><button class="swsw" id="qkmussw" role="switch" aria-checked="${mus}" aria-label="Музыка на шторке"></button></div>`;
   }
   $('#admb').innerHTML=h+'</div>';
 }
@@ -2389,6 +2416,8 @@ async function treeGo(r){
   }catch(x){say(err(x),1)}
 }
 $('#admb').addEventListener('click',e=>{
+  const qm=e.target.closest&&e.target.closest('#qkmussw');
+  if(qm){const on=qm.getAttribute('aria-checked')!=='true';sv('tgqmus',on?'on':'off');qm.setAttribute('aria-checked',on);quickSync();say(on?'Музыка перенесена на шторку':'Музыка снова внизу');return}
   const qs=e.target.closest&&e.target.closest('#quicksw');
   if(qs){const on=qs.getAttribute('aria-checked')!=='true';sv('tgquick',on?'on':'off');qs.setAttribute('aria-checked',on);extSync();say(on?'Быстрый доступ включён':'Быстрый доступ выключен');return}
   const sw=e.target.closest&&e.target.closest('#treesw');
@@ -2402,9 +2431,12 @@ $('#treeb').onclick=()=>{if(!treeOn())return;closeDrawer();fromSet=false;admPare
    Когда включено (расширение выдано и тумблер в его настройках включён): кнопка «Расширения» пропадает из шторки,
    а свайп вниз от верха главного экрана открывает панель с плитками доступных расширений. */
 function quickOn(){return extMine().some(e=>e.id==='quick')&&ld('tgquick','on')!=='off'}
+const qkMusOn=()=>quickOn()&&ld('tgqmus','off')==='on';
 function quickSync(){
   const on=quickOn();
   document.documentElement.style.overscrollBehaviorY=on?'contain':'';
+  document.body.classList.toggle('qkmusic',qkMusOn());   /* плеер переехал на шторку: нижняя панель плеера скрыта */
+  try{showPl(!$('#pl').hidden)}catch(e){}
   if(!on)quickClose(true);
 }
 const quickIdle=()=>!$('#app').hidden&&$('#drawer').hidden&&$('#adm').hidden&&$('#vw').hidden&&$('#pick').hidden&&$('#kpick').hidden&&$('#up').hidden&&$('#pw').hidden&&!selMode&&!$('#pl').classList.contains('full')&&!$('#qks');
@@ -2439,6 +2471,7 @@ function qkTick(){
   c.textContent=n.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
   const dt=$('#qkdate'),s=qkCap(n.toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'}));
   if(dt&&dt.textContent!==s){dt.textContent=s;if(QK.mo===0)qkCalPaint()}
+  qkMusTick();
 }
 function qkCalPaint(){
   const box=$('#qkcal');if(!box)return;
@@ -2454,6 +2487,28 @@ function qkCalPaint(){
   }
   box.innerHTML=`<div class="qkch"><button data-qkm="-1" aria-label="Предыдущий месяц">${icon('back')}</button><button class="qkcm" data-qkm="0">${qkCap(QK_MON[m])} ${y}</button><button data-qkm="1" aria-label="Следующий месяц" class="qkr">${icon('back')}</button></div><div class="qkw"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span class="we">Сб</span><span class="we">Вс</span></div><div class="qkdg">${cells}</div>`;
 }
+const qkFire=sel=>{const b=$(sel);if(b)b.dispatchEvent(new MouseEvent('click',{bubbles:false}))};   /* нажать кнопку плеера, не закрывая шторку */
+const QK_PLAY='<svg viewBox="0 0 24 24"><path d="M8 5.2v13.6a1 1 0 0 0 1.5.86l11-6.8a1 1 0 0 0 0-1.72l-11-6.8A1 1 0 0 0 8 5.2z"/></svg>',QK_PAUSE='<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4.2" height="14" rx="1.3"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.3"/></svg>';
+function qkMusPaint(){
+  const box=$('#qkmus');if(!box)return;
+  const f=pi>=0?pq[pi]:null;QK.mid=f?f.id:0;
+  if(!f){
+    box.innerHTML=`<div class="qkme"><span class="qkmi">${icon('music')}</span><div class="qkmt"><b>Ничего не играет</b><span>Нажмите, чтобы продолжить</span></div><button class="qkgo" data-qkmr aria-label="Включить музыку">${QK_PLAY}</button></div>`;return;
+  }
+  const cv=COV.get(f.id),ti=($('#pt')||{}).textContent||dispName(f.name),ar=($('#partist')||{}).textContent||'';
+  box.innerHTML=`<div class="qkmh"><button class="qkcv" data-qkmo aria-label="Открыть плеер">${cv?`<img src="${esc(cv)}" alt="">`:icon('music')}</button><div class="qkmt" data-qkmo><b>${esc(ti)}</b>${ar?`<span>${esc(ar)}</span>`:''}</div></div><div class="qkmp"><div class="qkpr" data-qkmseek><i id="qkmf"></i></div><div class="qkmtm"><span id="qkmcur">0:00</span><span id="qkmdur">0:00</span></div></div><div class="qkmb"><button data-qkmp="prev" aria-label="Предыдущий">${icon('prev')}</button><button class="qkbig" data-qkmp="play" id="qkmpl" aria-label="Играть или пауза"></button><button data-qkmp="next" aria-label="Следующий">${icon('next')}</button></div>`;
+  qkMusTick();
+}
+function qkMusTick(){
+  const box=$('#qkmus');if(!box)return;
+  const id=pi>=0&&pq[pi]?pq[pi].id:0;
+  if(id!==QK.mid){qkMusPaint();return}
+  if(!id)return;
+  const d=au.duration,c=au.currentTime,f=$('#qkmf');
+  if(f)f.style.width=(d>0&&isFinite(d)?Math.min(100,c/d*100):0)+'%';
+  const a=$('#qkmcur'),b=$('#qkmdur');if(a)a.textContent=fmt(c);if(b)b.textContent=d>0&&isFinite(d)?fmt(d):'0:00';
+  const pl=$('#qkmpl');if(pl){const pp=!au.paused&&!loadingTrack?'p':'s';if(pl.dataset.s!==pp){pl.dataset.s=pp;pl.innerHTML=pp==='p'?QK_PAUSE:QK_PLAY}}
+}
 function qkPinHtml(p){
   const s=p.s;let body;
   if(s.k==='c'){
@@ -2467,9 +2522,9 @@ function quickOpen(){
   const ord=qkOrder(),L=extMine().filter(e=>e.id!=='quick').map((e,i)=>({e,k:ord.indexOf(e.id)>=0?ord.indexOf(e.id):1e3+i})).sort((a,b)=>a.k-b.k).map(x=>x.e);
   const pin=qkPin();QK.mo=0;
   const el=document.createElement('div');el.id='qks';
-  el.innerHTML=`<div class="qkp"><div class="qkh"><div><div class="qkclk" id="qkclk"></div><div class="qkdt" id="qkdate"></div></div><button data-qkset aria-label="Настройки быстрого доступа">${icon('gear')}</button></div>${L.length?`<div class="qkg">${L.map((e,i)=>`<button class="qkt" data-qk="${e.id}" style="animation-delay:${(.1+i*.05).toFixed(2)}s"><span class="qki">${icon(e.ic)}</span><span class="qkn">${esc(extName(e.id))}</span></button>`).join('')}</div><div class="qkhint">Удерживайте плитку, чтобы переставить</div>`:'<div class="qke">Пока нет подключённых расширений</div>'}${pin?qkPinHtml(pin):''}<div class="qkc" id="qkcal"></div><div class="qkbar"></div></div>`;
+  el.innerHTML=`<div class="qkp"><div class="qkh"><div><div class="qkclk" id="qkclk"></div><button class="qkdt" id="qkdbtn" data-qkcal aria-label="Показать календарь"><span id="qkdate"></span>${icon('down')}</button></div><button data-qkset aria-label="Настройки быстрого доступа">${icon('gear')}</button></div><div class="qkc" id="qkcal"></div>${ld('tgqmus','off')==='on'?'<div class="qkm" id="qkmus"></div>':''}${L.length?`<div class="qkg">${L.map((e,i)=>`<button class="qkt" data-qk="${e.id}" style="animation-delay:${(.1+i*.05).toFixed(2)}s"><span class="qki">${icon(e.ic)}</span><span class="qkn">${esc(extName(e.id))}</span></button>`).join('')}</div><div class="qkhint">Удерживайте плитку, чтобы переставить</div>`:'<div class="qke">Пока нет подключённых расширений</div>'}${pin?qkPinHtml(pin):''}<div class="qkbar"></div></div>`;
   document.body.appendChild(el);
-  qkTick();qkCalPaint();clearInterval(QK.iv);QK.iv=setInterval(qkTick,1000);
+  QK.mid=-1;qkTick();qkCalPaint();qkMusPaint();clearInterval(QK.iv);QK.iv=setInterval(qkTick,500);
   qkBindDrag(el.querySelector('.qkg'));
   void el.offsetHeight;el.classList.add('on');
   try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}
@@ -2528,8 +2583,13 @@ function qkBindDrag(grid){
   grid.addEventListener('mousedown',e=>{const tile=e.target.closest('.qkt');if(!tile||e.button!==0)return;st={x:e.clientX,y:e.clientY};clear();tm=setTimeout(()=>begin(tile,st.x,st.y),380);window.addEventListener('mousemove',mm);window.addEventListener('mouseup',mu)});
 }
 document.addEventListener('click',e=>{
-  const el=$('#qks');if(!el)return;
+  const el=$('#qks');if(!el||!e.isTrusted)return;
   const mo=e.target.closest('[data-qkm]');if(mo){const v=+mo.dataset.qkm;QK.mo=v===0?0:QK.mo+v;qkCalPaint();return}
+  if(e.target.closest('[data-qkcal]')){const c=$('#qkcal'),d=$('#qkdbtn');if(c){const o=!c.classList.contains('open');c.classList.toggle('open',o);d.classList.toggle('open',o);if(o){QK.mo=0;qkCalPaint()}}return}
+  const mp=e.target.closest('[data-qkmp]');if(mp){const k=mp.dataset.qkmp;if(k==='prev')qkFire('#pprev');else if(k==='next')qkFire('#pnext');else qkFire('#pplay');setTimeout(qkMusTick,150);return}
+  if(e.target.closest('[data-qkmo]')){if(pi>=0){quickClose(true);showPl(true);expandPl()}return}
+  if(e.target.closest('[data-qkmr]')){quickClose(true);if(lastAud()||shSaved()||audioList().length)qkFire('#pbtn');else say('Включите трек из списка');return}
+  const sk=e.target.closest('[data-qkmseek]');if(sk){const r=sk.getBoundingClientRect(),d=au.duration;if(d>0&&isFinite(d)){au.currentTime=Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*d;qkMusTick()}return}
   if(e.target.closest('[data-qkpin]')){qkOpenPin();return}
   const b=e.target.closest('[data-qk]');if(b){if(Date.now()-QK.noClick<500)return;quickGo(b.dataset.qk);return}
   if(e.target.closest('[data-qkset]')){quickClose(true);openExtSet('quick',true);return}
@@ -4385,7 +4445,7 @@ const fmt=t=>{if(!isFinite(t))return'0:00';t=Math.floor(t);return Math.floor(t/6
 let loadingTrack=false,playTok=0;
 const setPlBtn=()=>{$('#pplay').innerHTML=loadingTrack?'<svg class="i plspin" viewBox="0 0 24 24" style="width:28px;height:28px"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.5" stroke-dasharray="36 20" stroke-linecap="round"/></svg>':au.paused?'<svg class="i" viewBox="0 0 24 24" style="fill:currentColor;width:28px;height:28px"><path d="M8 5l11 7-11 7z"/></svg>':'<svg class="i" viewBox="0 0 24 24" style="fill:currentColor;width:28px;height:28px"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg>'};
 setPlBtn();
-function showPl(on){$('#pl').hidden=!on;document.body.classList.toggle('pl-on',on)}
+function showPl(on){$('#pl').hidden=!on;document.body.classList.toggle('pl-on',on&&!document.body.classList.contains('qkmusic'))}
 let loadT0=0;
 const dispName=n=>String(n||'').replace(/\.(mp3|m4a|flac|wav|ogg|oga|opus|aac|wma)$/i,'');
 async function playAt(i,auto=true,resume=false,force=false){
@@ -5823,7 +5883,7 @@ $('#out').onclick=async()=>{
   if(!confirm('Выйти из аккаунта? Файлы в канале останутся.'))return;
   jlog('out','');for(let n=0;n<8&&(JQ.length||jBusy);n++){await jflush();await sleep(200)}
   try{if(client){if(client.signOut)await client.signOut();else if(client.logOut)await client.logOut()}}catch(e){}
-  try{Object.keys(localStorage).filter(k=>k.includes(PFX)||k==='tgm'||k==='tgun'||['tgmp','tglast','tgpos','tgspd','tgshm','tgtree','tgcttl','tgrawkeep','tgrawwhy','tgmode','tgquick','tgnpin','tgqord'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
+  try{Object.keys(localStorage).filter(k=>k.includes(PFX)||k==='tgm'||k==='tgun'||['tgmp','tglast','tgpos','tgspd','tgshm','tgtree','tgcttl','tgrawkeep','tgrawwhy','tgmode','tgquick','tgnpin','tgqord','tgqmus'].includes(k)).forEach(k=>localStorage.removeItem(k))}catch(e){}
   try{idbOp('f','readwrite',s=>s.clear());idbOp('a','readwrite',s=>s.clear());idbOp('m','readwrite',s=>s.clear())}catch(e){}try{BIO.e={};BIO.eno={};saveBio()}catch(e){}WARM.clear();
   S={};ready=false;showSetup=true;files=[];folders=[];cur='';C.clear();
   for(const i of['#aid','#ahash','#phone','#combo'])$(i).value='';drawCs();
