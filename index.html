@@ -595,6 +595,33 @@ body.qkmusic #pl:not(.full){display:none!important}
 #inst .ist .i{display:inline-block;width:17px;height:17px;vertical-align:-3px;color:var(--acc)}
 #inst .ihint{font-size:12.5px;color:var(--mute);line-height:1.45;margin:0 4px 6px;text-align:center}
 @media (prefers-reduced-motion:reduce){#inst .ip{transition:none}}
+/* Стего-утилита */
+.gls0{display:flex;flex-direction:column;gap:14px;min-width:0}
+.gls0[hidden]{display:none}
+.stg .sgtabs button{display:flex;align-items:center;justify-content:center;gap:8px}.stg .sgtabs .i{width:18px;height:18px}
+.stg .sgtabs{padding:4px;border-radius:18px;background:color-mix(in srgb,var(--ink) 6%,transparent)}
+.sgf{display:flex;align-items:center;gap:12px;width:100%;padding:14px;border-radius:16px;border:1.5px dashed color-mix(in srgb,var(--acc) 50%,transparent);background:color-mix(in srgb,var(--acc) 7%,transparent);color:var(--ink);cursor:pointer;text-align:left;position:relative}
+.sgf input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:0}
+.sgfi{flex:none;width:44px;height:44px;border-radius:14px;display:grid;place-items:center;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc)}
+.sgfi .i{width:22px;height:22px}
+.sgft{min-width:0;display:block}.sgft b{display:block;font-size:15px;font-weight:700}.sgft span{display:block;margin-top:2px;font-size:12.5px;color:var(--mute);word-break:break-word}
+.sgor{margin:12px 2px 8px;font-size:12.5px;color:var(--mute)}
+.glin{display:block;width:100%;padding:13px 14px;border-radius:14px;border:1px solid color-mix(in srgb,var(--ink) 15%,transparent);background:color-mix(in srgb,var(--ink) 6%,transparent);color:var(--ink);font:inherit;font-size:15px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);resize:vertical}
+.glin::placeholder{color:var(--mute)}
+.glin:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 20%,transparent)}
+.sgmt{margin-top:16px}
+.glseg.g4{grid-template-columns:repeat(4,1fr)}
+.sgzr{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;font-size:14.5px}
+.sgpv{margin-top:10px;padding:12px;border-radius:14px;background:color-mix(in srgb,var(--ink) 5%,transparent);border:1px solid color-mix(in srgb,var(--ink) 10%,transparent);font-size:13.5px}
+.sgfn{font-weight:700;word-break:break-word}.sgfm{margin-top:2px;color:var(--mute);font-size:12.5px}
+.sgpv img,.sgpv video{display:block;max-width:100%;max-height:220px;margin-top:10px;border-radius:10px}
+.sgpv audio{display:block;width:100%;margin-top:10px}
+.sgpv pre{margin:10px 0 0;white-space:pre-wrap;word-break:break-word;font:13px/1.45 ui-monospace,monospace;color:var(--ink)}
+.sgo{display:flex;flex-direction:column;gap:12px}
+.sgm{padding:14px;border-radius:16px;background:color-mix(in srgb,var(--acc) 12%,transparent);border:1px solid color-mix(in srgb,var(--acc) 35%,transparent);font-size:14px;line-height:1.45;word-break:break-word}
+.sgm.err{background:rgba(255,90,80,.10);border-color:rgba(255,110,100,.38);color:#ff9d95}
+.swgo.sgdl{text-decoration:none;font-size:15px;word-break:break-all;text-align:center}
+.swgo.sgdl .i{width:20px;height:20px;flex:none}
 .swtree{display:block;width:100%;height:auto;overflow:visible;-webkit-tap-highlight-color:transparent;user-select:none}
 .swtree .br{fill:none;stroke:var(--acc);stroke-opacity:.55;stroke-width:3.2;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:swgrow .9s ease-out forwards}
 .swtree .br.tw{stroke-width:1.7;stroke-opacity:.42}
@@ -1237,7 +1264,7 @@ const err=x=>(x&&x.message)||String(x);
 
 /* ---- пути папок: "Учёба/Латынь" ---- */
 const IC={dumb:'M6 5v14M18 5v14M3 9v6M21 9v6M6 12h12',puzzle:'M19.439 7.85c-.049.322.059.648.289.878l1.568 1.568c.47.47.706 1.087.706 1.704s-.235 1.233-.706 1.704l-1.611 1.611a.98.98 0 0 1-.837.276c-.47-.07-.802-.48-.968-.925a2.501 2.501 0 1 0-3.214 3.214c.446.166.855.497.925.968a.979.979 0 0 1-.276.837l-1.61 1.61a2.404 2.404 0 0 1-1.705.707 2.402 2.402 0 0 1-1.704-.706l-1.568-1.568a1.026 1.026 0 0 0-.877-.29c-.493.074-.84.504-1.02.968a2.5 2.5 0 1 1-3.237-3.237c.464-.18.894-.527.967-1.02a1.026 1.026 0 0 0-.289-.877l-1.568-1.568A2.402 2.402 0 0 1 1.998 12c0-.617.236-1.234.706-1.704L4.23 8.77c.24-.24.581-.353.917-.303.515.077.877.528 1.073 1.01a2.5 2.5 0 1 0 3.259-3.259c-.482-.196-.933-.558-1.01-1.073-.05-.336.062-.676.303-.917l1.525-1.525A2.402 2.402 0 0 1 12 1.998c.617 0 1.234.236 1.704.706l1.568 1.568c.23.23.556.338.877.29.493-.074.84-.504 1.02-.968a2.5 2.5 0 1 1 3.237 3.237c-.464.18-.894.527-.967 1.02Z',file:'M6 3h8l4 4v14H6zM14 3v4h4',users:'M16 19v-1a4 4 0 0 0-8 0v1M12 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6z',menu:'M4 6h16M4 12h16M4 18h16',filter:'M3 5h18l-7 8v6l-4-2v-4z',edit:'M4 20h4L19 9l-4-4L4 16zM14 6l4 4',copy:'M9 9h10v10H9zM5 15V5h10',sort:'M8 4v16M8 4L4 8M8 4l4 4M16 20V4M16 20l-4-4M16 20l4-4',grid:'M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z',list:'M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01',refresh:'M20 12a8 8 0 1 1-2.5-5.8M20 4v5h-5',folderplus:'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM12 10v6M9 13h6',trash:'M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3',gear:'M4 7h10M18 7h2M4 17h2M10 17h10M14 5v4M8 15v4',lock:'M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3',down:'M6 9l6 6 6-6',play:'M8 5l11 7-11 7z',music:'M9 18V5l11-2v13M9 18a3 3 0 1 1-6 0 3 3 0 0 1 6 0zM20 16a3 3 0 1 1-6 0 3 3 0 0 1 6 0z',prev:'M7 5v14M19 5l-9 7 9 7z',next:'M17 5v14M5 5l9 7-9 7z',rew:'M11 6l-7 6 7 6zM20 6l-7 6 7 6z',fwd:'M13 6l7 6-7 6zM4 6l7 6-7 6z',unlock:'M6 11h12v9H6zM8 11V8a4 4 0 0 1 7.6-1.7',cloud:'M7 18h10a4 4 0 0 0 .6-7.95A5.5 5.5 0 0 0 7 9.2 4.5 4.5 0 0 0 7 18z',move:'M5 12h14M13 6l6 6-6 6',repo:'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',plus:'M12 5v14M5 12h14',check:'M5 12l5 5 9-10',close:'M6 6l12 12M18 6L6 18',back:'M15 5l-7 7 7 7',bell:'M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0',logout:'M10 5H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9',finger:'M12 11v4c0 2-.5 3.5-1.5 5M8 10a4 4 0 0 1 8 0v3c0 2.5-.5 4.5-1.5 6.5M5 12a7 7 0 0 1 14 0v1.5M8 13v1c0 2-.4 3.4-1 4.5'};
-Object.assign(IC,{bolt:'M13 2 3 14h9l-1 8 10-12h-9l1-8z',wifioff:'M12 20h.01M8.5 16.4a5 5 0 0 1 7 0M2 8.8a15 15 0 0 1 4.2-2.6M5 12.9a10 10 0 0 1 5.2-2.6M22 8.8a15 15 0 0 0-11.7-3.7M19 12.9a10 10 0 0 0-1.2-.9M2 2l20 20',expand:'M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3'});
+Object.assign(IC,{picture:'M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4zM21 15l-3.1-3.1a2 2 0 0 0-2.8 0L6 21',download:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3',bolt:'M13 2 3 14h9l-1 8 10-12h-9l1-8z',wifioff:'M12 20h.01M8.5 16.4a5 5 0 0 1 7 0M2 8.8a15 15 0 0 1 4.2-2.6M5 12.9a10 10 0 0 1 5.2-2.6M22 8.8a15 15 0 0 0-11.7-3.7M19 12.9a10 10 0 0 0-1.2-.9M2 2l20 20',expand:'M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3'});
 Object.assign(IC,{thumbdown:'M17 14V2M9 18.12 10 14H4.17a2 2 0 0 1-1.92-2.56l2.33-8A2 2 0 0 1 6.5 2H20a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-2.76a2 2 0 0 0-1.79 1.11L12 22a3.13 3.13 0 0 1-3-3.88Z',shuffle:'M2 18h1.4c1.3 0 2.5-.6 3.3-1.7l6.1-8.6c.7-1.1 2-1.7 3.3-1.7H22M18 2l4 4-4 4M2 6h1.9c1.5 0 2.9.9 3.6 2.2M22 18h-5.9c-1.3 0-2.6-.7-3.3-1.8l-.5-.8M18 14l4 4-4 4',repeat:'m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3',repeat1:'m17 2 4 4-4 4M3 11v-1a4 4 0 0 1 4-4h14M7 22l-4-4 4-4M21 13v1a4 4 0 0 1-4 4H3M11 10h1v4',gauge:'m12 14 4-4M3.34 19a10 10 0 1 1 17.32 0',moon:'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z',tree:'M12 22V6.8M7.5 22h9M12 16.5C9.5 16.5 7.5 15 6.8 12.1M12 13.5C14.5 13.5 16.5 12 17.3 9.3M10.2 4.8a1.8 1.8 0 1 0 3.6 0 1.8 1.8 0 1 0-3.6 0M4.5 10.7a1.7 1.7 0 1 0 3.4 0 1.7 1.7 0 1 0-3.4 0M16.1 7.8a1.7 1.7 0 1 0 3.4 0 1.7 1.7 0 1 0-3.4 0',branch:'M6 3v12M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM15 6a9 9 0 0 0-9 9',folder:'M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z'});
 const icon=n=>`<svg class="i" viewBox="0 0 24 24"><path d="${IC[n]}"/></svg>`;
 document.querySelectorAll('[data-ic]').forEach(el=>el.insertAdjacentHTML('afterbegin',icon(el.dataset.ic)));
@@ -1976,7 +2003,7 @@ $('#kpb').addEventListener('click',async e=>{
    Если он нажал «Да», в его шторке появляется раздел «Расширения». Записи лежат в канале (🧩): предложение, согласие, отказ. */
 const EXR='🧩 ';
 let EXT=[];
-const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>openMusic()},{id:'notes',name:'Заметки',ic:'edit',open:()=>openNotes()},{id:'gym',name:'Журнал тренировок',ic:'dumb',open:()=>openGym()},{id:'links',name:'Временные ссылки',ic:'copy',open:()=>openShares()},{id:'shuf',name:'Случайный плеер',ic:'repo',open:()=>openShuffle()},{id:'quick',name:'Быстрый доступ к расширениям',ic:'grid',set:1,open:()=>openExtSet('quick')},{id:'tree',name:'Дерево репозиториев',ic:'tree',set:1,open:()=>openTree()}];
+const EXTS=[{id:'music',name:'Музыка из чата',ic:'music',open:()=>openMusic()},{id:'notes',name:'Заметки',ic:'edit',open:()=>openNotes()},{id:'gym',name:'Журнал тренировок',ic:'dumb',open:()=>openGym()},{id:'links',name:'Временные ссылки',ic:'copy',open:()=>openShares()},{id:'shuf',name:'Случайный плеер',ic:'repo',open:()=>openShuffle()},{id:'stego',name:'Стего-утилита',ic:'picture',open:()=>openStego()},{id:'quick',name:'Быстрый доступ к расширениям',ic:'grid',set:1,open:()=>openExtSet('quick')},{id:'tree',name:'Дерево репозиториев',ic:'tree',set:1,open:()=>openTree()}];
 const extName=id=>{let n='';for(const r of EXT)if(r.x===id&&r.k==='n'&&r.n)n=r.n;return n||(EXTS.find(e=>e.id===id)||{}).name||id};
 const extState=(x,u)=>{let k='';for(const r of EXT)if(r.x===x&&r.u===u)k=r.k;return k};
 const extMine=()=>EXTS.filter(e=>isAdmin()||(S.guestUser&&extState(e.id,S.guestUser)==='a'));
@@ -2683,6 +2710,289 @@ document.addEventListener('click',async e=>{
   INST.ev=null;instClose();
   try{ev.prompt();const r=await ev.userChoice;if(r&&r.outcome==='accepted')sv('tginst','done');else instLater()}catch(x){instLater()}
 });
+/* ---- Расширение «Стего-утилита» ----
+   Прячет файл или текст в картинку (PNG, младшие биты пикселей), WAV-аудио или в конец любого файла; необязательный пароль
+   (AES-GCM, PBKDF2) и сжатие (gzip). Всё считается на устройстве, ничего не отправляется. Формат упаковки совпадает с
+   отдельной страницей stego.html (магия STG1, хвост STGEND01): файлы, спрятанные там, достаются здесь и наоборот.
+   Доступно администратору, остальным выдаётся в консоли (Расширения). Ядро ниже перенесено без изменений. */
+const STG=(()=>{
+const enc=new TextEncoder(),dec=new TextDecoder();
+const MAGIC=[0x53,0x54,0x47,0x31],TRAIL=enc.encode('STGEND01');
+const fmt=b=>b>1e6?(b/1e6).toFixed(2)+' МБ':b<1e3?b+' Б':(b/1e3).toFixed(1)+' КБ';
+const concat=(...a)=>{const o=new Uint8Array(a.reduce((n,x)=>n+x.length,0));let p=0;for(const x of a){o.set(x,p);p+=x.length}return o};
+const u32=n=>{const a=new Uint8Array(4);new DataView(a.buffer).setUint32(0,n);return a};
+const u16=n=>{const a=new Uint8Array(2);new DataView(a.buffer).setUint16(0,n);return a};
+const pipe=async(d,t)=>new Uint8Array(await new Response(new Blob([d]).stream().pipeThrough(t)).arrayBuffer());
+const NF=()=>new Error('NOTFOUND');
+
+/* Предпросмотр: по сигнатуре байтов определяем тип и показываем превью, не полагаясь на имя/MIME */
+function sniff(bytes){
+  const h=bytes.subarray(0,16);
+  const eq=(a,o=0)=>a.every((v,i)=>h[i+o]===v);
+  if(eq([0x89,0x50,0x4E,0x47]))return'image/png';
+  if(eq([0xFF,0xD8,0xFF]))return'image/jpeg';
+  if(eq([0x47,0x49,0x46]))return'image/gif';
+  if(eq([0x52,0x49,0x46,0x46])&&bytes.length>11&&eq([0x57,0x41,0x56,0x45],8))return'audio/wav';
+  if(eq([0x52,0x49,0x46,0x46])&&bytes.length>11&&eq([0x41,0x56,0x49,0x20],8))return'video/avi';
+  if(eq([0x49,0x44,0x33])||eq([0xFF,0xFB])||eq([0xFF,0xF3])||eq([0xFF,0xF2]))return'audio/mpeg';
+  if(eq([0x4F,0x67,0x67,0x53]))return'audio/ogg';
+  if(eq([0x50,0x4B,0x03,0x04]))return'application/zip';
+  if(eq([0x25,0x50,0x44,0x46]))return'application/pdf';
+  if(bytes.length>=12&&eq([0x66,0x74,0x79,0x70],4))return'video/mp4';
+  // похоже на текст?
+  const n=Math.min(bytes.length,512);let printable=0;
+  for(let i=0;i<n;i++){const c=bytes[i];if(c===9||c===10||c===13||(c>=32&&c<127)||c>=128)printable++}
+  if(n&&printable/n>0.95)return'text/plain';
+  return'application/octet-stream';
+}
+const LABEL={'image/png':'PNG-изображение','image/jpeg':'JPEG-изображение','image/gif':'GIF-изображение',
+  'audio/wav':'WAV-аудио','audio/mpeg':'MP3-аудио','audio/ogg':'OGG-аудио','video/avi':'AVI-видео','video/mp4':'MP4-видео/аудио',
+  'application/zip':'ZIP-архив','application/pdf':'PDF-документ','text/plain':'текст','application/octet-stream':'файл неизвестного формата'};
+
+async function key(pw,salt){
+  if(!crypto.subtle)throw new Error('Шифрование недоступно в этом браузере');
+  const b=await crypto.subtle.importKey('raw',enc.encode(pw),'PBKDF2',false,['deriveKey']);
+  return crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:200000,hash:'SHA-256'},b,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+}
+async function buildPacket(name,data,pw,zip){
+  const nb=enc.encode(name).slice(0,65535);
+  let body=concat(u16(nb.length),nb,data),flags=0,head=new Uint8Array(0);
+  if(zip&&window.CompressionStream){body=await pipe(body,new CompressionStream('gzip'));flags|=2}
+  if(pw){
+    const salt=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
+    body=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},await key(pw,salt),body));
+    flags|=1;head=concat(salt,iv);
+  }
+  return concat(new Uint8Array(MAGIC),Uint8Array.of(flags),head,u32(body.length),body);
+}
+async function parsePacket(rd,max,pw){
+  const m=rd(4);if(!MAGIC.every((v,i)=>m[i]===v))throw NF();
+  const flags=rd(1)[0];let salt,iv;
+  if(flags&1){const h=rd(28);salt=h.slice(0,16);iv=h.slice(16)}
+  const len=new DataView(rd(4).buffer).getUint32(0);
+  if(len>max)throw NF();
+  let body=rd(len);
+  if(flags&1){
+    if(!pw)throw new Error('Данные зашифрованы, введите пароль');
+    try{body=new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv},await key(pw,salt),body))}
+    catch{throw new Error('Неверный пароль или данные повреждены')}
+  }
+  if(flags&2)body=await pipe(body,new DecompressionStream('gzip'));
+  const nl=new DataView(body.buffer,body.byteOffset).getUint16(0);
+  return{name:dec.decode(body.slice(2,2+nl)),data:body.slice(2+nl)};
+}
+
+/* Носители: n ячеек, get/set работают с байтом, в младших битах которого лежат данные */
+async function imgCarrier(file){
+  const url=URL.createObjectURL(file),img=new Image();img.src=url;
+  try{await img.decode()}catch{URL.revokeObjectURL(url);throw new Error('Не удалось открыть как изображение')}
+  const cv=document.createElement('canvas');cv.width=img.naturalWidth;cv.height=img.naturalHeight;
+  const ctx=cv.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0);URL.revokeObjectURL(url);
+  const id=ctx.getImageData(0,0,cv.width,cv.height),d=id.data;
+  let c=0;for(let i=3;i<d.length;i+=4)if(d[i]===255)c++; // только непрозрачные пиксели
+  const ix=new Uint32Array(c*3);let k=0;
+  for(let i=0;i<d.length;i+=4)if(d[i+3]===255){ix[k++]=i;ix[k++]=i+1;ix[k++]=i+2}
+  return{n:ix.length,get:i=>d[ix[i]],set:(i,v)=>{d[ix[i]]=v},
+    save:()=>new Promise(r=>{ctx.putImageData(id,0,0);cv.toBlob(r,'image/png')})};
+}
+function parseWav(buf){
+  const dv=new DataView(buf),s=(o,n)=>String.fromCharCode(...new Uint8Array(buf,o,n));
+  if(buf.byteLength<44||s(0,4)!=='RIFF'||s(8,4)!=='WAVE')return null;
+  let p=12,fmtc=null;
+  while(p+8<=buf.byteLength){
+    const id=s(p,4),sz=dv.getUint32(p+4,true);
+    if(id==='fmt ')fmtc={tag:dv.getUint16(p+8,true),bits:dv.getUint16(p+22,true)};
+    if(id==='data')return fmtc?{fmt:fmtc,off:p+8,len:Math.min(sz,buf.byteLength-p-8)}:null;
+    p+=8+sz+(sz&1);
+  }
+  return null;
+}
+function encodeWav(ab){
+  const ch=ab.numberOfChannels,len=ab.length,sr=ab.sampleRate,out=new Uint8Array(44+len*ch*2),dv=new DataView(out.buffer);
+  const w=(o,t)=>{for(let i=0;i<t.length;i++)out[o+i]=t.charCodeAt(i)};
+  w(0,'RIFF');dv.setUint32(4,36+len*ch*2,true);w(8,'WAVEfmt ');dv.setUint32(16,16,true);dv.setUint16(20,1,true);
+  dv.setUint16(22,ch,true);dv.setUint32(24,sr,true);dv.setUint32(28,sr*ch*2,true);dv.setUint16(32,ch*2,true);dv.setUint16(34,16,true);
+  w(36,'data');dv.setUint32(40,len*ch*2,true);
+  const cs=[];for(let c=0;c<ch;c++)cs.push(ab.getChannelData(c));
+  let p=44;for(let i=0;i<len;i++)for(let c=0;c<ch;c++){const x=Math.max(-1,Math.min(1,cs[c][i]));dv.setInt16(p,x<0?x*32768:x*32767,true);p+=2}
+  return out;
+}
+async function wavCarrier(file,noConv){
+  const buf=await file.arrayBuffer();let info=parseWav(buf),bytes,conv=false;
+  if(info&&(info.fmt.tag===1||info.fmt.tag===0xFFFE)&&info.fmt.bits===16)bytes=new Uint8Array(buf.slice(0));
+  else{
+    if(noConv)throw new Error('skip');
+    const ac=new(window.AudioContext||window.webkitAudioContext)();let ab;
+    try{ab=await ac.decodeAudioData(buf.slice(0))}catch{throw new Error('Не удалось прочитать аудио')}finally{ac.close()}
+    bytes=encodeWav(ab);info=parseWav(bytes.buffer);conv=true;
+  }
+  const off=info.off;
+  return{n:Math.floor(info.len/2),converted:conv,get:i=>bytes[off+2*i],set:(i,v)=>{bytes[off+2*i]=v},
+    save:async()=>new Blob([bytes],{type:'audio/wav'})};
+}
+
+/* LSB: первые 8 ячеек (по 1 биту) хранят глубину, дальше данные по `d` бит на ячейку */
+function embed(c,p,d){
+  const cap=Math.max(0,Math.floor((c.n-8)*d/8));
+  if(8+Math.ceil(p.length*8/d)>c.n)throw new Error('Не влезает: нужно '+fmt(p.length)+', вместимость '+fmt(cap)+'. Увеличьте «бит на канал», возьмите контейнер побольше или метод «В конец файла».');
+  for(let b=0;b<8;b++)c.set(b,(c.get(b)&254)|((d>>(7-b))&1));
+  const m=(1<<d)-1,tb=p.length*8;let bp=0;
+  for(let s=8;bp<tb;s++){
+    let v=0;for(let k=0;k<d;k++,bp++)v=(v<<1)|(bp<tb?(p[bp>>3]>>(7-(bp&7)))&1:0);
+    c.set(s,(c.get(s)&~m&255)|v);
+  }
+}
+function lsbReader(c){
+  if(c.n<64)throw NF();
+  let d=0;for(let b=0;b<8;b++)d=(d<<1)|(c.get(b)&1);
+  if(d<1||d>4)throw NF();
+  const m=(1<<d)-1;let s=8,buf=0,nb=0;
+  return{max:Math.floor((c.n-8)*d/8),read(n){
+    const o=new Uint8Array(n);
+    for(let i=0;i<n;i++){
+      while(nb<8){if(s>=c.n)throw NF();buf=(buf<<d)|(c.get(s++)&m);nb+=d}
+      o[i]=(buf>>(nb-8))&255;nb-=8;buf&=(1<<nb)-1;
+    }
+    return o;
+  }};
+}
+const arrReader=a=>{let p=0;return n=>{if(p+n>a.length)throw NF();const o=a.slice(p,p+n);p+=n;return o}};
+const tryRun=async fn=>{try{return await fn()}catch(e){if(e.message==='NOTFOUND')return null;throw e}};
+
+
+const g=id=>document.getElementById(id);
+const ST={meth:'auto',depth:1,zip:true,tok:0,urls:[]};
+const urlOf=b=>{const u=URL.createObjectURL(b);ST.urls.push(u);return u};
+function msg(o,t,err){o.innerHTML='';const p=document.createElement('div');p.className='sgm'+(err?' err':'');p.textContent=t;o.append(p)}
+function link(o,blob,name){const a=document.createElement('a');a.href=urlOf(blob);a.download=name;a.className='swgo sgdl';a.innerHTML=icon('download')+'<span></span>';a.lastChild.textContent='Скачать '+name;o.append(a)}
+/* Предпросмотр по сигнатуре байтов, а не по имени/MIME */
+async function showPreview(el,blob,name,size){
+  el.hidden=false;el.innerHTML='';
+  const head=new Uint8Array(await blob.slice(0,64).arrayBuffer());
+  const mime=sniff(head),label=LABEL[mime]||mime;
+  const fn=document.createElement('div');fn.className='sgfn';fn.textContent=name||'(без имени)';
+  const mt=document.createElement('div');mt.className='sgfm';mt.textContent=label+' · '+fmt(size!=null?size:blob.size);
+  el.append(fn,mt);
+  const url=urlOf(blob);
+  if(mime.startsWith('image/')){const img=document.createElement('img');img.src=url;img.alt=name||'';el.append(img)}
+  else if(mime.startsWith('audio/')){const a=document.createElement('audio');a.controls=true;a.src=url;el.append(a)}
+  else if(mime.startsWith('video/')){const v=document.createElement('video');v.controls=true;v.src=url;el.append(v)}
+  else if(mime==='text/plain'&&blob.size<200000){const t=await blob.text(),pre=document.createElement('pre');pre.textContent=t.slice(0,4000)+(t.length>4000?'\n…':'');el.append(pre)}
+}
+const hidePrev=el=>{el.hidden=true;el.innerHTML=''};
+function method(f){
+  const m=ST.meth;if(m!=='auto')return m;
+  if(f.type.startsWith('image/'))return'img';
+  if(/\.wav$/i.test(f.name))return'wav';
+  return'append';
+}
+const payloadSize=()=>{const pf=g('sgpay').files[0];return pf?pf.size:enc.encode(g('sgtxt').value||'').length};
+async function updCap(){
+  const t=++ST.tok,f=g('sgcont').files[0],o=g('sgcap');
+  if(!f){o.textContent='';return}
+  const m=method(f);
+  if(m==='append'){o.textContent='Размер данных не ограничен: они дописываются в конец файла.';return}
+  o.textContent='Считаю вместимость…';
+  try{
+    const c=await(m==='img'?imgCarrier(f):wavCarrier(f));if(t!==ST.tok)return;
+    const cells=c.n-8,need=payloadSize()+80,curD=ST.depth,curCap=Math.max(0,Math.floor(cells*curD/8));
+    let line='Вместимость при '+curD+' бит/канал: около '+fmt(curCap)+(c.converted?'. Аудио будет сконвертировано в WAV.':'');
+    if(need>80){
+      let rec=null;for(let d=1;d<=4;d++){if(Math.floor(cells*d/8)>=need){rec=d;break}}
+      if(rec===null)line+='. Даже при 4 бит/канал файл не влезает: нужен контейнер побольше или метод «В конец файла».';
+      else if(rec===curD)line+='. Для этого файла текущей глубины достаточно.';
+      else if(rec<curD)line+='. Для этого файла хватило бы '+rec+' бит/канал, это меньше изменений в контейнере.';
+      else line+='. Для этого файла нужно не меньше '+rec+' бит/канал, иначе не влезет.';
+    }
+    o.textContent=line;
+  }catch(e){if(t===ST.tok)o.textContent=e.message}
+}
+function pills(box,attr,val){document.querySelectorAll('#'+box+' button').forEach(b=>b.classList.toggle('on',b.dataset[attr]===String(val)))}
+function tab(n){
+  g('sgp1').hidden=n!==1;g('sgp2').hidden=n!==2;
+  document.querySelectorAll('[data-sgtab]').forEach(b=>b.classList.toggle('on',+b.dataset.sgtab===n));
+}
+const fileName=(id,f,def)=>{const e=g(id+'n');if(e)e.textContent=f?f.name+' · '+fmt(f.size):def};
+async function doHide(){
+  const o=g('sgo1'),cf=g('sgcont').files[0],pf=g('sgpay').files[0],txt=g('sgtxt').value;
+  if(!cf)return msg(o,'Выберите контейнер',1);
+  if(!pf&&!txt)return msg(o,'Выберите файл или введите текст',1);
+  msg(o,'Работаю…');
+  try{
+    const name=pf?pf.name:'message.txt',data=pf?new Uint8Array(await pf.arrayBuffer()):enc.encode(txt);
+    const pk=await buildPacket(name,data,g('sgpw').value,ST.zip),m=method(cf);
+    const base=cf.name.replace(/\.[^.]*$/,''),ext=(cf.name.match(/\.[^.]*$/)||[''])[0];
+    let blob,out;
+    if(m==='append'){blob=new Blob([await cf.arrayBuffer(),pk,u32(pk.length),TRAIL]);out=base+'_out'+ext}
+    else{const c=await(m==='img'?imgCarrier(cf):wavCarrier(cf));embed(c,pk,ST.depth);blob=await c.save();out=base+'_out.'+(m==='img'?'png':'wav')}
+    msg(o,'Готово. Спрятано: '+name+' ('+fmt(data.length)+'). Храните и пересылайте результат как файл, не как фото в мессенджере.');
+    link(o,blob,out);
+    const pv=document.createElement('div');pv.className='sgpv';o.append(pv);
+    await showPreview(pv,blob,out,blob.size);
+  }catch(e){msg(o,e.message,1)}
+}
+async function doFind(){
+  const o=g('sgo2'),f=g('sgdfile').files[0],pw=g('sgdpw').value;
+  if(!f)return msg(o,'Выберите файл',1);
+  msg(o,'Ищу данные…');
+  try{
+    const b=new Uint8Array(await f.arrayBuffer()),L=b.length;let r=null;
+    if(L>12&&TRAIL.every((v,i)=>b[L-8+i]===v)){
+      const n=new DataView(b.buffer).getUint32(L-12);
+      if(n+12<=L)r=await tryRun(()=>parsePacket(arrReader(b.subarray(L-12-n,L-12)),n,pw));
+    }
+    const lsb=c=>tryRun(()=>{const x=lsbReader(c);return parsePacket(x.read,x.max,pw)});
+    if(!r){let c=null;try{c=await wavCarrier(f,1)}catch{}if(c)r=await lsb(c)}
+    if(!r){let c=null;try{c=await imgCarrier(f)}catch{}if(c)r=await lsb(c)}
+    if(!r)return msg(o,'Скрытых данных не найдено. Возможно, файл пережали или он в другом формате.',1);
+    const safeName=r.name.replace(/[\\/:*?"<>|]/g,'_')||'extracted.bin',rb=new Blob([r.data]);
+    msg(o,'Найден файл: '+r.name+' ('+fmt(r.data.length)+')');
+    link(o,rb,safeName);
+    const pv=document.createElement('div');pv.className='sgpv';o.append(pv);
+    await showPreview(pv,rb,r.name,r.data.length);
+  }catch(e){msg(o,e.message,1)}
+}
+function build(){
+  ST.urls.splice(0).forEach(u=>URL.revokeObjectURL(u));
+  ST.meth='auto';ST.depth=1;ST.zip=true;ST.tok++;
+  const pick=(id,t,s)=>`<label class="sgf"><span class="sgfi">${icon('picture')}</span><span class="sgft"><b>${t}</b><span id="${id}n">${s}</span></span><input type="file" id="${id}"></label>`;
+  $('#admb').innerHTML=`<div class="gls stg">
+    <div class="glseg sgtabs"><button class="on" data-sgtab="1">${icon('lock')}Спрятать</button><button data-sgtab="2">${icon('unlock')}Достать</button></div>
+    <div id="sgp1" class="gls0">
+      <section class="gl"><div class="gll">Контейнер</div>${pick('sgcont','Выбрать контейнер','Картинка, аудио или любой файл')}<div id="sgpc" class="sgpv" hidden></div></section>
+      <section class="gl"><div class="gll">Что спрятать</div>${pick('sgpay','Выбрать файл','Любой файл')}<div id="sgpp" class="sgpv" hidden></div><div class="sgor">или текст</div><textarea id="sgtxt" class="glin" rows="3" placeholder="Введите текст…"></textarea></section>
+      <section class="gl"><div class="gll">Метод</div>
+        <div class="glseg" id="sgm"><button class="on" data-sgm="auto">Авто</button><button data-sgm="img">В картинку</button><button data-sgm="wav">В аудио</button><button data-sgm="append">В конец файла</button></div>
+        <div class="glsub" id="sgmd">Авто: тип выбирается по контейнеру. «В картинку» даёт PNG, «В аудио» даёт WAV, «В конец файла» подходит для любого формата и сохраняет его.</div>
+        <div class="gll sgmt">Бит на канал</div><div class="glseg g4" id="sgd"><button class="on" data-sgd="1">1</button><button data-sgd="2">2</button><button data-sgd="3">3</button><button data-sgd="4">4</button></div>
+        <div class="gll sgmt">Пароль</div><input type="password" id="sgpw" class="glin" autocomplete="off" placeholder="необязательно">
+        <div class="sgzr"><span>Сжать перед встраиванием</span><button class="swsw" id="sgzip" role="switch" aria-checked="true" aria-label="Сжать перед встраиванием"></button></div>
+        <div id="sgcap" class="glsub"></div></section>
+      <button class="swgo" id="sggo">${icon('lock')}Спрятать</button><div id="sgo1" class="sgo"></div>
+    </div>
+    <div id="sgp2" class="gls0" hidden>
+      <section class="gl"><div class="gll">Файл с данными</div>${pick('sgdfile','Выбрать файл','Картинка, аудио или любой файл')}<div id="sgpd" class="sgpv" hidden></div>
+        <div class="gll sgmt">Пароль (если был)</div><input type="password" id="sgdpw" class="glin" autocomplete="off"></section>
+      <button class="swgo" id="sgdgo">${icon('unlock')}Достать</button><div id="sgo2" class="sgo"></div>
+    </div>
+  </div>`;
+  const root=g('sgp1').parentNode;
+  root.addEventListener('click',e=>{
+    const tb=e.target.closest('[data-sgtab]');if(tb){tab(+tb.dataset.sgtab);return}
+    const mm=e.target.closest('[data-sgm]');if(mm){ST.meth=mm.dataset.sgm;pills('sgm','sgm',ST.meth);updCap();return}
+    const dd=e.target.closest('[data-sgd]');if(dd){ST.depth=+dd.dataset.sgd;pills('sgd','sgd',ST.depth);updCap();return}
+    if(e.target.closest('#sgzip')){ST.zip=!ST.zip;g('sgzip').setAttribute('aria-checked',ST.zip);return}
+    if(e.target.closest('#sggo')){doHide();return}
+    if(e.target.closest('#sgdgo')){doFind();return}
+  });
+  const onFile=(id,prev,def)=>g(id).addEventListener('change',()=>{const f=g(id).files[0];fileName(id,f,def);f?showPreview(g(prev),f,f.name,f.size):hidePrev(g(prev))});
+  onFile('sgcont','sgpc','Картинка, аудио или любой файл');onFile('sgpay','sgpp','Любой файл');onFile('sgdfile','sgpd','Картинка, аудио или любой файл');
+  g('sgcont').addEventListener('change',updCap);g('sgpay').addEventListener('change',updCap);g('sgtxt').addEventListener('input',updCap);
+}
+return{open(){openAdm(extName('stego'));build()}};
+})();
+function openStego(){STG.open()}
+
 /* ---- Расширение «Журнал тренировок»: приложение gym-log целиком, внутри изолированного фрейма на весь экран.
    «Назад» переадресуется в приложение, выход — его ползунком. Данные лежат на устройстве (gym_*, IndexedDB gymlog). ---- */
 const GYM={on:false,recs:new Map(),sx:'',q:null,last:0,pend:null,pt:0,rt:0};let FLOODT=0;
@@ -3386,12 +3696,12 @@ async function connect(){
   });
   await findChannel();
   if(!S.main){S.main=S.chat;sv('tgm',S)}
-  try{await refresh({light:true})}catch(e){
+  try{await refresh({light:true,fast:true})}catch(e){
     if(!ACC.test(err(e))||S.viewer)throw e;
     if(!confirm('Канал архива недоступен ('+err(e)+'). Создать новый канал «'+TITLE+'»? Старые файлы останутся в старом канале.'))throw e;
     await makeChannel();await refresh();
   }
-  BGS.ok=1;BGS.t=Date.now()-1e5;
+  BGS.ok=1;BGS.t=Date.now()-17e4;   /* первая фоновая сверка архива через ~30 с после запуска */
 }
 const NET=/disconnect|network|connection|timeout|timed out|websocket|fetch|closed|offline/i;
 async function connectRetry(){
@@ -3604,7 +3914,14 @@ async function refresh(opt){
         const cut=snap.maxId-300;
         /* v102: при opt.verify старые записи архива сверяются с чатом: удалённые на другом устройстве выпадают сразу */
         const stale=Date.now()-snap.fullT>RAWTTL;
-        const alive=(opt.verify||stale)?await aliveIds(snap,cut):null;
+        /* v122: при запуске (opt.fast) архив старше 6 часов НЕ сверяется перед показом: сверка всех записей долгая, а её сбой раньше
+           приводил к полному чтению чата. Показываем архив сразу, а сверка идёт фоном (bgSync, opt.verify). Сбой сверки без verify
+           тоже не сбрасывает архив: он остаётся в работе, а запасной путь (RAWV.bad) включит полное чтение в фоне. */
+        let alive=null;
+        if(opt.verify||(stale&&!opt.fast)){
+          try{alive=await aliveIds(snap,cut)}
+          catch(e){if(opt.verify)throw e;alive=null}
+        }
         vOk=!!alive||!snap.r||!Object.values(snap.r).some(a=>a&&a.length);
         for(const k in RK)for(const e of (snap.r[k]||[]))if(e[RAWID[k]]<cut&&(!alive||alive.has(e[RAWID[k]]))){RK[k].push({...e});seen.add(e[RAWID[k]])}
         for(const r of oks)if(!okk||r.id>okk.id)okk=r;
