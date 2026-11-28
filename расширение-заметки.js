@@ -66,10 +66,10 @@ function ntPush(n){
   const p=(NTQ[n.id]||Promise.resolve()).then(run);NTQ[n.id]=p.catch(()=>{});
   return p.then(()=>true,x=>{const f=/FLOOD_WAIT_(\d+)/.exec(String(err(x))+' '+String(x&&x.message||x));if(f){FLOODT=Date.now()+(+f[1]+1)*1000;say('Лимит Telegram: досохраню автоматически через '+f[1]+' с',1)}else say('Заметка не сохранилась в облаке: '+err(x),1);return false})}
 function ntFlush(){clearTimeout(NT.t);const L=[...NT.d];NT.d.clear();for(const n of L)ntPush(n)}
-const ntTouch=()=>{NT.n.up=Date.now();NT.d.add(NT.n);clearTimeout(NT.t);NT.t=setTimeout(ntFlush,1500);try{qkPinUpd(NT.n)}catch(e){}};
+const ntTouch=()=>{NT.n.up=Date.now();NT.d.add(NT.n);clearTimeout(NT.t);NT.t=setTimeout(ntFlush,1500);try{qkPinUpd(NT.n)}catch(e){}try{qtRebuild()}catch(e){}};
 function ntDel(n){try{qkPinDelId(n.id)}catch(e){}NTS=NTS.filter(r=>!(r.id===n.id&&r.u===ntMe()));NT.d.delete(n);
   const p=(NTQ[n.id]||Promise.resolve()).then(async()=>{const m=[...(n._m||[])];for(let i=0;i<m.length;i+=100)await withChat(()=>client.deleteMessages(S.chat,m.slice(i,i+100)))});
-  NTQ[n.id]=p.catch(()=>{});p.catch(e=>say('Не удалось удалить в облаке: '+err(e),1))}
+  NTQ[n.id]=p.catch(()=>{});p.catch(e=>say('Не удалось удалить в облаке: '+err(e),1));setTimeout(()=>{try{qtRebuild()}catch(e){}},0)}
 /* заметки, которые раньше лежали только на устройстве, переезжают в облако */
 function ntMigrate(){try{const k='ntx-'+(S.guestUser||'admin'),old=ld(k,[]);if(!Array.isArray(old)||!old.length)return;
   const have=new Set(NTD.map(x=>x.id));
@@ -78,13 +78,13 @@ function ntMigrate(){try{const k='ntx-'+(S.guestUser||'admin'),old=ld(k,[]);if(!
 function ntUpgrade(){if(!NTK)return;const pl=new Set(NTS.filter(r=>r.u===ntMe()&&!r.e).map(r=>r.id));for(const n of NTD)if(pl.has(n.id))ntPush(n)}
 /* подтянуть изменения с других устройств */
 function ntSyncIn(){if(OFFLINE||Date.now()-NT.rt<60000)return;NT.rt=Date.now();
-  refresh().then(async()=>{try{render()}catch(e){}if(NT.n||NT.d.size||NT.f||!$('#ntl'))return;NTD=(await ntMine()).filter(n=>n.k!=='g');ntPaint()}).catch(()=>{})}
+  refresh().then(async()=>{try{render()}catch(e){}if(NT.n||NT.d.size||NT.f||!$('#ntl'))return;NTD=(await ntMine()).filter(n=>n.k!=='g');try{qtRebuild()}catch(e){}ntPaint()}).catch(()=>{})}
 function ntSheet(items){const o=document.createElement('div');o.id='ntsh';o.innerHTML='<div class="b">'+items.map((x,i)=>`<button data-i="${i}" class="${x.c||''}">${icon(x.ic)}<span>${esc(x.t)}</span></button>`).join('')+'</div>';document.body.appendChild(o);o.onclick=e=>{const b=e.target.closest('button');o.remove();if(b)items[b.dataset.i].fn()}}
 async function openNotes(inner){
   if(!inner){const pf=fromSet,pp=admParent;const k=await ntKeyGet();if(k===undefined)return;
     NT.pf=pf;NT.pp=pp;NT.q='';NT.bad=0;NTD=(await ntMine()).filter(n=>n.k!=='g');
     if(NT.bad){say('Часть заметок не расшифровалась: возможно, пароль учётки менялся',1);NT.bad=0}
-    ntMigrate();ntUpgrade();ntSyncIn()}
+    ntMigrate();ntUpgrade();ntSyncIn();try{qtRebuild()}catch(e){}}
   NT.n=null;fromSet=NT.pf;admParent=NT.pp;
   openAdm(extName('notes'));
   $('#admb').innerHTML=`<div class="nts"><input id="ntq" type="search" placeholder="Поиск по заметкам" value="${esc(NT.q)}"><div id="ntl"></div></div><div id="ntfm" hidden><button id="ntfc">${icon('check')}Чек-лист</button><button id="ntfn">${icon('edit')}Заметка</button></div><button class="ntfab" id="ntadd" aria-label="Добавить">${icon('plus')}</button>`;
@@ -98,7 +98,7 @@ function ntPaint(){const s=NT.q.toLowerCase();
   $('#ntl').innerHTML=L.length?L.map(n=>`<div class="f ntr${n.p?' pin':''}" data-id="${n.id}"><div class="th fo">${icon(n.k==='c'?'check':'edit')}</div><div><b>${esc(ntTtl(n))}</b><div class="m">${n.p?'★ ':''}${ntFmt(n.up)}${ntPrev(n)?' · '+esc(ntPrev(n)):''}</div></div></div>`).join(''):`<div class="empty"><span class="big">📝</span>${NT.q?'Ничего не найдено':'Здесь пока пусто.<br>Нажмите «+», чтобы создать заметку'}</div>`}
 function ntNew(k){const t=Date.now(),n={id:t.toString(36)+Math.random().toString(36).slice(2,5),t:'',b:'',c:k==='c'?[{x:0,d:''}]:[],k,p:0,cr:t,up:t};NTD.push(n);ntOpen(n.id)}
 const ntGrow=()=>{const x=$('#ntx');x.style.height='auto';x.style.height=Math.max(x.scrollHeight,innerHeight*.45)+'px'};
-function ntPaintC(){$('#ntc').innerHTML=NT.n.c.map((x,i)=>`<div class="nci${x.x?' dn':''}"><button class="ncb" data-t="${i}" aria-label="Отметить">${x.x?'✓':''}</button><input data-i="${i}" value="${esc(x.d)}" placeholder="Пункт" autocomplete="off"><button class="ib2" data-r="${i}" aria-label="Удалить пункт">${icon('close')}</button></div>`).join('')+'<button id="ntcadd">+ Пункт</button>'}
+function ntPaintC(){$('#ntc').innerHTML=NT.n.c.map((x,i)=>`<div class="nci${x.x?' dn':''}"><button class="ncb" data-t="${i}" aria-label="Отметить">${x.x?'✓':''}</button><input data-i="${i}" value="${esc(x.d)}" placeholder="Пункт" autocomplete="off">${quickOn()?`<button class="ib2 qtp${x.q?' on':''}" data-q="${i}" aria-label="Вынести на шторку">${icon('grid')}</button>`:''}<button class="ib2" data-r="${i}" aria-label="Удалить пункт">${icon('close')}</button></div>`).join('')+'<button id="ntcadd">+ Пункт</button>'}
 function ntAddC(at){NT.n.c.splice(at,0,{x:0,d:''});ntPaintC();$('#ntc').querySelector(`[data-i="${at}"]`).focus();ntTouch()}
 function ntView(){const c=NT.n.k==='c';$('#ntx').hidden=c;$('#ntc').hidden=!c;if(c)ntPaintC();else ntGrow()}
 function ntOpen(id){const n=NTD.find(x=>x.id===id);if(!n)return;NT.n=n;fromSet=true;admParent=ntEnd;openAdm('Заметка');
@@ -110,14 +110,14 @@ function ntOpen(id){const n=NTD.find(x=>x.id===id);if(!n)return;NT.n=n;fromSet=t
   const c=$('#ntc');
   c.addEventListener('input',e=>{const i=e.target.dataset.i;if(i!=null){n.c[i].d=e.target.value;ntTouch()}});
   c.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.dataset.i!=null){e.preventDefault();ntAddC(+e.target.dataset.i+1)}});
-  c.addEventListener('click',e=>{const t=e.target.closest('[data-t]'),r=e.target.closest('[data-r]');
-    if(t){const x=n.c[t.dataset.t];x.x=x.x?0:1;ntTouch();ntPaintC()}else if(r){n.c.splice(r.dataset.r,1);ntTouch();ntPaintC()}else if(e.target.id==='ntcadd')ntAddC(n.c.length)});
+  c.addEventListener('click',e=>{const t=e.target.closest('[data-t]'),r=e.target.closest('[data-r]'),q=e.target.closest('[data-q]');
+    if(t){const x=n.c[t.dataset.t];x.x=x.x?0:1;ntTouch();ntPaintC()}else if(r){n.c.splice(r.dataset.r,1);ntTouch();ntPaintC()}else if(q){const x=n.c[q.dataset.q];if(x){x.q=x.q?0:1;if(x.q&&!x.i)x.i=Date.now().toString(36)+Math.random().toString(36).slice(2,6);ntTouch();ntPaintC();say(x.q?'Вынесено на шторку':'Убрано со шторки')}}else if(e.target.id==='ntcadd')ntAddC(n.c.length)});
   ntView();
   if(!n.t&&!n.b&&!n.c.some(i=>i.d))setTimeout(()=>(n.k==='c'?$('#nte'):$('#ntx')).focus(),60)}
 function ntEnd(){const n=NT.n;if(!n)return;NT.n=null;$('#musq').textContent='?';
   const l=n.c.length;n.c=n.c.filter(i=>i.d.trim());if(n.c.length!==l)NT.d.add(n);
   if(!n.t.trim()&&!n.b.trim()&&!n.c.length){NTD=NTD.filter(x=>x!==n);if(n._m&&n._m.length)ntDel(n);NT.d.delete(n)}
-  ntFlush();openNotes(1)}
+  try{qtRebuild()}catch(e){}ntFlush();openNotes(1)}
 /* поделиться картинкой: текст заметки на фоне приложения */
 function ntWrap(c,txt,w){const out=[];for(const p of txt.split('\n')){if(!p){out.push('');continue}let line='';
   for(const word of p.split(' ')){const t=line?line+' '+word:word;if(c.measureText(t).width<=w){line=t;continue}if(line)out.push(line);line=word;
