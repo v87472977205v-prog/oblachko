@@ -91,6 +91,8 @@ async function qtAct(i,patch){
 function qtBlock(){
   const el=document.createElement('div');el.className='qtk';el.hidden=!qtSnap().length;el.innerHTML=qtRows();
   el.addEventListener('click',e=>{
+    /* после нажатия список перерисовывается, и общий обработчик шторки решил бы, что нажали мимо панели, и закрыл её */
+    e.stopPropagation();
     const x=e.target.closest('[data-qtx]');
     if(x){qtAct(x.dataset.qtx,{q:0});return}
     const c=e.target.closest('[data-qtt]');
